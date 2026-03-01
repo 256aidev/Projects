@@ -1,0 +1,179 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.0 Chrome/140.0.7339.249 Electron/38.7.2 Safari/537.36" version="29.3.0">
+  <diagram name="Page-1" id="ODG_CY6rw8rxUHsgfiHp">
+    <mxGraphModel dx="2348" dy="1125" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-46" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;" value="&lt;div&gt;Dev Network&lt;/div&gt;" vertex="1">
+          <mxGeometry height="340" width="800" x="500" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-39" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;" value="Bittek Prod Network&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="340" width="800" x="500" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-37" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;" value="LaravaLabs Prod Network&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="340" width="800" x="500" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-3" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;align=center;" target="6TY5DbsHy_CrghAaTYLx-2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="Ting internet Fiber Passthr Modem&lt;div&gt;2.5Gb internet&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="160" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-5" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;align=center;dashed=1;dashPattern=1 2;" target="6TY5DbsHy_CrghAaTYLx-4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="UDR7 Unfi Router&lt;div&gt;2.5Gb -10Gb&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="120" x="320" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-4" parent="1" style="whiteSpace=wrap;html=1;rounded=0;align=center;" value="Virtual Network VLAN ID 1: LarvaLabs&lt;div&gt;Gatway 192.168.1.1 /24&lt;/div&gt;&lt;div&gt;Wired and WiFI&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="150" x="520" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-7" edge="1" parent="1" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="6TY5DbsHy_CrghAaTYLx-10" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="400" y="928.5714285714284" as="sourcePoint" />
+            <mxPoint x="750" y="948.2537313432836" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Comcast modem/&amp;nbsp; Router" vertex="1">
+          <mxGeometry height="60" width="120" x="280" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="VLAN 1&amp;nbsp;&lt;div&gt;Gateway 10.0.0.0 /24&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="120" x="840" y="960" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-12" parent="1" style="whiteSpace=wrap;html=1;rounded=0;align=center;" value="Virtual Network VLAN ID 2: Bittek&lt;div&gt;Gatway 10.0.1.1 /24&lt;/div&gt;&lt;div&gt;Wired and WiFI&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="150" x="544" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-13" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.013;entryY=0.4;entryDx=0;entryDy=0;entryPerimeter=0;align=center;dashed=1;dashPattern=1 2;" target="6TY5DbsHy_CrghAaTYLx-12">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="210" />
+              <mxPoint x="480" y="496" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-14" parent="1" style="sketch=0;aspect=fixed;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#00188D;shape=mxgraph.azure.computer" value="Dev win11 box&lt;div&gt;Wired IP: 10.0.0.21&lt;/div&gt;&lt;div&gt;Bittek WiFi: 10.0.1.41&lt;/div&gt;" vertex="1">
+          <mxGeometry height="45" width="50" x="594" y="810" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-15" parent="1" style="sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#036897;strokeColor=#ffffff;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=left;outlineConnect=0;shape=mxgraph.cisco.computers_and_peripherals.ibm_mini_as400;" value="Synogloy Nas Larval Labs DC&lt;div&gt;Hastname Tank01&amp;nbsp;&lt;/div&gt;&lt;div&gt;192.168.1.106&lt;/div&gt;" vertex="1">
+          <mxGeometry height="62" width="43" x="970.5" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-16" parent="1" style="sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#036897;strokeColor=#ffffff;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.cisco.computers_and_peripherals.ibm_mini_as400;" value="Synology Nas&amp;nbsp;&lt;div&gt;Hostname: NAS-DC1&amp;nbsp;&lt;/div&gt;&lt;div&gt;IP on VLAN 2 10.0.1.198&lt;/div&gt;&lt;div&gt;IP on Dev Network: 10.0.0.198&amp;nbsp;&lt;/div&gt;&lt;div&gt;http://10.0.0.198:5000/&lt;/div&gt;" vertex="1">
+          <mxGeometry height="72" width="43" x="1140" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-17" parent="1" style="verticalLabelPosition=bottom;html=1;verticalAlign=top;align=left;strokeColor=none;fillColor=#00BEF2;shape=mxgraph.azure.computer;pointerEvents=1;" value="Lixnux MULE&lt;div style=&quot;&quot;&gt;192.168.1.18&lt;font color=&quot;#808893&quot; face=&quot;Inter, Lato, Arial, sans-serif&quot;&gt;&lt;span style=&quot;font-size: 13px; font-variant-ligatures: no-common-ligatures; text-wrap-mode: wrap; background-color: rgb(255, 255, 255);&quot;&gt;2&lt;/span&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;font color=&quot;#808893&quot; face=&quot;Inter, Lato, Arial, sans-serif&quot;&gt;&lt;span style=&quot;font-size: 13px; font-variant-ligatures: no-common-ligatures; text-wrap-mode: wrap; background-color: rgb(255, 255, 255);&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="45" width="50" x="967" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-21" parent="1" style="verticalLabelPosition=bottom;html=1;verticalAlign=top;align=left;strokeColor=none;fillColor=#00BEF2;shape=mxgraph.azure.computer;pointerEvents=1;" value="Lixnux SCV&lt;div style=&quot;&quot;&gt;192.168.1.96&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;font color=&quot;#808893&quot; face=&quot;Inter, Lato, Arial, sans-serif&quot;&gt;&lt;span style=&quot;font-size: 13px; font-variant-ligatures: no-common-ligatures; text-wrap-mode: wrap; background-color: rgb(255, 255, 255);&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="45" width="50" x="967" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-26" parent="1" style="image;points=[];aspect=fixed;html=1;align=left;shadow=0;dashed=0;image=img/lib/allied_telesis/switch/Switch_24_port_L2.svg;" value="2.5gb switch&amp;nbsp;" vertex="1">
+          <mxGeometry height="51" width="74.4" x="731.2999999999998" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-29" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.023;entryY=0.588;entryDx=0;entryDy=0;entryPerimeter=0;align=left;" target="6TY5DbsHy_CrghAaTYLx-26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-32" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-26" style="endArrow=classic;html=1;rounded=0;align=left;" target="6TY5DbsHy_CrghAaTYLx-15" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="850" y="430" as="sourcePoint" />
+            <mxPoint x="900" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-35" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-26" style="endArrow=classic;html=1;rounded=0;align=left;" target="6TY5DbsHy_CrghAaTYLx-17" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="890" y="319" as="sourcePoint" />
+            <mxPoint x="1055" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-36" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-26" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;align=left;" target="6TY5DbsHy_CrghAaTYLx-21" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="850" y="430" as="sourcePoint" />
+            <mxPoint x="900" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-38" parent="1" style="verticalLabelPosition=bottom;html=1;verticalAlign=top;align=left;strokeColor=none;fillColor=#00BEF2;shape=mxgraph.azure.computer;pointerEvents=1;" value="&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Linux Server&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;Hostname: Bazi&lt;/div&gt;&lt;div&gt;&lt;div style=&quot;&quot;&gt;10.0.1.76&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;br&gt;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;font color=&quot;#808893&quot; face=&quot;Inter, Lato, Arial, sans-serif&quot;&gt;&lt;span style=&quot;font-size: 13px; font-variant-ligatures: no-common-ligatures; text-wrap-mode: wrap; background-color: rgb(255, 255, 255);&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/font&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="50" x="1100" y="412.5" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-40" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-16" style="endArrow=classic;html=1;rounded=0;entryX=0.567;entryY=1.033;entryDx=0;entryDy=0;entryPerimeter=0;" target="6TY5DbsHy_CrghAaTYLx-12" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="850" y="530" as="sourcePoint" />
+            <mxPoint x="900" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-41" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-12" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="6TY5DbsHy_CrghAaTYLx-38" value="ds">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="850" y="530" as="sourcePoint" />
+            <mxPoint x="900" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-42" parent="1" style="sketch=0;aspect=fixed;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#00188D;shape=mxgraph.azure.computer" value="AI Server&lt;div&gt;Hostname dragon.lan.256ai&lt;/div&gt;&lt;div&gt;ip: 10.0.1.147&lt;/div&gt;" vertex="1">
+          <mxGeometry height="45" width="50" x="1100" y="552.5" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-43" parent="1" style="verticalLabelPosition=bottom;html=1;verticalAlign=top;align=center;strokeColor=none;fillColor=#00BEF2;shape=mxgraph.azure.laptop;pointerEvents=1;" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Dev Mac Box with Claude Code on it&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="50" x="850" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-47" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-10" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="6TY5DbsHy_CrghAaTYLx-14" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="494" y="1102" as="sourcePoint" />
+            <mxPoint x="730" y="1103" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-49" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-10" style="endArrow=classic;html=1;rounded=0;" target="6TY5DbsHy_CrghAaTYLx-16" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="850" y="840" as="sourcePoint" />
+            <mxPoint x="1140" y="755.8699808795411" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-50" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-10" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="6TY5DbsHy_CrghAaTYLx-43" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="937" y="1035" as="sourcePoint" />
+            <mxPoint x="820" y="920" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-62" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-8" style="endArrow=none;dashed=1;html=1;rounded=0;" target="6TY5DbsHy_CrghAaTYLx-2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="220" y="920" as="sourcePoint" />
+            <mxPoint x="270" y="870" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-65" connectable="0" parent="6TY5DbsHy_CrghAaTYLx-62" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="SSH&amp;nbsp;" vertex="1">
+          <mxGeometry relative="1" x="-0.4909" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-63" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-14" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" target="6TY5DbsHy_CrghAaTYLx-12" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="850" y="860" as="sourcePoint" />
+            <mxPoint x="900" y="810" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-64" connectable="0" parent="6TY5DbsHy_CrghAaTYLx-63" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="WiFi&amp;nbsp;" vertex="1">
+          <mxGeometry relative="1" x="-0.2357" y="-3" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-67" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-12" style="endArrow=none;dashed=1;html=1;rounded=0;" target="6TY5DbsHy_CrghAaTYLx-2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="220" y="390" as="sourcePoint" />
+            <mxPoint x="270" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-68" connectable="0" parent="6TY5DbsHy_CrghAaTYLx-67" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="SSH" vertex="1">
+          <mxGeometry relative="1" x="0.372" y="-2" as="geometry">
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-69" edge="1" parent="1" source="6TY5DbsHy_CrghAaTYLx-2" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="6TY5DbsHy_CrghAaTYLx-4" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="350" y="130" as="sourcePoint" />
+            <mxPoint x="400" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6TY5DbsHy_CrghAaTYLx-70" connectable="0" parent="6TY5DbsHy_CrghAaTYLx-69" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="SSH" vertex="1">
+          <mxGeometry relative="1" x="-0.25" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

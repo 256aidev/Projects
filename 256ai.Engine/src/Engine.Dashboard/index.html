@@ -1,0 +1,2785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>256ai Swarm Control</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        h1 { color: #00d4ff; margin-bottom: 20px; }
+        h2 { color: #888; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .status-bar {
+            background: #16213e;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-bar .status { font-size: 24px; font-weight: bold; }
+        .status-bar .status.ok { color: #00ff88; }
+        .status-bar .status.down { color: #ff4444; }
+        .status-bar .meta { color: #888; font-size: 12px; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+        .card {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .workers-list { list-style: none; }
+        .workers-list li {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto auto;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 0;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .workers-list li:last-child { border-bottom: none; }
+        .worker-name { font-weight: 500; }
+        .worker-role { color: #00d4ff; font-size: 12px; }
+        .worker-provider { color: #aa88ff; font-size: 12px; }
+        .worker-ip { color: #888; font-size: 12px; font-family: 'Consolas', monospace; text-align: right; }
+        .worker-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .worker-status.online { background: #00ff8820; color: #00ff88; }
+        .worker-status.offline { background: #ff444420; color: #ff4444; }
+
+        .command-section { grid-column: 1 / -1; }
+        .command-input {
+            width: 100%;
+            background: #0f0f23;
+            border: 2px solid #2a2a4a;
+            border-radius: 8px;
+            padding: 15px;
+            color: #eee;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .command-input:focus { outline: none; border-color: #00d4ff; }
+
+        .target-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .target-select label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #0f0f23;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .target-select label:hover { background: #2a2a4a; }
+        .target-select input:checked + span { color: #00d4ff; }
+        .target-select input { display: none; }
+
+        .send-btn {
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .send-btn:hover { background: #00b8e6; transform: translateY(-1px); }
+        .send-btn:disabled { background: #444; cursor: not-allowed; }
+
+        .tasks-list { max-height: 300px; overflow-y: auto; }
+        .task-item {
+            padding: 12px;
+            background: #0f0f23;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .task-item .objective { font-size: 14px; margin-bottom: 6px; }
+        .task-item .meta { font-size: 11px; color: #888; display: flex; gap: 15px; }
+        .task-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .task-status.PENDING { background: #ffaa0020; color: #ffaa00; }
+        .task-status.IN_PROGRESS { background: #00d4ff20; color: #00d4ff; }
+        .task-status.COMPLETED { background: #00ff8820; color: #00ff88; }
+        .task-status.FAIL { background: #ff444420; color: #ff4444; }
+        .task-status.CANCELLED { background: #88888820; color: #888888; }
+
+        .cancel-btn {
+            background: transparent;
+            border: 1px solid #ff8800;
+            color: #ff8800;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+        .cancel-btn:hover { background: #ff880020; }
+
+        .response-section { grid-column: 1 / -1; }
+        .response-box {
+            background: #0f0f23;
+            border: 2px solid #2a2a4a;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 150px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .response-task-id {
+            color: #00d4ff;
+            font-size: 12px;
+            font-family: monospace;
+        }
+        .response-empty {
+            color: #666;
+            font-style: italic;
+        }
+        .task-item.clickable {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .task-item.clickable:hover {
+            background: #1a1a3a;
+        }
+        .task-item.selected {
+            border: 1px solid #00d4ff;
+        }
+
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .refresh-btn:hover { border-color: #00d4ff; color: #00d4ff; }
+
+        .delete-btn {
+            background: transparent;
+            border: 1px solid #ff4444;
+            color: #ff4444;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+        .delete-btn:hover { background: #ff444420; }
+
+        .activity-log {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .activity-item {
+            display: flex;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a4a;
+            font-size: 13px;
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-icon { font-size: 14px; }
+        .activity-time { color: #666; font-size: 11px; min-width: 70px; }
+        .activity-message { flex: 1; }
+        .activity-type {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .activity-type.TASK_CREATED { background: #00d4ff20; color: #00d4ff; }
+        .activity-type.TASK_CLAIMED { background: #ffaa0020; color: #ffaa00; }
+        .activity-type.TASK_COMPLETED { background: #00ff8820; color: #00ff88; }
+        .activity-type.TASK_FAILED { background: #ff444420; color: #ff4444; }
+        .activity-type.WORKER_HEARTBEAT { background: #ff88ff20; color: #ff88ff; }
+        .activity-type.ESCALATION { background: #ff444420; color: #ff4444; }
+
+        .three-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 1200px) { .three-col-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 768px) { .three-col-grid { grid-template-columns: 1fr; } }
+
+        /* Task Queue Panel */
+        .queue-section { grid-column: 1 / -1; }
+        .queue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .queue-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .queue-btn {
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .queue-btn.start { background: #00ff88; color: #000; }
+        .queue-btn.start:hover { background: #00cc6a; }
+        .queue-btn.pause { background: #ffaa00; color: #000; }
+        .queue-btn.pause:hover { background: #cc8800; }
+        .queue-btn.clear { background: transparent; border: 1px solid #ff4444; color: #ff4444; }
+        .queue-btn.clear:hover { background: #ff444420; }
+        .queue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .queue-status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .queue-status-badge.idle { background: #88888820; color: #888; }
+        .queue-status-badge.running { background: #00ff8820; color: #00ff88; }
+        .queue-status-badge.paused { background: #ffaa0020; color: #ffaa00; }
+        .queue-status-badge.waiting { background: #ff88ff20; color: #ff88ff; }
+
+        .queue-add-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .queue-add-input {
+            flex: 1;
+            background: #0f0f23;
+            border: 2px solid #2a2a4a;
+            border-radius: 6px;
+            padding: 10px 15px;
+            color: #eee;
+            font-size: 14px;
+        }
+        .queue-add-input:focus { outline: none; border-color: #00d4ff; }
+        .queue-add-btn {
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .queue-add-btn:hover { background: #00b8e6; }
+
+        .queue-items { max-height: 300px; overflow-y: auto; }
+        .queue-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #0f0f23;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .queue-item.current { border-left: 3px solid #00d4ff; }
+        .queue-item.done { opacity: 0.5; }
+        .queue-item.failed { border-left: 3px solid #ff4444; }
+        .queue-item.retrying { border-left: 3px solid #ffaa00; }
+        .queue-item-num {
+            color: #666;
+            font-size: 11px;
+            min-width: 20px;
+        }
+        .queue-item-text { flex: 1; }
+        .queue-item-status {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .queue-item-remove {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+        .queue-item-remove:hover { color: #ff4444; }
+        .queue-progress {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+        .queue-progress-bar {
+            height: 4px;
+            background: #2a2a4a;
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .queue-progress-fill {
+            height: 100%;
+            background: #00d4ff;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        .queue-settings {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
+            align-items: center;
+        }
+        .queue-settings label { display: flex; align-items: center; gap: 5px; }
+        .queue-settings input[type="number"] {
+            width: 50px;
+            background: #0f0f23;
+            border: 1px solid #2a2a4a;
+            border-radius: 4px;
+            color: #eee;
+            padding: 2px 6px;
+            font-size: 12px;
+        }
+        .queue-settings input[type="checkbox"] { accent-color: #00d4ff; }
+
+        /* Projects Panel */
+        .projects-bar {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+        .projects-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .projects-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .project-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #0f0f23;
+            border: 2px solid #2a2a4a;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+        .project-chip:hover { border-color: #00d4ff; }
+        .project-chip.selected { border-color: #00d4ff; background: #00d4ff10; }
+        .project-chip .proj-name { font-weight: 600; }
+        .project-chip .proj-domain { color: #888; font-size: 11px; }
+        .project-chip .proj-counts { font-size: 11px; color: #00ff88; }
+
+        .new-project-btn {
+            background: transparent;
+            border: 2px dashed #2a2a4a;
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .new-project-btn:hover { border-color: #00d4ff; color: #00d4ff; }
+
+        .project-form {
+            display: none;
+            margin-top: 12px;
+            padding: 15px;
+            background: #0f0f23;
+            border-radius: 8px;
+        }
+        .project-form.visible { display: block; }
+        .project-form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .project-form-row label {
+            min-width: 80px;
+            font-size: 12px;
+            color: #888;
+        }
+        .project-form-row input, .project-form-row select, .project-form-row textarea {
+            flex: 1;
+            background: #16213e;
+            border: 1px solid #2a2a4a;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #eee;
+            font-size: 13px;
+        }
+        .project-form-row textarea { min-height: 60px; resize: vertical; }
+        .project-form-row input:focus, .project-form-row select:focus, .project-form-row textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .project-form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .project-form-actions button {
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .project-form-actions .create-btn { background: #00d4ff; color: #000; }
+        .project-form-actions .create-btn:hover { background: #00b8e6; }
+        .project-form-actions .cancel-form-btn { background: transparent; border: 1px solid #444; color: #888; }
+        .project-form-actions .cancel-form-btn:hover { border-color: #888; color: #eee; }
+
+        .project-filter-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: #00d4ff20;
+            color: #00d4ff;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .project-filter-badge .clear-filter {
+            background: none;
+            border: none;
+            color: #00d4ff;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+        }
+        .project-filter-badge .clear-filter:hover { color: #fff; }
+
+        /* Tab Navigation */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: #16213e;
+            padding: 6px;
+            border-radius: 8px;
+        }
+        .tab-btn {
+            padding: 10px 24px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { color: #ccc; background: #0f0f23; }
+        .tab-btn.active { color: #00d4ff; background: #0f0f23; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ===== HELP TAB ===== */
+        .help-layout {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 0;
+            min-height: 70vh;
+        }
+        @media (max-width: 900px) {
+            .help-layout { grid-template-columns: 1fr; }
+            .help-sidebar { flex-direction: row; overflow-x: auto; padding: 10px; border-right: none; border-bottom: 1px solid #2a2a4a; }
+            .help-sidebar button { white-space: nowrap; }
+        }
+        .help-sidebar {
+            background: #16213e;
+            border-radius: 8px 0 0 8px;
+            padding: 16px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .help-sidebar button {
+            background: transparent;
+            border: none;
+            color: #888;
+            padding: 12px 20px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+        }
+        .help-sidebar button:hover { color: #ccc; background: #0f0f2380; }
+        .help-sidebar button.active { color: #00d4ff; background: #0f0f23; border-left-color: #00d4ff; }
+        .help-body {
+            background: #16213e;
+            border-radius: 0 8px 8px 0;
+            padding: 30px 36px;
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+        .help-body h2 { color: #00d4ff; font-size: 20px; text-transform: none; margin-bottom: 16px; }
+        .help-body h3 { color: #eee; font-size: 15px; margin: 24px 0 10px 0; }
+        .help-body p { color: #ccc; font-size: 14px; line-height: 1.8; margin-bottom: 14px; }
+        .help-body ul, .help-body ol { color: #ccc; font-size: 14px; line-height: 1.8; margin-bottom: 14px; padding-left: 24px; }
+        .help-body li { margin-bottom: 6px; }
+        .help-body code {
+            background: #0f0f23;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: #ffaa00;
+        }
+        .help-body pre {
+            background: #0f0f23;
+            border: 1px solid #2a2a4a;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+        .help-body .endpoint {
+            background: #0f0f23;
+            border: 1px solid #2a2a4a;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+        }
+        .help-body .endpoint .method {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: monospace;
+            margin-right: 8px;
+        }
+        .help-body .endpoint .method.get { background: #00ff8830; color: #00ff88; }
+        .help-body .endpoint .method.post { background: #00d4ff30; color: #00d4ff; }
+        .help-body .endpoint .method.put { background: #ffaa0030; color: #ffaa00; }
+        .help-body .endpoint .method.delete { background: #ff444430; color: #ff4444; }
+        .help-body .endpoint .path { font-family: monospace; font-size: 14px; color: #eee; }
+        .help-body .endpoint .desc { color: #888; font-size: 13px; margin-top: 6px; }
+        .help-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+        .help-body table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: #0f0f23;
+            color: #00d4ff;
+            font-weight: 600;
+            border-bottom: 2px solid #2a2a4a;
+        }
+        .help-body table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #2a2a4a;
+            color: #ccc;
+        }
+        .help-body table tr:hover td { background: #0f0f2340; }
+        .help-body .callout {
+            background: #0f0f23;
+            border-left: 3px solid #00d4ff;
+            padding: 14px 18px;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #ccc;
+        }
+        .help-body .callout.warn { border-left-color: #ffaa00; }
+        .help-body .callout.success { border-left-color: #00ff88; }
+        .help-section { display: none; }
+        .help-section.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>256ai Swarm Control</h1>
+
+        <div class="status-bar">
+            <div>
+                <div class="status" id="overallStatus">--</div>
+                <div class="meta">Control Plane: <span id="cpUrl">--</span></div>
+            </div>
+            <div class="meta" id="lastUpdate">Last update: --</div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('main')" id="tabMain">Dashboard</button>
+            <button class="tab-btn" onclick="switchTab('projects')" id="tabProjects">Projects</button>
+            <button class="tab-btn" onclick="switchTab('queue')" id="tabQueue">Task Queue</button>
+            <button class="tab-btn" onclick="switchTab('help')" id="tabHelp" style="margin-left:auto;">Help</button>
+        </div>
+
+        <!-- ========== PROJECTS TAB ========== -->
+        <div class="tab-content" id="tab-projects">
+        <div class="projects-bar">
+            <div class="projects-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2 style="margin-bottom: 0;">Projects</h2>
+                    <span id="projectFilterBadge"></span>
+                </div>
+                <button class="new-project-btn" onclick="toggleProjectForm()">+ New Project</button>
+            </div>
+            <div class="projects-list" id="projectsList">
+                <span style="color:#666; font-size:13px;">Loading projects...</span>
+            </div>
+            <div class="project-form" id="projectForm">
+                <div class="project-form-row">
+                    <label>Name</label>
+                    <input type="text" id="projName" placeholder="e.g., BaZi Astrology App">
+                </div>
+                <div class="project-form-row">
+                    <label>Domain</label>
+                    <select id="projDomain">
+                        <option value="astrology">astrology</option>
+                        <option value="wellness">wellness</option>
+                        <option value="personality">personality</option>
+                        <option value="general" selected>general</option>
+                    </select>
+                </div>
+                <div class="project-form-row">
+                    <label>Description</label>
+                    <textarea id="projDescription" placeholder="Brief description of the project..."></textarea>
+                </div>
+                <div class="project-form-row">
+                    <label>Working Dir</label>
+                    <input type="text" id="projWorkingDir" placeholder="C:\Projects\256ai-projects\my-app">
+                </div>
+                <div class="project-form-row" style="align-items: flex-start;">
+                    <label style="padding-top: 8px;">Spec / MD</label>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <label style="min-width: auto; padding: 6px 14px; background: #16213e; border: 1px solid #2a2a4a; border-radius: 6px; cursor: pointer; font-size: 12px; color: #00d4ff; transition: all 0.2s;" onmouseover="this.style.borderColor='#00d4ff'" onmouseout="this.style.borderColor='#2a2a4a'">
+                                Upload .md file
+                                <input type="file" id="projSpecFile" accept=".md,.markdown,.txt" style="display:none;" onchange="loadSpecFile(this)">
+                            </label>
+                            <span id="projSpecFileName" style="color: #888; font-size: 12px;"></span>
+                        </div>
+                        <textarea id="projSpecMarkdown" placeholder="Paste or type your project spec markdown here... (optional)&#10;&#10;This is where you can paste the detailed MD file from ChatGPT or other sources." style="min-height: 120px; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; line-height: 1.5;"></textarea>
+                    </div>
+                </div>
+                <div class="project-form-actions">
+                    <button class="cancel-form-btn" onclick="toggleProjectForm()">Cancel</button>
+                    <button class="create-btn" onclick="createProject()">Create Project</button>
+                </div>
+            </div>
+        </div>
+        </div><!-- /tab-projects -->
+
+        <!-- ========== MAIN TAB ========== -->
+        <div class="tab-content active" id="tab-main">
+        <div class="three-col-grid">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2>Workers</h2>
+                    <button class="refresh-btn" onclick="refresh()">Refresh</button>
+                </div>
+                <ul class="workers-list" id="workersList">
+                    <li><span class="worker-name">Loading...</span></li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>Recent Tasks</h2>
+                <div class="tasks-list" id="tasksList">
+                    <div class="task-item"><div class="objective">Loading...</div></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Activity Log</h2>
+                <div class="activity-log" id="activityLog">
+                    <div class="activity-item"><span class="activity-message">Loading...</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+
+            <div class="card command-section" style="grid-column: 1 / -1;">
+                <h2>Send Command</h2>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" class="command-input" id="commandInput" style="margin-bottom:0;"
+                           placeholder="Enter task objective... (e.g., 'Build a to-do app with React and Node.js')">
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <button class="send-btn" id="sendBtn" onclick="sendCommand()" style="background: linear-gradient(135deg, #00d4ff, #0088ff); font-size: 14px; padding: 8px 20px;">Send to Lead AI</button>
+                    <span id="sendStatus" style="color: #888;"></span>
+                    <button onclick="toggleDirectRouting()" style="background: none; border: 1px solid #444; color: #888; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;" id="directRoutingToggle">Direct to Worker &#9662;</button>
+                </div>
+
+                <div id="directRoutingPanel" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid #333;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span style="color: #888; font-size: 12px;">Route directly:</span>
+                        <div class="target-select" id="targetSelect" style="margin-bottom:0;">
+                            <label><input type="radio" name="target" value="general" checked><span>General (Any)</span></label>
+                        </div>
+                        <button class="send-btn" onclick="sendCommandDirect()" style="background: #444; font-size: 12px; padding: 6px 14px;">Send Direct</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card response-section" style="grid-column: 1 / -1;">
+                <div class="response-header">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h2 style="margin-bottom:0;">Task Viewer</h2>
+                        <div id="viewerTabs" style="display: flex; gap: 4px;">
+                            <button class="refresh-btn" onclick="switchViewerTab('output')" id="tabOutput" style="border-color:#00d4ff; color:#00d4ff;">Output</button>
+                            <button class="refresh-btn" onclick="switchViewerTab('details')" id="tabDetails">Details</button>
+                            <button class="refresh-btn" onclick="switchViewerTab('timeline')" id="tabTimeline">Timeline</button>
+                        </div>
+                    </div>
+                    <span class="response-task-id" id="responseTaskId"></span>
+                </div>
+
+                <!-- Output tab -->
+                <div class="response-box" id="responseBox">
+                    <span class="response-empty">Click a task to view its response, or send a command and wait for results...</span>
+                </div>
+
+                <!-- Details tab -->
+                <div class="response-box" id="detailsBox" style="display:none;">
+                    <span class="response-empty">Select a task to see details.</span>
+                </div>
+
+                <!-- Timeline tab -->
+                <div class="response-box" id="timelineBox" style="display:none;">
+                    <span class="response-empty">Select a task to see its timeline.</span>
+                </div>
+            </div>
+        </div>
+        </div><!-- /tab-main -->
+
+        <!-- ========== TASK QUEUE TAB ========== -->
+        <div class="tab-content" id="tab-queue">
+        <div class="grid">
+            <div class="card queue-section">
+                <div class="queue-header">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <h2 style="margin-bottom: 0;">Task Queue</h2>
+                        <span class="queue-status-badge idle" id="queueStatusBadge">Idle</span>
+                    </div>
+                    <div class="queue-controls">
+                        <button class="queue-btn start" id="queueStartBtn" onclick="queueStart()">Start Queue</button>
+                        <button class="queue-btn pause" id="queuePauseBtn" onclick="queuePause()" style="display:none;">Pause</button>
+                        <button class="queue-btn clear" onclick="queueClear()">Clear</button>
+                    </div>
+                </div>
+
+                <div class="target-select" id="queueDomainSelect" style="margin-bottom:10px;">
+                    <label><input type="radio" name="queueDomain" value="general" checked><span>General (Any)</span></label>
+                    <label><input type="radio" name="queueDomain" value="code"><span>code</span></label>
+                    <label><input type="radio" name="queueDomain" value="docs"><span>docs</span></label>
+                    <label><input type="radio" name="queueDomain" value="ai-compute"><span>ai-compute</span></label>
+                    <label><input type="radio" name="queueDomain" value="data"><span>data</span></label>
+                    <label><input type="radio" name="queueDomain" value="sound"><span>sound</span></label>
+                </div>
+                <div class="queue-add-row">
+                    <input type="text" class="queue-add-input" id="queueAddInput"
+                           placeholder="Add task to queue... (press Enter or click Add)">
+                    <button class="queue-add-btn" onclick="queueAdd()">Add</button>
+                </div>
+
+                <div class="queue-items" id="queueItems">
+                    <div style="color:#666; font-style:italic; padding:10px; text-align:center;">Queue is empty. Add tasks above, then hit Start Queue.</div>
+                </div>
+
+                <div class="queue-progress" id="queueProgress" style="display:none;">
+                    <span id="queueProgressText">0 / 0 completed</span>
+                    <div class="queue-progress-bar">
+                        <div class="queue-progress-fill" id="queueProgressFill" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div class="queue-settings">
+                    <label>
+                        <input type="checkbox" id="queueAutoResume" checked>
+                        Auto-resume on failure
+                    </label>
+                    <label>
+                        Max retries:
+                        <input type="number" id="queueMaxRetries" value="3" min="0" max="10">
+                    </label>
+                    <label>
+                        Retry delay (sec):
+                        <input type="number" id="queueRetryDelay" value="30" min="5" max="600">
+                    </label>
+                </div>
+            </div>
+        </div>
+        </div><!-- /tab-queue -->
+
+        <!-- ========== HELP TAB ========== -->
+        <div class="tab-content" id="tab-help">
+        <div class="help-layout">
+            <div class="help-sidebar">
+                <button class="active" onclick="switchHelpSection('overview')">Overview</button>
+                <button onclick="switchHelpSection('architecture')">Architecture</button>
+                <button onclick="switchHelpSection('domains')">Task Domains</button>
+                <button onclick="switchHelpSection('sending')">Sending Tasks</button>
+                <button onclick="switchHelpSection('taskqueue')">Task Queue</button>
+                <button onclick="switchHelpSection('tasklife')">Task Lifecycle</button>
+                <button onclick="switchHelpSection('workers')">Workers</button>
+                <button onclick="switchHelpSection('projects')">Projects</button>
+                <button onclick="switchHelpSection('api')">API Reference</button>
+                <button onclick="switchHelpSection('mcp')">MCP Server</button>
+                <button onclick="switchHelpSection('benchmark')">Benchmarking</button>
+                <button onclick="switchHelpSection('escalations')">Escalations</button>
+                <button onclick="switchHelpSection('troubleshooting')">Troubleshooting</button>
+                <button onclick="switchHelpSection('network')">Network Map</button>
+            </div>
+            <div class="help-body">
+
+                <!-- ===== OVERVIEW ===== -->
+                <div class="help-section active" id="help-overview">
+                    <h2>Welcome to 256ai Swarm Control</h2>
+                    <p>
+                        This is the control dashboard for the <strong>256ai Engine</strong> &mdash; a distributed AI orchestration system
+                        that coordinates multiple AI workers (Claude Code instances, Ollama models, and Claude API) across your network.
+                        The engine routes tasks to the right worker, tracks their progress, and collects results.
+                    </p>
+
+                    <h3>What Can You Do Here?</h3>
+                    <ul>
+                        <li><strong>Dashboard tab</strong> &mdash; See your workers, recent tasks, and activity log at a glance. Send one-off tasks to any worker.</li>
+                        <li><strong>Projects tab</strong> &mdash; Create and manage projects. Projects group related tasks together so you can track progress on larger goals.</li>
+                        <li><strong>Task Queue tab</strong> &mdash; Build a batch of tasks and run them sequentially. Great for multi-step workflows where you want tasks executed one after another.</li>
+                        <li><strong>Help tab</strong> &mdash; You are here. This is the comprehensive reference for everything the system can do.</li>
+                    </ul>
+
+                    <h3>How It Works (The Short Version)</h3>
+                    <ol>
+                        <li>You type a task objective (like "Write a Python function to parse CSV files").</li>
+                        <li>You pick a <strong>domain</strong> (general, code, docs, ai-compute, data) that determines which workers can pick it up.</li>
+                        <li>You click <strong>Send Task</strong>. The engine creates the task with status <code>PENDING</code>.</li>
+                        <li>Workers poll the engine every 5 seconds looking for tasks in their domain.</li>
+                        <li>A matching worker claims the task, executes it, and sends back the result.</li>
+                        <li>You see the result in the <strong>Task Viewer</strong> panel.</li>
+                    </ol>
+
+                    <div class="callout success">
+                        <strong>Tip:</strong> Click on any task in the Recent Tasks list to view its output, details, and timeline in the Task Viewer panel below.
+                    </div>
+
+                    <h3>Key Concepts</h3>
+                    <table>
+                        <tr><th>Concept</th><th>What It Means</th></tr>
+                        <tr><td><strong>Control Plane</strong></td><td>The central server (this engine) that routes tasks, manages workers, and stores results. Runs on port 5100.</td></tr>
+                        <tr><td><strong>Worker</strong></td><td>An AI agent that picks up and executes tasks. Each worker runs on a machine and uses a specific AI provider (Claude Code, Ollama, or Claude API).</td></tr>
+                        <tr><td><strong>Task</strong></td><td>A unit of work with an objective, domain, and expected output. Workers claim and execute tasks.</td></tr>
+                        <tr><td><strong>Domain</strong></td><td>A category that controls routing. Workers declare which domains they handle; tasks are tagged with a domain.</td></tr>
+                        <tr><td><strong>Heartbeat</strong></td><td>Workers send a heartbeat every 15&ndash;30 seconds to prove they're alive. No heartbeat for 60 seconds = offline.</td></tr>
+                        <tr><td><strong>Escalation</strong></td><td>When a worker encounters something it can't handle, it raises an escalation for human review.</td></tr>
+                        <tr><td><strong>Project</strong></td><td>A named group of related tasks. Use projects to organize multi-task workflows.</td></tr>
+                    </table>
+                </div>
+
+                <!-- ===== ARCHITECTURE ===== -->
+                <div class="help-section" id="help-architecture">
+                    <h2>System Architecture</h2>
+                    <p>
+                        The 256ai Engine is organized into 5 layers. Understanding these layers helps you understand who does what and where
+                        your tasks actually get executed.
+                    </p>
+
+                    <h3>The 5 Layers</h3>
+                    <table>
+                        <tr><th>Layer</th><th>Who / What</th><th>Responsibility</th></tr>
+                        <tr>
+                            <td><strong>1. Strategy</strong></td>
+                            <td>Human (Mark)</td>
+                            <td>Final authority. Approves plans, makes architectural decisions, sets direction. The engine never overrides the Strategy Layer.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2. Control Plane</strong></td>
+                            <td>This Engine (port 5100)</td>
+                            <td>Routes tasks to workers, validates messages, manages state machines, processes heartbeats, stores results. This dashboard talks to the Control Plane.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3. Execution Nodes</strong></td>
+                            <td>Workers (Claude Code, Ollama, Claude API)</td>
+                            <td>Execute tasks, send heartbeats, report progress, escalate anomalies. These are the "hands" that do the actual work.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>4. Model &amp; Compute</strong></td>
+                            <td>Ollama, Qwen, Llama</td>
+                            <td>AI inference for <em>applications</em> (not the engine itself). When an app needs AI, it calls Ollama on Dragon or AI02. The engine doesn't use Ollama directly &mdash; it orchestrates Claude Code instances.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>5. Monitoring</strong></td>
+                            <td>This Dashboard, Logs, Metrics</td>
+                            <td>Observability layer. You're using it right now. Monitors health, task flow, worker status, and escalations.</td>
+                        </tr>
+                    </table>
+
+                    <div class="callout">
+                        <strong>Key distinction:</strong> The engine orchestrates <strong>Claude Code instances</strong> as workers, NOT Ollama.
+                        Ollama is Layer 4 compute that <em>applications</em> use for inference. Some workers happen to use Ollama as their
+                        provider for executing tasks, but the engine treats all workers the same regardless of their backend.
+                    </div>
+
+                    <h3>Network Layout</h3>
+                    <table>
+                        <tr><th>Machine</th><th>IP Address</th><th>Role</th></tr>
+                        <tr><td>Dragon (MainWin)</td><td><code>10.0.1.147</code></td><td>Control Plane + Coordinator + Ollama GPU compute</td></tr>
+                        <tr><td>MainWin</td><td><code>10.0.1.235</code></td><td>Swarm Lead (Claude Code &mdash; plans and coordinates)</td></tr>
+                        <tr><td>AI02</td><td><code>10.0.1.178</code></td><td>3 workers: Claude Code, 2x Ollama coders</td></tr>
+                        <tr><td>Mac</td><td><code>10.0.1.237</code></td><td>1 worker: Claude Code</td></tr>
+                    </table>
+
+                    <h3>Message Types (HL7-Style)</h3>
+                    <p>The engine uses a messaging protocol inspired by HL7 (healthcare messaging standard). Each message type has a 3-letter code:</p>
+                    <table>
+                        <tr><th>Code</th><th>Name</th><th>Purpose</th></tr>
+                        <tr><td><code>AGT</code></td><td>Agent Task</td><td>Task dispatch &mdash; "here's a job for you"</td></tr>
+                        <tr><td><code>AAC</code></td><td>Agent Ack</td><td>Worker acknowledges receipt of a task</td></tr>
+                        <tr><td><code>ARG</code></td><td>Agent Result</td><td>Worker sends back the completed result</td></tr>
+                        <tr><td><code>AEX</code></td><td>Agent Exception</td><td>Worker raises an escalation (something went wrong)</td></tr>
+                        <tr><td><code>AHE</code></td><td>Agent Heartbeat</td><td>Worker sends a "still alive" pulse every 15&ndash;30 seconds</td></tr>
+                        <tr><td><code>ADI</code></td><td>Agent Disposition</td><td>Human resolves an escalation (accept/reject/defer)</td></tr>
+                        <tr><td><code>AHS</code></td><td>App Health Status</td><td>Application reports its health</td></tr>
+                        <tr><td><code>ASC</code></td><td>Synthetic Check</td><td>End-to-end test to verify the system works</td></tr>
+                    </table>
+                </div>
+
+                <!-- ===== DOMAINS ===== -->
+                <div class="help-section" id="help-domains">
+                    <h2>Task Domains</h2>
+                    <p>
+                        Every task has a <strong>domain</strong> that controls which workers can pick it up. When you submit a task, you choose a domain.
+                        Workers declare which domains they handle in their configuration. Only workers whose domain list includes your task's domain will
+                        claim and execute it.
+                    </p>
+
+                    <h3>Available Domains</h3>
+                    <table>
+                        <tr><th>Domain</th><th>Use For</th><th>Which Workers Handle It</th></tr>
+                        <tr>
+                            <td><code>general</code></td>
+                            <td>Anything that doesn't fit a specific category. This is the default and is the safest choice if you're not sure.</td>
+                            <td>All workers (every worker declares <code>general</code>)</td>
+                        </tr>
+                        <tr>
+                            <td><code>code</code></td>
+                            <td>Code generation, refactoring, bug fixes, code review, writing scripts, debugging. Use this when you want code written or analyzed.</td>
+                            <td>Workers running Claude Code or other coding-capable models</td>
+                        </tr>
+                        <tr>
+                            <td><code>docs</code></td>
+                            <td>Documentation writing, markdown generation, README creation, text summarization, content writing. Any text-heavy task.</td>
+                            <td>Any text-capable worker</td>
+                        </tr>
+                        <tr>
+                            <td><code>ai-compute</code></td>
+                            <td>Heavy AI inference tasks &mdash; model inference, embeddings, data processing, anything that benefits from GPU compute and local models.</td>
+                            <td>Workers with Ollama/Qwen backends (Dragon, AI02). These machines have GPUs.</td>
+                        </tr>
+                        <tr>
+                            <td><code>data</code></td>
+                            <td>Data analysis, transformation, database queries, CSV processing, ETL tasks, statistics.</td>
+                            <td>Workers with data processing capability</td>
+                        </tr>
+                    </table>
+
+                    <h3>How Routing Works</h3>
+                    <ol>
+                        <li>You submit a task with a domain (e.g., <code>code</code>).</li>
+                        <li>The task enters the queue with status <code>PENDING</code>.</li>
+                        <li>Every 5 seconds, each worker polls the Control Plane: "Do you have any tasks in my domains?"</li>
+                        <li>The first worker whose domain list includes <code>code</code> claims the task.</li>
+                        <li>If no workers handle that domain, the task stays <code>PENDING</code> until one comes online.</li>
+                    </ol>
+
+                    <div class="callout warn">
+                        <strong>Important:</strong> If you submit a task to <code>ai-compute</code> but no Ollama workers are online, the task
+                        will sit in <code>PENDING</code> forever. Check the Workers panel to make sure at least one worker handles your chosen domain.
+                    </div>
+
+                    <h3>When to Use What</h3>
+                    <ul>
+                        <li><strong>Not sure?</strong> Use <code>general</code>. Every worker can handle it, so it will always get picked up.</li>
+                        <li><strong>Want code written, reviewed, or debugged?</strong> Use <code>code</code>.</li>
+                        <li><strong>Want local AI (Ollama/Qwen) to do the work?</strong> Use <code>ai-compute</code>.</li>
+                        <li><strong>Writing docs or text content?</strong> Use <code>docs</code>.</li>
+                        <li><strong>Data crunching?</strong> Use <code>data</code>.</li>
+                    </ul>
+                </div>
+
+                <!-- ===== SENDING TASKS ===== -->
+                <div class="help-section" id="help-sending">
+                    <h2>Sending Tasks</h2>
+                    <p>
+                        The <strong>Send Command</strong> section on the Dashboard tab is the quickest way to submit a single task to the swarm.
+                        Here's exactly how to use it, step by step.
+                    </p>
+
+                    <h3>Step-by-Step</h3>
+                    <ol>
+                        <li>Go to the <strong>Dashboard</strong> tab.</li>
+                        <li>In the <strong>Send Command</strong> panel, type your task objective in the text box. Be specific and clear about what you want. For example:
+                            <ul>
+                                <li><em>"Write a Python function that validates email addresses using regex"</em></li>
+                                <li><em>"Analyze the login flow in the BaZi app and suggest improvements"</em></li>
+                                <li><em>"Summarize the key points of this document: [paste content]"</em></li>
+                            </ul>
+                        </li>
+                        <li>Select a <strong>domain</strong> using the radio buttons (General, Code, Docs, etc.). See the <strong>Task Domains</strong> section for guidance.</li>
+                        <li>Click <strong>Send Task</strong>.</li>
+                        <li>The task will appear in the <strong>Recent Tasks</strong> list with status <code>PENDING</code>.</li>
+                        <li>A worker will claim it (usually within 5&ndash;10 seconds).</li>
+                        <li>Click on the task in the list to watch its progress in the <strong>Task Viewer</strong>.</li>
+                        <li>When the worker finishes, the result appears in the <strong>Output</strong> tab of the Task Viewer.</li>
+                    </ol>
+
+                    <h3>Task Viewer Tabs</h3>
+                    <p>When you click a task, the Task Viewer shows three tabs:</p>
+                    <table>
+                        <tr><th>Tab</th><th>What It Shows</th></tr>
+                        <tr><td><strong>Output</strong></td><td>The actual result/response from the worker. This is what the AI produced.</td></tr>
+                        <tr><td><strong>Details</strong></td><td>Metadata: task ID, domain, status, assigned worker, timestamps, execution mode.</td></tr>
+                        <tr><td><strong>Timeline</strong></td><td>Chronological view: when the task was created, claimed, started, and completed. Useful for debugging slow tasks.</td></tr>
+                    </table>
+
+                    <div class="callout">
+                        <strong>Auto-refresh:</strong> When viewing an in-progress task, the Task Viewer automatically refreshes every 2 seconds so you can watch the progress live.
+                    </div>
+
+                    <h3>Writing Good Objectives</h3>
+                    <p>The quality of your results depends heavily on how you write the objective. Here are some tips:</p>
+                    <ul>
+                        <li><strong>Be specific.</strong> "Write code" is vague. "Write a TypeScript function that converts Fahrenheit to Celsius" is actionable.</li>
+                        <li><strong>Include context.</strong> If the task relates to a specific project or file, mention it.</li>
+                        <li><strong>State the expected output.</strong> "Return a JSON object with..." or "Write the output as a markdown table" helps the worker format correctly.</li>
+                        <li><strong>One task, one objective.</strong> Don't combine "write the function AND update the tests AND deploy." Split these into separate tasks (or use the Task Queue for sequencing).</li>
+                    </ul>
+                </div>
+
+                <!-- ===== TASK QUEUE ===== -->
+                <div class="help-section" id="help-taskqueue">
+                    <h2>Task Queue</h2>
+                    <p>
+                        The <strong>Task Queue</strong> tab lets you build a batch of tasks and execute them one after another, sequentially.
+                        This is ideal for multi-step workflows where you need tasks to run in order, or when you want to submit a large batch
+                        and walk away while they execute.
+                    </p>
+
+                    <h3>How to Use the Task Queue</h3>
+                    <ol>
+                        <li>Go to the <strong>Task Queue</strong> tab.</li>
+                        <li>Select a <strong>domain</strong> from the dropdown (general, code, docs, ai-compute, data).</li>
+                        <li>Type a task objective in the text box and press <strong>Enter</strong> or click <strong>Add</strong>.</li>
+                        <li>Repeat to add more tasks. They appear in the queue list below.</li>
+                        <li>When your queue is ready, click <strong>Start Queue</strong>.</li>
+                        <li>The engine submits the first task and waits for it to complete before submitting the next one.</li>
+                        <li>A progress bar shows how many tasks have completed.</li>
+                    </ol>
+
+                    <h3>Queue Settings</h3>
+                    <table>
+                        <tr><th>Setting</th><th>What It Does</th></tr>
+                        <tr>
+                            <td><strong>Auto-resume on failure</strong></td>
+                            <td>If a task fails, the queue automatically moves on to the next task instead of stopping. Enabled by default.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Max retries</strong></td>
+                            <td>How many times to retry a failed task before moving on. Default: 3.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Retry delay (sec)</strong></td>
+                            <td>How many seconds to wait before retrying a failed task. Default: 30 seconds.</td>
+                        </tr>
+                    </table>
+
+                    <h3>Queue Controls</h3>
+                    <ul>
+                        <li><strong>Start Queue</strong> &mdash; Begins processing tasks from the top of the queue.</li>
+                        <li><strong>Pause</strong> &mdash; Pauses after the current task finishes. Does not cancel the running task.</li>
+                        <li><strong>Clear</strong> &mdash; Removes all tasks from the queue. If a task is currently running, it continues to completion but no more tasks are submitted.</li>
+                    </ul>
+
+                    <h3>Queue Status Badges</h3>
+                    <table>
+                        <tr><th>Badge</th><th>Meaning</th></tr>
+                        <tr><td><code>Idle</code></td><td>Queue is not running. Add tasks and hit Start Queue.</td></tr>
+                        <tr><td><code>Running</code></td><td>Actively processing a task. The current task objective is shown.</td></tr>
+                        <tr><td><code>Paused</code></td><td>Queue was paused. Click Start Queue to resume.</td></tr>
+                        <tr><td><code>Waiting</code></td><td>Waiting for a task to complete before moving to the next one.</td></tr>
+                    </table>
+
+                    <div class="callout">
+                        <strong>Tip:</strong> You can add tasks to the queue while it's running. New tasks are added to the end and will be processed when the queue reaches them.
+                    </div>
+                </div>
+
+                <!-- ===== TASK LIFECYCLE ===== -->
+                <div class="help-section" id="help-tasklife">
+                    <h2>Task Lifecycle</h2>
+                    <p>
+                        Every task moves through a series of statuses from creation to completion. Understanding this lifecycle helps you
+                        diagnose issues and know what's happening with your tasks at any given moment.
+                    </p>
+
+                    <h3>Status Flow</h3>
+<pre>PENDING &rarr; LEASED &rarr; ACKED &rarr; RUNNING &rarr; COMPLETED
+   |          |         |         |
+   |          |         |         +--&rarr; FAIL
+   +----------+---------+---------+--&rarr; CANCELLED</pre>
+
+                    <h3>Status Definitions</h3>
+                    <table>
+                        <tr><th>Status</th><th>What It Means</th><th>How Long It Typically Lasts</th></tr>
+                        <tr>
+                            <td><code>PENDING</code></td>
+                            <td>Task has been created and is waiting in the queue for a worker to claim it. No worker has touched it yet.</td>
+                            <td>0&ndash;10 seconds (depends on worker poll timing)</td>
+                        </tr>
+                        <tr>
+                            <td><code>LEASED</code></td>
+                            <td>A worker has polled and claimed the task, but hasn't acknowledged it yet. Think of it as "reserved."</td>
+                            <td>Milliseconds to a few seconds</td>
+                        </tr>
+                        <tr>
+                            <td><code>ACKED</code></td>
+                            <td>The worker has acknowledged receipt (sent an ACK message). The worker is preparing to execute.</td>
+                            <td>Milliseconds to a few seconds</td>
+                        </tr>
+                        <tr>
+                            <td><code>RUNNING</code></td>
+                            <td>The worker is actively executing the task. It may report progress updates during this phase.</td>
+                            <td>Seconds to minutes (depends on task complexity and AI provider)</td>
+                        </tr>
+                        <tr>
+                            <td><code>COMPLETED</code></td>
+                            <td>The worker finished successfully and submitted a result. The output is available in the Task Viewer.</td>
+                            <td>Final state</td>
+                        </tr>
+                        <tr>
+                            <td><code>FAIL</code></td>
+                            <td>The worker tried but the task failed. Check the task details for error information.</td>
+                            <td>Final state</td>
+                        </tr>
+                        <tr>
+                            <td><code>CANCELLED</code></td>
+                            <td>The task was cancelled before completion, either by you or by the system.</td>
+                            <td>Final state</td>
+                        </tr>
+                    </table>
+
+                    <h3>Cancelling Tasks</h3>
+                    <p>
+                        You can cancel any task that hasn't reached a final state (COMPLETED, FAIL, or CANCELLED). In the Recent Tasks list,
+                        click the orange <strong>Cancel</strong> button next to the task. The task status changes to <code>CANCELLED</code> immediately.
+                    </p>
+                    <div class="callout warn">
+                        <strong>Note:</strong> Cancelling a task in the Control Plane does not immediately stop the worker. The worker may
+                        continue executing until it next checks in. The result will be discarded if it arrives after cancellation.
+                    </div>
+                </div>
+
+                <!-- ===== WORKERS ===== -->
+                <div class="help-section" id="help-workers">
+                    <h2>Workers</h2>
+                    <p>
+                        Workers are the AI agents that actually execute your tasks. Each worker runs on a specific machine, uses a specific
+                        AI provider, and handles specific domains. The Workers panel on the Dashboard tab shows all registered workers.
+                    </p>
+
+                    <h3>Worker Information</h3>
+                    <p>Each worker in the list shows:</p>
+                    <table>
+                        <tr><th>Field</th><th>What It Shows</th></tr>
+                        <tr><td><strong>Name</strong></td><td>The worker's unique identifier (e.g., <code>worker-256ai-001</code>). Set in the worker's configuration.</td></tr>
+                        <tr><td><strong>Role</strong></td><td>What kind of worker it is: <code>claude-code</code>, <code>ollama</code>, or <code>claude-api</code>.</td></tr>
+                        <tr><td><strong>Provider</strong></td><td>The AI backend the worker uses to execute tasks.</td></tr>
+                        <tr><td><strong>IP Address</strong></td><td>The network address of the machine the worker runs on.</td></tr>
+                        <tr><td><strong>Status</strong></td><td>Online (green) if heartbeat received in the last 60 seconds, Offline (red) otherwise.</td></tr>
+                    </table>
+
+                    <h3>Worker Providers</h3>
+                    <table>
+                        <tr><th>Provider</th><th>Description</th><th>Best For</th></tr>
+                        <tr>
+                            <td><code>claude-code</code></td>
+                            <td>Runs tasks via Claude Code CLI as a subprocess. Full access to the local filesystem, tools, and development environment.</td>
+                            <td>Code generation, file editing, complex multi-step tasks, anything that needs filesystem access</td>
+                        </tr>
+                        <tr>
+                            <td><code>ollama</code></td>
+                            <td>Sends the task objective to a local Ollama model (Qwen, Llama, etc.) via HTTP API. Fast, free, runs on GPU.</td>
+                            <td>Quick AI inference, embeddings, data processing, local-only tasks</td>
+                        </tr>
+                        <tr>
+                            <td><code>claude-api</code></td>
+                            <td>Calls the Anthropic Claude API directly. Requires an API key configured on the worker.</td>
+                            <td>Cloud-scale tasks, when local compute is saturated, general-purpose AI</td>
+                        </tr>
+                    </table>
+
+                    <h3>Heartbeats and Online Status</h3>
+                    <p>
+                        Every worker sends a <strong>heartbeat</strong> to the Control Plane every 15&ndash;30 seconds. The heartbeat includes the
+                        worker's ID, role, IP address, status, and capacity information. If the Control Plane hasn't received a heartbeat from a worker
+                        in the last 60 seconds, that worker is marked <strong>Offline</strong>.
+                    </p>
+                    <p>
+                        An offline worker will not receive new tasks. Tasks already claimed by a worker that goes offline may get stuck in
+                        <code>LEASED</code> or <code>RUNNING</code> status until the lease timeout returns them to <code>PENDING</code>.
+                    </p>
+
+                    <h3>Removing Stale Workers</h3>
+                    <p>
+                        If a worker is offline and you know it's not coming back (machine shut down, worker decommissioned), you can remove it
+                        from the registry. In the Workers list, click the delete button next to the offline worker. This cleans up the dashboard
+                        and prevents stale entries from cluttering the view.
+                    </p>
+                    <div class="callout warn">
+                        <strong>Caution:</strong> Only remove workers that you're sure are permanently offline. If the worker comes back online,
+                        it will re-register itself automatically via its next heartbeat.
+                    </div>
+                </div>
+
+                <!-- ===== PROJECTS ===== -->
+                <div class="help-section" id="help-projects">
+                    <h2>Projects</h2>
+                    <p>
+                        Projects let you group related tasks together under a single name. This is useful when you're working on a multi-step
+                        goal and want to track all the tasks associated with it in one place.
+                    </p>
+
+                    <h3>Creating a Project</h3>
+                    <ol>
+                        <li>Go to the <strong>Projects</strong> tab.</li>
+                        <li>Click <strong>+ New Project</strong>.</li>
+                        <li>Fill in the details:
+                            <ul>
+                                <li><strong>Name</strong> &mdash; A human-readable name (e.g., "BaZi Astrology App").</li>
+                                <li><strong>Domain</strong> &mdash; The project's primary domain category.</li>
+                                <li><strong>Description</strong> &mdash; Brief description of what the project is.</li>
+                                <li><strong>Working Dir</strong> &mdash; The filesystem path where the project's code lives.</li>
+                                <li><strong>Spec / MD</strong> &mdash; Optional. Upload or paste a markdown spec file (from ChatGPT, design docs, etc.).</li>
+                            </ul>
+                        </li>
+                        <li>Click <strong>Create Project</strong>.</li>
+                    </ol>
+
+                    <h3>Filtering by Project</h3>
+                    <p>
+                        Click on a project chip to filter the Dashboard's task list to only show tasks belonging to that project. A filter badge
+                        appears showing the active filter. Click the X on the badge to clear the filter and see all tasks again.
+                    </p>
+
+                    <h3>Project Task Counts</h3>
+                    <p>
+                        Each project chip shows a task count in the format <code>completed/total</code> (e.g., <code>5/8</code> means 5 of 8 tasks
+                        are complete). This updates automatically as tasks are submitted and completed.
+                    </p>
+                </div>
+
+                <!-- ===== API REFERENCE ===== -->
+                <div class="help-section" id="help-api">
+                    <h2>API Reference</h2>
+                    <p>
+                        The Control Plane exposes a REST API on <code>http://10.0.1.147:5100</code>. You can call these endpoints from
+                        any tool that speaks HTTP &mdash; curl, Postman, PowerShell, scripts, other applications, or Claude Code itself.
+                    </p>
+
+                    <h3>Health Endpoints</h3>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/health/summary</span>
+                        <div class="desc">Get overall system health status: OK, DEGRADED, or DOWN. Shows worker counts, app health, synthetic check results, and pending escalations.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/health/workers</span>
+                        <div class="desc">List all registered workers with their ID, role, provider, IP, status, and last-seen timestamp. Workers are "online" if heartbeat was received within 60 seconds.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <span class="path">/health/heartbeat</span>
+                        <div class="desc">Worker sends a heartbeat to prove it's alive. Body: <code>{ workerId, status, role, ipAddress, version, capacity }</code>. Workers should call this every 15&ndash;30 seconds.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method delete">DELETE</span>
+                        <span class="path">/health/workers/{workerId}</span>
+                        <div class="desc">Remove a dead or stale worker from the registry. Use this to clean up workers that are permanently offline.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/health/apps</span>
+                        <div class="desc">List health status of all managed applications. Shows app ID, environment, status, latency, error rate.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/health/synthetic</span>
+                        <div class="desc">List synthetic check results. Optional parameter: <code>?limit=50</code>.</div>
+                    </div>
+
+                    <h3>Task Endpoints</h3>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <span class="path">/tasks</span>
+                        <div class="desc">Submit a new task. Required body fields: <code>objective</code> (string), <code>domain</code> (string), <code>expectedOutputs</code> (string). Optional: <code>constraints</code>, <code>inputs</code>, <code>validationCriteria</code>, <code>timeLimitSeconds</code>, <code>projectId</code>, <code>parentTaskId</code>, <code>executionMode</code>, <code>dependsOn</code>.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/tasks</span>
+                        <div class="desc">List tasks with optional filters. Parameters: <code>?status=PENDING</code>, <code>?projectId=xxx</code>, <code>?parentTaskId=xxx</code>, <code>?limit=50</code>.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/tasks/{id}</span>
+                        <div class="desc">Get a specific task by ID. Returns full details including status, assigned worker, timestamps, progress, and result.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/tasks/poll</span>
+                        <div class="desc">Worker polls for available tasks. Claims the first matching PENDING task. Required: <code>?workerId=xxx</code>. Optional: <code>&amp;domains=general,code</code>.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <span class="path">/tasks/{id}/ack</span>
+                        <div class="desc">Worker acknowledges task receipt after polling. Body: <code>{ workerId }</code>. Transitions task from LEASED to ACKED.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <span class="path">/tasks/{id}/progress</span>
+                        <div class="desc">Worker reports progress on a long-running task. Body: <code>{ workerId, message, percentComplete, currentStep }</code>.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <span class="path">/tasks/{id}/result</span>
+                        <div class="desc">Worker submits the task result. Body: <code>{ workerId, success, outputs, executionTimeMs }</code>. Transitions task to COMPLETED or FAIL.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <span class="path">/tasks/{id}/cancel</span>
+                        <div class="desc">Cancel a pending or in-progress task. Sets status to CANCELLED.</div>
+                    </div>
+
+                    <h3>Escalation Endpoints</h3>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/escalations</span>
+                        <div class="desc">List escalations (issues raised by workers). Filter: <code>?disposition=Pending</code>, <code>?limit=50</code>. Levels: CONCERN, RISK, BLOCKER.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/escalations/{id}</span>
+                        <div class="desc">Get full details of an escalation: level, evidence, impact, recommendation, disposition status.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method put">PUT</span>
+                        <span class="path">/escalations/{id}</span>
+                        <div class="desc">Disposition an escalation. Body: <code>{ disposition, reason, reviewDate }</code>. Values: Accepted, Rejected (requires reason), Deferred (requires reviewDate).</div>
+                    </div>
+
+                    <h3>Event &amp; Benchmark Endpoints</h3>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/events</span>
+                        <div class="desc">Get recent activity events (tasks, workers, escalations). Parameter: <code>?limit=50</code>.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <span class="path">/benchmark/run</span>
+                        <div class="desc">Submit a batch of synthetic benchmark tasks. Body: <code>{ taskCount, domain, projectId }</code>. Returns a projectId to track results.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/benchmark/{projectId}</span>
+                        <div class="desc">Get live benchmark results: throughput (tasks/sec, tasks/min), latency percentiles (p50, p95, max), per-worker distribution.</div>
+                    </div>
+
+                    <h3>Project Endpoints</h3>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/projects</span>
+                        <div class="desc">List all projects with their name, domain, description, and working directory.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <span class="path">/projects</span>
+                        <div class="desc">Create a new project. Body: <code>{ name, domain, description, workingDir, specMarkdown }</code>.</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <span class="path">/projects/{id}</span>
+                        <div class="desc">Get project details including task counts by status.</div>
+                    </div>
+
+                    <h3>Quick Examples (curl)</h3>
+<pre># Check system health
+curl http://10.0.1.147:5100/health/summary
+
+# List online workers
+curl http://10.0.1.147:5100/health/workers
+
+# Submit a task
+curl -X POST http://10.0.1.147:5100/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"objective": "Write a hello world in Python", "domain": "code", "expectedOutputs": "Python code"}'
+
+# Check task status
+curl http://10.0.1.147:5100/tasks/{taskId}
+
+# List pending tasks
+curl "http://10.0.1.147:5100/tasks?status=PENDING&amp;limit=10"
+
+# Cancel a task
+curl -X POST http://10.0.1.147:5100/tasks/{taskId}/cancel
+
+# List pending escalations
+curl "http://10.0.1.147:5100/escalations?disposition=Pending"</pre>
+                </div>
+
+                <!-- ===== MCP SERVER ===== -->
+                <div class="help-section" id="help-mcp">
+                    <h2>MCP Server (Model Context Protocol)</h2>
+                    <p>
+                        The Control Plane exposes an <strong>MCP SSE endpoint</strong> that allows Claude Code instances (and any other
+                        MCP-compatible client) to interact with the engine natively using tool calls. This means Claude Code can submit tasks,
+                        check health, manage escalations, and run benchmarks &mdash; all through its native tool-calling interface instead of
+                        raw HTTP requests.
+                    </p>
+
+                    <h3>Connecting from Claude Code</h3>
+                    <p>Add this to your Claude Code MCP configuration (typically in <code>.claude/settings.json</code> or project settings):</p>
+<pre>{
+  "mcpServers": {
+    "256ai-engine": {
+      "url": "http://10.0.1.147:5100/sse"
+    }
+  }
+}</pre>
+                    <p>Once connected, Claude Code will have access to 11 tools it can call directly.</p>
+
+                    <h3>Available MCP Tools</h3>
+                    <table>
+                        <tr><th>Tool</th><th>Description</th><th>Example Usage</th></tr>
+                        <tr>
+                            <td><code>submit_task</code></td>
+                            <td>Submit a new task to the engine</td>
+                            <td>"Submit a task to write a Python CSV parser in the code domain"</td>
+                        </tr>
+                        <tr>
+                            <td><code>get_task</code></td>
+                            <td>Get status and result of a task by ID</td>
+                            <td>"What's the status of task abc123?"</td>
+                        </tr>
+                        <tr>
+                            <td><code>list_tasks</code></td>
+                            <td>List tasks, filter by status or project</td>
+                            <td>"Show me all pending tasks" or "List completed tasks for project X"</td>
+                        </tr>
+                        <tr>
+                            <td><code>cancel_task</code></td>
+                            <td>Cancel a pending or in-progress task</td>
+                            <td>"Cancel task abc123"</td>
+                        </tr>
+                        <tr>
+                            <td><code>system_health</code></td>
+                            <td>Get overall system health</td>
+                            <td>"How's the engine doing?" or "System health"</td>
+                        </tr>
+                        <tr>
+                            <td><code>list_workers</code></td>
+                            <td>List all workers and their status</td>
+                            <td>"List workers" or "Who's online?"</td>
+                        </tr>
+                        <tr>
+                            <td><code>remove_worker</code></td>
+                            <td>Remove a stale/dead worker</td>
+                            <td>"Remove worker worker-old-001"</td>
+                        </tr>
+                        <tr>
+                            <td><code>list_escalations</code></td>
+                            <td>List escalations from workers</td>
+                            <td>"Any pending escalations?"</td>
+                        </tr>
+                        <tr>
+                            <td><code>dispose_escalation</code></td>
+                            <td>Accept, reject, or defer an escalation</td>
+                            <td>"Accept escalation abc123" or "Reject escalation abc123 &mdash; false positive"</td>
+                        </tr>
+                        <tr>
+                            <td><code>run_benchmark</code></td>
+                            <td>Submit N benchmark tasks</td>
+                            <td>"Run a benchmark with 20 tasks"</td>
+                        </tr>
+                        <tr>
+                            <td><code>benchmark_results</code></td>
+                            <td>Get throughput results for a benchmark</td>
+                            <td>"Get benchmark results for benchmark-20260216-070000"</td>
+                        </tr>
+                    </table>
+
+                    <div class="callout success">
+                        <strong>How to use:</strong> Once the MCP server is connected, just talk naturally to Claude Code. Say things like "submit a task to analyze the login flow"
+                        or "list workers" and Claude Code will call the appropriate MCP tool automatically.
+                    </div>
+                </div>
+
+                <!-- ===== BENCHMARK ===== -->
+                <div class="help-section" id="help-benchmark">
+                    <h2>Benchmarking</h2>
+                    <p>
+                        The benchmark tools let you measure the throughput of your swarm &mdash; how fast the system can route and complete tasks.
+                        This is useful for understanding your system's capacity, identifying bottlenecks, and testing after configuration changes.
+                    </p>
+
+                    <h3>How Benchmarks Work</h3>
+                    <p>
+                        A benchmark submits N synthetic tasks with a simple objective: "Benchmark task X/N &mdash; respond with OK."
+                        These tasks are intentionally trivial so that execution time is minimal. What you're measuring is the engine's
+                        <strong>routing throughput</strong>: how fast can the Control Plane route tasks to workers and collect results?
+                    </p>
+
+                    <h3>Running a Benchmark (PowerShell Script)</h3>
+                    <p>The easiest way to benchmark is the PowerShell script:</p>
+<pre># Quick 5-task test
+.\scripts\benchmark.ps1 -TaskCount 5
+
+# 20 tasks in burst mode (all submitted at once)
+.\scripts\benchmark.ps1 -TaskCount 20 -Burst
+
+# Target only code-domain workers
+.\scripts\benchmark.ps1 -TaskCount 10 -Domain code
+
+# Dry run: submit tasks but don't wait for completion
+.\scripts\benchmark.ps1 -TaskCount 50 -DryRun</pre>
+
+                    <h3>Script Parameters</h3>
+                    <table>
+                        <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+                        <tr><td><code>-TaskCount</code></td><td>10</td><td>Number of benchmark tasks to submit</td></tr>
+                        <tr><td><code>-Domain</code></td><td>"general"</td><td>Target domain (controls which workers participate)</td></tr>
+                        <tr><td><code>-Burst</code></td><td>false</td><td>Submit all tasks at once (vs. one per second)</td></tr>
+                        <tr><td><code>-TimeoutSec</code></td><td>300</td><td>Max wait time for all tasks to complete</td></tr>
+                        <tr><td><code>-ControlPlane</code></td><td>"http://10.0.1.147:5100"</td><td>Target Control Plane URL</td></tr>
+                        <tr><td><code>-DryRun</code></td><td>false</td><td>Submit tasks but don't wait for completion</td></tr>
+                        <tr><td><code>-ProjectId</code></td><td>auto-generated</td><td>Custom project ID for grouping</td></tr>
+                    </table>
+
+                    <h3>Running a Benchmark (REST API)</h3>
+<pre># Submit 20 benchmark tasks
+curl -X POST http://10.0.1.147:5100/benchmark/run \
+  -H "Content-Type: application/json" \
+  -d '{"taskCount": 20, "domain": "general"}'
+
+# Check results (use the projectId from the response above)
+curl http://10.0.1.147:5100/benchmark/benchmark-20260216-070000</pre>
+
+                    <h3>Running a Benchmark (MCP)</h3>
+                    <p>From Claude Code with MCP connected, just say:</p>
+                    <ul>
+                        <li>"Run a benchmark with 10 tasks"</li>
+                        <li>"Get benchmark results for benchmark-20260216-070000"</li>
+                    </ul>
+
+                    <h3>Understanding Results</h3>
+                    <table>
+                        <tr><th>Metric</th><th>What It Tells You</th></tr>
+                        <tr><td><strong>Wall time</strong></td><td>Total elapsed time from first task submitted to last task completed.</td></tr>
+                        <tr><td><strong>Throughput (tasks/sec)</strong></td><td>How many tasks the system completes per second. Higher is better.</td></tr>
+                        <tr><td><strong>Throughput (tasks/min)</strong></td><td>Same metric, scaled to per-minute for easier human reasoning.</td></tr>
+                        <tr><td><strong>Latency avg/p50/p95/max</strong></td><td>How long individual tasks take from creation to completion. P50 = median, P95 = worst 5% of tasks.</td></tr>
+                        <tr><td><strong>Per-worker distribution</strong></td><td>How many tasks each worker handled. Ideally, tasks are spread evenly across workers.</td></tr>
+                    </table>
+
+                    <div class="callout">
+                        <strong>Bottleneck:</strong> Workers poll every 5 seconds. With 6 workers, the theoretical maximum routing throughput
+                        is about 1.2 tasks/second (6 workers &divide; 5 second poll interval). Actual throughput will be lower due to execution time.
+                    </div>
+                </div>
+
+                <!-- ===== ESCALATIONS ===== -->
+                <div class="help-section" id="help-escalations">
+                    <h2>Escalations</h2>
+                    <p>
+                        When a worker encounters something it can't handle &mdash; ambiguous instructions, an error it doesn't know how to fix,
+                        a security concern, or any situation where it needs human judgment &mdash; it raises an <strong>escalation</strong>.
+                        Escalations surface issues for human review and are a core part of the engine's safety model.
+                    </p>
+
+                    <h3>Escalation Levels</h3>
+                    <table>
+                        <tr><th>Level</th><th>Severity</th><th>When It's Used</th></tr>
+                        <tr>
+                            <td><code>CONCERN</code></td>
+                            <td>Low &mdash; informational</td>
+                            <td>Minor issue that might be worth noting. The worker continued working but flagged something unusual.</td>
+                        </tr>
+                        <tr>
+                            <td><code>RISK</code></td>
+                            <td>Medium &mdash; needs attention</td>
+                            <td>Potential problem. The task result may be inaccurate or the worker isn't confident in its output.</td>
+                        </tr>
+                        <tr>
+                            <td><code>BLOCKER</code></td>
+                            <td>High &mdash; cannot proceed</td>
+                            <td>The worker is stuck and cannot continue without human intervention. Requires immediate action.</td>
+                        </tr>
+                    </table>
+
+                    <h3>Dispositions</h3>
+                    <p>
+                        <strong>Every escalation must receive a disposition.</strong> This is a golden rule of the engine. You resolve
+                        escalations by choosing one of three dispositions:
+                    </p>
+                    <table>
+                        <tr><th>Disposition</th><th>Meaning</th><th>When to Use</th></tr>
+                        <tr>
+                            <td><strong>Accepted</strong></td>
+                            <td>Issue acknowledged and resolved</td>
+                            <td>You've reviewed it and it's valid. Take whatever action is needed.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Rejected</strong></td>
+                            <td>Issue dismissed (requires a reason)</td>
+                            <td>False positive, not an issue, or the worker was wrong to escalate. You must provide a reason.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Deferred</strong></td>
+                            <td>Will review later (requires a review date)</td>
+                            <td>Valid issue but not urgent. Set a date to revisit it.</td>
+                        </tr>
+                    </table>
+
+                    <h3>Managing Escalations via API</h3>
+<pre># List pending escalations
+curl "http://10.0.1.147:5100/escalations?disposition=Pending"
+
+# Accept an escalation
+curl -X PUT http://10.0.1.147:5100/escalations/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"disposition": "Accepted"}'
+
+# Reject with reason
+curl -X PUT http://10.0.1.147:5100/escalations/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"disposition": "Rejected", "reason": "False positive"}'
+
+# Defer for later
+curl -X PUT http://10.0.1.147:5100/escalations/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"disposition": "Deferred", "reviewDate": "2026-03-01T00:00:00Z"}'</pre>
+                </div>
+
+                <!-- ===== TROUBLESHOOTING ===== -->
+                <div class="help-section" id="help-troubleshooting">
+                    <h2>Troubleshooting</h2>
+                    <p>
+                        Common issues and how to resolve them.
+                    </p>
+
+                    <h3>Dashboard Shows "DOWN" Status</h3>
+                    <p>This means the dashboard can't reach the Control Plane at <code>http://10.0.1.147:5100</code>.</p>
+                    <ul>
+                        <li>Check that the Control Plane is running: <code>curl http://10.0.1.147:5100/health/summary</code></li>
+                        <li>If it returns "connection refused," the Control Plane process needs to be started:
+                            <code>dotnet run --project src/Engine.ControlPlane --urls "http://localhost:5100"</code></li>
+                        <li>Check Windows Firewall &mdash; port 5100 must be accessible from the machine running the dashboard.</li>
+                        <li>Verify the IP address is correct. The Control Plane runs on Dragon (10.0.1.147).</li>
+                    </ul>
+
+                    <h3>Task Stuck in PENDING</h3>
+                    <p>The task was submitted but no worker is picking it up.</p>
+                    <ul>
+                        <li><strong>Check the domain.</strong> Are any online workers handling that domain? If you submitted to <code>ai-compute</code> but only <code>general</code> workers are online, it won't get picked up.</li>
+                        <li><strong>Check worker status.</strong> Are workers actually online? Look at the Workers panel. If all workers are offline, no one is polling.</li>
+                        <li><strong>Wait a moment.</strong> Workers poll every 5 seconds. Give it 10&ndash;15 seconds before worrying.</li>
+                        <li><strong>Check worker logs.</strong> The worker process may be running but erroring on the poll. Check the worker's terminal output.</li>
+                    </ul>
+
+                    <h3>Task Stuck in LEASED or ACKED</h3>
+                    <p>A worker claimed the task but hasn't completed it.</p>
+                    <ul>
+                        <li>The worker may be executing a long-running task. Check if the worker is still online.</li>
+                        <li>If the worker went offline mid-task, the task is stuck. Cancel it and resubmit.</li>
+                        <li>Future: Lease timeout will automatically return these to PENDING after 60 seconds (not yet implemented).</li>
+                    </ul>
+
+                    <h3>Worker Shows "Offline"</h3>
+                    <ul>
+                        <li>The worker process may have crashed or been stopped. Check the worker machine.</li>
+                        <li>Network connectivity issue &mdash; the worker can't reach the Control Plane. Ping <code>10.0.1.147</code> from the worker machine.</li>
+                        <li>The worker is running but its heartbeat is failing. Check the worker's terminal for HTTP errors.</li>
+                    </ul>
+
+                    <h3>Task Completed But No Output</h3>
+                    <ul>
+                        <li>Click the task in Recent Tasks, then check the <strong>Details</strong> tab for the raw result JSON.</li>
+                        <li>The worker may have returned an empty or malformed result. Check the <code>success</code> field in details.</li>
+                        <li>If <code>success: false</code>, check the worker logs for the error that caused the failure.</li>
+                    </ul>
+
+                    <h3>MCP Not Connecting</h3>
+                    <ul>
+                        <li>Verify the SSE endpoint is reachable: <code>curl http://10.0.1.147:5100/sse</code> (should start streaming).</li>
+                        <li>Check your Claude Code MCP configuration. The URL must be exactly <code>http://10.0.1.147:5100/sse</code>.</li>
+                        <li>Make sure the Control Plane was restarted after the MCP code was added. MCP won't work on an old build.</li>
+                    </ul>
+
+                    <h3>Slow Throughput</h3>
+                    <ul>
+                        <li><strong>Expected bottleneck:</strong> Workers poll every 5 seconds. With 6 workers, max theoretical throughput is ~1.2 tasks/second.</li>
+                        <li>If throughput is much lower than expected, check how many workers are actually online and in the right domain.</li>
+                        <li>Ollama workers are slower than Claude API workers for simple tasks. Use <code>claude-api</code> workers for fast echo-type tasks.</li>
+                        <li>Run a benchmark to get exact numbers: <code>.\scripts\benchmark.ps1 -TaskCount 20 -Burst</code></li>
+                    </ul>
+
+                    <h3>Build Errors After Code Changes</h3>
+                    <ul>
+                        <li>If <code>dotnet build</code> fails with file lock errors (MSB3027), the Control Plane is still running. Stop it first, then build, then restart.</li>
+                        <li>The compilation may succeed (0 errors) but the copy step fails because the .exe is locked. This is a file-lock issue, not a code issue.</li>
+                    </ul>
+
+                    <h3>Getting More Help</h3>
+                    <p>Full documentation is available in the project repository:</p>
+                    <ul>
+                        <li><strong>API Reference:</strong> <code>docs/ControlPlane/API_REFERENCE.md</code></li>
+                        <li><strong>Worker Connection Guide:</strong> <code>docs/Worker/04_WORKER_CONNECTION.md</code></li>
+                        <li><strong>Engine Spec:</strong> <code>spec/ENGINE_SPEC.md</code></li>
+                        <li><strong>Protocol Flows:</strong> <code>spec/PROTOCOL_FLOWS.md</code></li>
+                    </ul>
+                </div>
+
+                <!-- ===== NETWORK MAP ===== -->
+                <div class="help-section" id="help-network">
+                    <h2>Network Map</h2>
+                    <p>
+                        Live view of all machines in the swarm, loaded from the engine's machine registry.
+                        This data is also available via the <code>list_machines</code> and <code>get_machine</code> MCP tools,
+                        and the <code>GET /machines</code> REST API.
+                    </p>
+                    <div id="networkMapContent">
+                        <p style="color:#888; font-style:italic;">Loading machines...</p>
+                    </div>
+                </div>
+
+            </div><!-- /help-body -->
+        </div><!-- /help-layout -->
+        </div><!-- /tab-help -->
+
+    </div>
+
+    <script>
+        const CONTROL_PLANE = 'http://10.0.1.147:5100';
+
+        // =============================================
+        // TAB NAVIGATION
+        // =============================================
+
+        function switchTab(tabName) {
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Deactivate all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            // Show selected tab
+            document.getElementById('tab-' + tabName).classList.add('active');
+            // Activate selected button
+            document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
+        }
+
+        // =============================================
+        // HELP SECTIONS
+        // =============================================
+
+        function switchHelpSection(sectionName) {
+            // Hide all help sections
+            document.querySelectorAll('.help-section').forEach(el => el.classList.remove('active'));
+            // Deactivate all sidebar buttons
+            document.querySelectorAll('.help-sidebar button').forEach(el => el.classList.remove('active'));
+            // Show selected section
+            document.getElementById('help-' + sectionName).classList.add('active');
+            // Activate the clicked button
+            const buttons = document.querySelectorAll('.help-sidebar button');
+            buttons.forEach(btn => {
+                if (btn.getAttribute('onclick') === "switchHelpSection('" + sectionName + "')") {
+                    btn.classList.add('active');
+                }
+            });
+            // Scroll help body to top
+            document.querySelector('.help-body').scrollTop = 0;
+
+            // Load network map data when switching to that section
+            if (sectionName === 'network') {
+                loadNetworkMap();
+            }
+        }
+
+        async function loadNetworkMap() {
+            const container = document.getElementById('networkMapContent');
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/machines`);
+                const machines = await res.json();
+
+                if (!machines.length) {
+                    container.innerHTML = '<p style="color:#888;">No machines registered. Add machines via <code>POST /machines</code> or restart the Control Plane to seed defaults.</p>';
+                    return;
+                }
+
+                let html = '<table><tr><th>Machine</th><th>IP Address</th><th>OS</th><th>Role</th><th>Always On</th><th>Connect</th><th>Workers</th><th>Domains</th></tr>';
+
+                machines.forEach(m => {
+                    const connectParts = [];
+                    if (m.sshConnection) connectParts.push('<code>ssh ' + escapeHtml(m.sshConnection) + '</code>');
+                    if (m.rdpConnection) connectParts.push('<code>RDP: ' + escapeHtml(m.rdpConnection) + '</code>');
+                    if (!connectParts.length) connectParts.push('<span style="color:#666;">—</span>');
+
+                    const workers = m.workerIds ? (Array.isArray(m.workerIds) ? m.workerIds : JSON.parse(JSON.stringify(m.workerIds))).join(', ') : '—';
+                    const domains = m.domains ? (Array.isArray(m.domains) ? m.domains : JSON.parse(JSON.stringify(m.domains))).join(', ') : '—';
+
+                    html += '<tr>';
+                    html += '<td><strong>' + escapeHtml(m.displayName) + '</strong><br><code style="font-size:11px;">' + escapeHtml(m.machineId) + '</code></td>';
+                    html += '<td><code>' + escapeHtml(m.ipAddress) + '</code></td>';
+                    html += '<td>' + escapeHtml(m.os) + '</td>';
+                    html += '<td>' + escapeHtml(m.role) + '</td>';
+                    html += '<td>' + (m.alwaysOn ? '<span style="color:#00ff88;">Yes</span>' : '<span style="color:#ffaa00;">No</span>') + '</td>';
+                    html += '<td>' + connectParts.join('<br>') + '</td>';
+                    html += '<td style="font-size:12px;">' + escapeHtml(workers) + '</td>';
+                    html += '<td style="font-size:12px;">' + escapeHtml(domains) + '</td>';
+                    html += '</tr>';
+                });
+
+                html += '</table>';
+
+                // Services detail
+                html += '<h3>Services by Machine</h3>';
+                machines.forEach(m => {
+                    const services = m.services ? (Array.isArray(m.services) ? m.services : []) : [];
+                    if (!services.length) return;
+                    html += '<div class="endpoint" style="margin-bottom:10px;">';
+                    html += '<strong>' + escapeHtml(m.displayName) + '</strong> (' + escapeHtml(m.ipAddress) + ')<br>';
+                    services.forEach(s => {
+                        const svcName = s.name || s.Name || '?';
+                        const svcPort = s.port || s.Port || '';
+                        const svcUrl = s.url || s.Url || '';
+                        html += '<span style="margin-left:16px;">';
+                        if (svcUrl) {
+                            html += '<code>' + escapeHtml(svcName) + '</code> — <code>' + escapeHtml(svcUrl) + '</code>';
+                        } else if (svcPort) {
+                            html += '<code>' + escapeHtml(svcName) + '</code> — port ' + svcPort;
+                        } else {
+                            html += '<code>' + escapeHtml(svcName) + '</code>';
+                        }
+                        html += '</span><br>';
+                    });
+                    html += '</div>';
+                });
+
+                // Notes
+                html += '<h3>Machine Notes</h3>';
+                machines.forEach(m => {
+                    if (!m.notes) return;
+                    html += '<div class="callout" style="margin-bottom:8px;"><strong>' + escapeHtml(m.displayName) + ':</strong> ' + escapeHtml(m.notes) + '</div>';
+                });
+
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<p style="color:#ff4444;">Failed to load machines: ' + escapeHtml(err.message) + '. Is the Control Plane running?</p>';
+            }
+        }
+
+        // =============================================
+        // PROJECTS
+        // =============================================
+
+        let selectedProjectId = null;
+
+        async function fetchProjects() {
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/projects`);
+                const projects = await res.json();
+
+                const container = document.getElementById('projectsList');
+
+                if (projects.length === 0) {
+                    container.innerHTML = '<span style="color:#666; font-size:13px;">No projects yet. Click "+ New Project" to create one.</span>';
+                    return;
+                }
+
+                // Fetch task counts for each project
+                const projectsHtml = await Promise.all(projects.map(async (p) => {
+                    let taskInfo = '';
+                    try {
+                        const tRes = await fetch(`${CONTROL_PLANE}/projects/${p.projectId}`);
+                        const pDetail = await tRes.json();
+                        const total = pDetail.tasks?.total || 0;
+                        const completed = pDetail.tasks?.byStatus?.COMPLETED || 0;
+                        taskInfo = `${completed}/${total}`;
+                    } catch { taskInfo = '--'; }
+
+                    return `
+                        <div class="project-chip ${selectedProjectId === p.projectId ? 'selected' : ''}"
+                             onclick="selectProject('${p.projectId}', '${escapeHtml(p.name)}')">
+                            <div>
+                                <div class="proj-name">${escapeHtml(p.name)}${p.hasSpec ? ' <span style="color:#00d4ff; font-size:10px;" title="Has spec markdown">MD</span>' : ''}</div>
+                                <div class="proj-domain">${p.domain}</div>
+                            </div>
+                            <span class="proj-counts">${taskInfo}</span>
+                        </div>
+                    `;
+                }));
+
+                container.innerHTML = projectsHtml.join('');
+            } catch (e) {
+                document.getElementById('projectsList').innerHTML =
+                    '<span style="color:#666; font-size:13px;">Error loading projects</span>';
+            }
+        }
+
+        function selectProject(projectId, projectName) {
+            if (selectedProjectId === projectId) {
+                // Deselect
+                selectedProjectId = null;
+                document.getElementById('projectFilterBadge').innerHTML = '';
+            } else {
+                selectedProjectId = projectId;
+                document.getElementById('projectFilterBadge').innerHTML = `
+                    <span class="project-filter-badge">
+                        Filtering: ${projectName}
+                        <button class="clear-filter" onclick="event.stopPropagation(); selectProject('${projectId}', '${projectName}')">x</button>
+                    </span>
+                `;
+            }
+            fetchTasks();
+            fetchProjects();
+        }
+
+        function toggleProjectForm() {
+            const form = document.getElementById('projectForm');
+            form.classList.toggle('visible');
+        }
+
+        function loadSpecFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            document.getElementById('projSpecFileName').textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('projSpecMarkdown').value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        async function createProject() {
+            const name = document.getElementById('projName').value.trim();
+            const domain = document.getElementById('projDomain').value;
+            const description = document.getElementById('projDescription').value.trim();
+            const workingDir = document.getElementById('projWorkingDir').value.trim();
+            const specMarkdown = document.getElementById('projSpecMarkdown').value.trim();
+
+            if (!name) {
+                alert('Project name is required');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/projects`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        domain,
+                        description: description || null,
+                        workingDirectory: workingDir || null,
+                        specMarkdown: specMarkdown || null
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    // Clear form
+                    document.getElementById('projName').value = '';
+                    document.getElementById('projDescription').value = '';
+                    document.getElementById('projWorkingDir').value = '';
+                    document.getElementById('projSpecMarkdown').value = '';
+                    document.getElementById('projSpecFileName').textContent = '';
+                    document.getElementById('projSpecFile').value = '';
+                    toggleProjectForm();
+                    // Select the new project
+                    selectProject(data.projectId, name);
+                    fetchProjects();
+                } else {
+                    const err = await res.json();
+                    alert('Error creating project: ' + (err.error || 'Unknown'));
+                }
+            } catch (e) {
+                alert('Error: Could not reach Control Plane');
+            }
+        }
+
+        async function fetchHealth() {
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/health/summary`);
+                const data = await res.json();
+
+                const statusEl = document.getElementById('overallStatus');
+                statusEl.textContent = data.overallStatus;
+                statusEl.className = 'status ' + (data.overallStatus === 'OK' ? 'ok' : 'down');
+
+                document.getElementById('cpUrl').textContent = CONTROL_PLANE;
+                document.getElementById('lastUpdate').textContent = 'Last update: ' + new Date().toLocaleTimeString();
+            } catch (e) {
+                document.getElementById('overallStatus').textContent = 'UNREACHABLE';
+                document.getElementById('overallStatus').className = 'status down';
+            }
+        }
+
+        async function fetchWorkers() {
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/health/workers`);
+                const workers = await res.json();
+
+                const list = document.getElementById('workersList');
+                const targetSelect = document.getElementById('targetSelect');
+
+                if (workers.length === 0) {
+                    list.innerHTML = '<li><span class="worker-name">No workers registered</span></li>';
+                    return;
+                }
+
+                // Update workers list with Role, Provider, IP columns and delete button for offline workers
+                list.innerHTML = workers.map(w => `
+                    <li>
+                        <span class="worker-name">${w.workerId}</span>
+                        <span class="worker-role">${w.role || '--'}</span>
+                        <span class="worker-provider">${w.provider || '--'}</span>
+                        <span class="worker-ip">${w.ipAddress || '--'}</span>
+                        <div>
+                            <span class="worker-status ${w.isOnline ? 'online' : 'offline'}">
+                                ${w.isOnline ? 'Online' : 'Offline'}
+                            </span>
+                            ${!w.isOnline ? `<button class="delete-btn" onclick="deleteWorker('${w.workerId}')">Remove</button>` : ''}
+                        </div>
+                    </li>
+                `).join('');
+
+                // Update target select with unique domains
+                const domains = new Set(['general']);
+                // Add common domains
+                ['code', 'docs', 'ai-compute', 'data', 'sound'].forEach(d => domains.add(d));
+
+                targetSelect.innerHTML = Array.from(domains).map((d, i) => `
+                    <label>
+                        <input type="radio" name="target" value="${d}" ${i === 0 ? 'checked' : ''}>
+                        <span>${d}</span>
+                    </label>
+                `).join('');
+            } catch (e) {
+                document.getElementById('workersList').innerHTML =
+                    '<li><span class="worker-name">Error loading workers</span></li>';
+            }
+        }
+
+        async function fetchTasks() {
+            try {
+                let url = `${CONTROL_PLANE}/tasks?limit=10`;
+                if (selectedProjectId) url += `&projectId=${selectedProjectId}`;
+                const res = await fetch(url);
+                const tasks = await res.json();
+
+                const list = document.getElementById('tasksList');
+
+                if (tasks.length === 0) {
+                    list.innerHTML = '<div class="task-item"><div class="objective">No tasks yet</div></div>';
+                    return;
+                }
+
+                list.innerHTML = tasks.map(t => `
+                    <div class="task-item clickable" onclick="viewTask('${t.taskId}')" data-task-id="${t.taskId}">
+                        <div class="objective">
+                            <span class="task-status ${t.status}">${t.status}</span>
+                            ${t.objective.substring(0, 80)}${t.objective.length > 80 ? '...' : ''}
+                            ${(t.status === 'PENDING' || t.status === 'IN_PROGRESS') ? `<button class="cancel-btn" onclick="event.stopPropagation(); cancelTask('${t.taskId}')">Cancel</button>` : ''}
+                        </div>
+                        <div class="meta">
+                            <span>Domain: ${t.domain}</span>
+                            <span>Worker: ${t.assignedWorkerId || 'Pending'}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('tasksList').innerHTML =
+                    '<div class="task-item"><div class="objective">Error loading tasks</div></div>';
+            }
+        }
+
+        function toggleDirectRouting() {
+            const panel = document.getElementById('directRoutingPanel');
+            const btn = document.getElementById('directRoutingToggle');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                btn.innerHTML = 'Direct to Worker &#9652;';
+            } else {
+                panel.style.display = 'none';
+                btn.innerHTML = 'Direct to Worker &#9662;';
+            }
+        }
+
+        // Primary flow: always sends to Lead AI (domain: "general")
+        // The lead worker decomposes, plans, and distributes to the swarm
+        async function sendCommand() {
+            await submitTask('general', document.getElementById('sendBtn'), 'Sending to Lead AI...');
+        }
+
+        // Manual override: sends directly to a specific domain/worker
+        async function sendCommandDirect() {
+            const domain = document.querySelector('input[name="target"]:checked').value;
+            await submitTask(domain, null, `Sending to ${domain}...`);
+        }
+
+        async function submitTask(domain, btn, statusMsg) {
+            const input = document.getElementById('commandInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const status = document.getElementById('sendStatus');
+
+            if (!input.value.trim()) {
+                status.textContent = 'Enter a command first';
+                status.style.color = '#ff4444';
+                return;
+            }
+
+            sendBtn.disabled = true;
+            status.textContent = statusMsg || 'Sending...';
+            status.style.color = '#00d4ff';
+
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        objective: input.value,
+                        domain: domain,
+                        expectedOutputs: 'Task result',
+                        projectId: selectedProjectId || undefined
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    const routeLabel = domain === 'general' ? 'Lead AI' : domain;
+                    status.textContent = `Task sent to ${routeLabel}: ${data.taskId.substring(0, 8)}...`;
+                    status.style.color = '#00ff88';
+                    input.value = '';
+                    setTimeout(() => {
+                        fetchTasks();
+                        viewTask(data.taskId);
+                    }, 500);
+                } else {
+                    status.textContent = 'Error: ' + (data.error || 'Failed');
+                    status.style.color = '#ff4444';
+                }
+            } catch (e) {
+                status.textContent = 'Error: Could not reach Control Plane';
+                status.style.color = '#ff4444';
+            }
+
+            sendBtn.disabled = false;
+        }
+
+        let selectedTaskId = null;
+        let autoRefreshTask = null;
+        let currentViewerTab = 'output';
+        let lastViewedTask = null; // Cache the full task object
+
+        function switchViewerTab(tab) {
+            currentViewerTab = tab;
+            document.getElementById('responseBox').style.display = tab === 'output' ? '' : 'none';
+            document.getElementById('detailsBox').style.display = tab === 'details' ? '' : 'none';
+            document.getElementById('timelineBox').style.display = tab === 'timeline' ? '' : 'none';
+
+            // Update tab button styles
+            ['tabOutput', 'tabDetails', 'tabTimeline'].forEach(id => {
+                const btn = document.getElementById(id);
+                btn.style.borderColor = '#444';
+                btn.style.color = '#888';
+            });
+            const activeId = tab === 'output' ? 'tabOutput' : tab === 'details' ? 'tabDetails' : 'tabTimeline';
+            document.getElementById(activeId).style.borderColor = '#00d4ff';
+            document.getElementById(activeId).style.color = '#00d4ff';
+
+            // Re-render with cached data
+            if (lastViewedTask) renderTaskViewer(lastViewedTask);
+        }
+
+        async function viewTask(taskId) {
+            selectedTaskId = taskId;
+
+            // Highlight selected task
+            document.querySelectorAll('.task-item').forEach(el => el.classList.remove('selected'));
+            const taskEl = document.querySelector(`[data-task-id="${taskId}"]`);
+            if (taskEl) taskEl.classList.add('selected');
+
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/tasks/${taskId}`);
+                const task = await res.json();
+                lastViewedTask = task;
+                lastViewedTask._taskId = taskId;
+
+                renderTaskViewer(task);
+
+                // Auto-refresh if still active
+                if (task.status === 'PENDING' || task.status === 'IN_PROGRESS' || task.status === 'LEASED' || task.status === 'ACKED' || task.status === 'RUNNING') {
+                    startAutoRefresh(taskId);
+                }
+            } catch (e) {
+                document.getElementById('responseBox').innerHTML = `<span style="color: #ff4444;">Error loading task details</span>`;
+            }
+        }
+
+        function renderTaskViewer(task) {
+            const taskId = task._taskId || task.taskId;
+            const taskIdEl = document.getElementById('responseTaskId');
+            taskIdEl.textContent = `Task: ${taskId.substring(0, 8)}... | Status: ${task.status}`;
+
+            // === Output tab ===
+            const responseBox = document.getElementById('responseBox');
+            if (task.status === 'COMPLETED' && task.result) {
+                let output = '';
+                if (typeof task.result === 'string') {
+                    try {
+                        const parsed = JSON.parse(task.result);
+                        output = parsed.response || parsed.outputs?.response || JSON.stringify(parsed, null, 2);
+                    } catch {
+                        output = task.result;
+                    }
+                } else if (task.result.response) {
+                    output = task.result.response;
+                } else if (task.result.outputs?.response) {
+                    output = task.result.outputs.response;
+                } else {
+                    output = JSON.stringify(task.result, null, 2);
+                }
+                // Check if output is an audio result from the sound engine
+                let audioHtml = '';
+                try {
+                    const audioResult = JSON.parse(output);
+                    if (audioResult.file_name && audioResult.type && audioResult.duration) {
+                        const audioUrl = `http://${window.location.hostname}:5200/audio/${audioResult.file_name}`;
+                        const typeLabel = audioResult.type === 'voice' ? 'Voice/TTS' :
+                                          audioResult.type === 'sfx' ? 'Sound Effect' :
+                                          audioResult.type === 'music' ? 'Music' : audioResult.type;
+                        audioHtml = `\n\n<div style="background:#1a2a1a;border:1px solid #00ff88;border-radius:8px;padding:12px;margin:8px 0;">` +
+                            `<span style="color:#00ff88;font-weight:bold;">&#9835; ${typeLabel}</span>` +
+                            ` | ${audioResult.duration}s | ${audioResult.sample_rate}Hz\n` +
+                            `<audio controls style="width:100%;margin-top:8px;filter:hue-rotate(120deg)brightness(0.8);" src="${audioUrl}"></audio>` +
+                            `\n<span style="color:#888;font-size:0.85em;">File: ${audioResult.file_name}</span></div>`;
+                    }
+                } catch {}
+                responseBox.innerHTML = `<span style="color: #00ff88;">COMPLETED</span>\n\n${escapeHtml(output)}${audioHtml}`;
+            } else if (task.status === 'FAIL' && task.result) {
+                responseBox.innerHTML = `<span style="color: #ff4444;">FAILED</span>\n\n${escapeHtml(task.result.error || JSON.stringify(task.result, null, 2))}`;
+            } else if (task.status === 'IN_PROGRESS' || task.status === 'RUNNING' || task.status === 'ACKED' || task.status === 'LEASED') {
+                let progressInfo = '';
+                if (task.progress) {
+                    const p = typeof task.progress === 'string' ? JSON.parse(task.progress) : task.progress;
+                    if (p.message) progressInfo += `\nStep: ${p.message}`;
+                    if (p.percentComplete != null) progressInfo += `\nProgress: ${p.percentComplete}%`;
+                    if (p.currentStep) progressInfo += `\nCurrent: ${p.currentStep}`;
+                }
+                responseBox.innerHTML = `<span style="color: #00d4ff;">IN PROGRESS</span>\n\nWorker: ${task.assignedWorkerId || 'Assigning...'}\nStatus: ${task.status}${progressInfo}\n\nWaiting for response...`;
+            } else if (task.status === 'CANCELLED') {
+                responseBox.innerHTML = `<span style="color: #888888;">CANCELLED</span>\n\nTask was cancelled.`;
+            } else {
+                responseBox.innerHTML = `<span style="color: #ffaa00;">PENDING</span>\n\nWaiting for a worker to pick up this task...`;
+            }
+
+            // === Details tab ===
+            const detailsBox = document.getElementById('detailsBox');
+            const execTime = task.result?.executionTimeMs ? `${(task.result.executionTimeMs / 1000).toFixed(1)}s` : '--';
+            detailsBox.innerHTML =
+                `<span style="color:#00d4ff;">TASK DETAILS</span>\n\n` +
+                `ID:           ${taskId}\n` +
+                `Objective:    ${escapeHtml(task.objective || '--')}\n` +
+                `Domain:       ${task.domain || '--'}\n` +
+                `Status:       ${task.status}\n` +
+                `Worker:       ${task.assignedWorkerId || '--'}\n` +
+                `Created:      ${task.createdAt ? new Date(task.createdAt).toLocaleString() : '--'}\n` +
+                `Completed:    ${task.completedAt ? new Date(task.completedAt).toLocaleString() : '--'}\n` +
+                `Exec Time:    ${execTime}\n` +
+                `Parent Task:  ${task.parentTaskId || 'none'}\n` +
+                `Exec Mode:    ${task.executionMode || 'auto'}\n` +
+                (task.constraints ? `\nConstraints:  ${escapeHtml(JSON.stringify(task.constraints))}` : '') +
+                (task.inputs ? `\nInputs:       ${escapeHtml(JSON.stringify(task.inputs))}` : '');
+
+            // === Timeline tab ===
+            const timelineBox = document.getElementById('timelineBox');
+            let timeline = `<span style="color:#00d4ff;">TASK TIMELINE</span>\n\n`;
+            if (task.createdAt) timeline += `  ${new Date(task.createdAt).toLocaleTimeString()}  CREATED\n`;
+            if (task.assignedWorkerId) timeline += `  ...                ASSIGNED to ${task.assignedWorkerId}\n`;
+            if (task.status === 'ACKED' || task.status === 'RUNNING' || task.status === 'COMPLETED' || task.status === 'FAIL')
+                timeline += `  ...                ACKED\n`;
+            if (task.status === 'RUNNING' || task.status === 'COMPLETED' || task.status === 'FAIL')
+                timeline += `  ...                RUNNING\n`;
+            if (task.progress) {
+                const p = typeof task.progress === 'string' ? JSON.parse(task.progress) : task.progress;
+                if (p.updatedAt) timeline += `  ${new Date(p.updatedAt).toLocaleTimeString()}  PROGRESS: ${p.message || ''} ${p.percentComplete != null ? p.percentComplete + '%' : ''}\n`;
+            }
+            if (task.completedAt) timeline += `  ${new Date(task.completedAt).toLocaleTimeString()}  ${task.status}\n`;
+            if (task.result?.executionTimeMs) timeline += `\n  Total execution: ${(task.result.executionTimeMs / 1000).toFixed(1)}s`;
+            timelineBox.innerHTML = timeline;
+        }
+
+        function startAutoRefresh(taskId) {
+            if (autoRefreshTask) clearInterval(autoRefreshTask);
+            autoRefreshTask = setInterval(() => {
+                if (selectedTaskId === taskId) {
+                    viewTask(taskId);
+                } else {
+                    clearInterval(autoRefreshTask);
+                }
+            }, 2000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function cancelTask(taskId) {
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/tasks/${taskId}/cancel`, { method: 'POST' });
+                if (res.ok) {
+                    fetchTasks();
+                    fetchEvents();
+                    if (selectedTaskId === taskId) viewTask(taskId);
+                } else {
+                    const data = await res.json();
+                    alert('Cancel failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error: Could not reach Control Plane');
+            }
+        }
+
+        async function deleteWorker(workerId) {
+            if (!confirm(`Remove worker "${workerId}" from the list?`)) return;
+
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/health/workers/${encodeURIComponent(workerId)}`, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    fetchWorkers();
+                    fetchEvents();
+                } else {
+                    alert('Failed to remove worker');
+                }
+            } catch (e) {
+                alert('Error: Could not reach Control Plane');
+            }
+        }
+
+        async function fetchEvents() {
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/events?limit=30`);
+                const events = await res.json();
+
+                const log = document.getElementById('activityLog');
+
+                if (events.length === 0) {
+                    log.innerHTML = '<div class="activity-item"><span class="activity-message">No activity yet</span></div>';
+                    return;
+                }
+
+                log.innerHTML = events.map(e => `
+                    <div class="activity-item">
+                        <span class="activity-icon">${e.icon}</span>
+                        <span class="activity-time">${formatTime(e.timestamp)}</span>
+                        <span class="activity-type ${e.type}">${e.type.replace('_', ' ')}</span>
+                        <span class="activity-message">${escapeHtml(e.message)}</span>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('activityLog').innerHTML =
+                    '<div class="activity-item"><span class="activity-message">Error loading events</span></div>';
+            }
+        }
+
+        function formatTime(timestamp) {
+            const d = new Date(timestamp);
+            return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function refresh() {
+            fetchHealth();
+            fetchWorkers();
+            fetchTasks();
+            fetchEvents();
+            fetchProjects();
+        }
+
+        // Initial load
+        refresh();
+
+        // Auto-refresh every 10 seconds
+        setInterval(refresh, 10000);
+
+        // Send on Enter
+        document.getElementById('commandInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendCommand();
+        });
+
+        // =============================================
+        // TASK QUEUE (Autopilot) — Queue + Feeder + Auto-Resume
+        // =============================================
+
+        let taskQueue = [];       // Array of { id, objective, domain, status, taskId, retries, error }
+        let queueState = 'idle';  // 'idle' | 'running' | 'paused' | 'waiting'
+        let queueNextId = 1;
+        let queuePollTimer = null;
+
+        // Add task to queue
+        function queueAdd() {
+            const input = document.getElementById('queueAddInput');
+            const domain = document.querySelector('input[name="queueDomain"]:checked').value;
+            const text = input.value.trim();
+            if (!text) return;
+
+            taskQueue.push({
+                id: queueNextId++,
+                objective: text,
+                domain: domain,
+                status: 'queued',  // queued | submitted | running | completed | failed | retrying
+                taskId: null,
+                retries: 0,
+                error: null
+            });
+
+            input.value = '';
+            renderQueue();
+        }
+
+        // Add on Enter key
+        document.getElementById('queueAddInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') queueAdd();
+        });
+
+        // Remove item from queue
+        function queueRemove(id) {
+            taskQueue = taskQueue.filter(q => q.id !== id);
+            renderQueue();
+        }
+
+        // Clear all queued (not in-progress) items
+        function queueClear() {
+            if (queueState === 'running') {
+                if (!confirm('Queue is running. Stop and clear all items?')) return;
+                queuePause();
+            }
+            taskQueue = [];
+            renderQueue();
+        }
+
+        // Start processing the queue
+        async function queueStart() {
+            if (taskQueue.filter(q => q.status === 'queued' || q.status === 'failed').length === 0) {
+                alert('No tasks in queue to process.');
+                return;
+            }
+            queueState = 'running';
+            updateQueueUI();
+            await processNextInQueue();
+        }
+
+        // Pause the queue
+        function queuePause() {
+            queueState = 'paused';
+            if (queuePollTimer) { clearTimeout(queuePollTimer); queuePollTimer = null; }
+            updateQueueUI();
+        }
+
+        // Process next queued item
+        async function processNextInQueue() {
+            if (queueState !== 'running') return;
+
+            // Find next item to process
+            const next = taskQueue.find(q => q.status === 'queued' || (q.status === 'failed' && q.retries < getMaxRetries()));
+            if (!next) {
+                // All done
+                queueState = 'idle';
+                updateQueueUI();
+                return;
+            }
+
+            // Submit the task to the Control Plane
+            next.status = 'submitted';
+            renderQueue();
+
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        objective: next.objective,
+                        domain: next.domain,
+                        expectedOutputs: 'Task result'
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to create task');
+                }
+
+                next.taskId = data.taskId;
+                next.status = 'running';
+                renderQueue();
+
+                // Poll for completion
+                await waitForTaskCompletion(next);
+
+            } catch (err) {
+                next.status = 'failed';
+                next.error = err.message;
+                next.retries++;
+                renderQueue();
+
+                // Auto-resume logic
+                if (shouldAutoResume() && next.retries < getMaxRetries()) {
+                    next.status = 'retrying';
+                    renderQueue();
+                    const delay = getRetryDelay() * 1000;
+                    queueState = 'waiting';
+                    updateQueueUI();
+                    queuePollTimer = setTimeout(() => {
+                        next.status = 'queued';
+                        queueState = 'running';
+                        updateQueueUI();
+                        processNextInQueue();
+                    }, delay);
+                    return;
+                }
+            }
+
+            // Move to next item
+            if (queueState === 'running') {
+                await processNextInQueue();
+            }
+        }
+
+        // Wait for a task to complete by polling its status
+        async function waitForTaskCompletion(queueItem) {
+            return new Promise((resolve, reject) => {
+                const poll = async () => {
+                    if (queueState !== 'running') { resolve(); return; }
+
+                    try {
+                        const res = await fetch(`${CONTROL_PLANE}/tasks/${queueItem.taskId}`);
+                        const task = await res.json();
+
+                        if (task.status === 'COMPLETED') {
+                            queueItem.status = 'completed';
+                            renderQueue();
+                            fetchTasks();
+                            resolve();
+                        } else if (task.status === 'FAIL' || task.status === 'CANCELLED') {
+                            queueItem.status = 'failed';
+                            queueItem.error = task.result?.error || `Task ${task.status}`;
+                            queueItem.retries++;
+                            renderQueue();
+
+                            // Auto-resume on failure
+                            if (shouldAutoResume() && queueItem.retries < getMaxRetries()) {
+                                queueItem.status = 'retrying';
+                                renderQueue();
+                                const delay = getRetryDelay() * 1000;
+                                queueState = 'waiting';
+                                updateQueueUI();
+                                queuePollTimer = setTimeout(() => {
+                                    queueItem.status = 'queued';
+                                    queueItem.taskId = null;
+                                    queueState = 'running';
+                                    updateQueueUI();
+                                    resolve();
+                                }, delay);
+                            } else {
+                                resolve();
+                            }
+                        } else {
+                            // Still running, poll again
+                            queuePollTimer = setTimeout(poll, 3000);
+                        }
+                    } catch (err) {
+                        // Network error — retry poll
+                        queuePollTimer = setTimeout(poll, 5000);
+                    }
+                };
+                poll();
+            });
+        }
+
+        function shouldAutoResume() {
+            return document.getElementById('queueAutoResume').checked;
+        }
+        function getMaxRetries() {
+            return parseInt(document.getElementById('queueMaxRetries').value) || 3;
+        }
+        function getRetryDelay() {
+            return parseInt(document.getElementById('queueRetryDelay').value) || 30;
+        }
+
+        // Render queue items
+        function renderQueue() {
+            const container = document.getElementById('queueItems');
+
+            if (taskQueue.length === 0) {
+                container.innerHTML = '<div style="color:#666; font-style:italic; padding:10px; text-align:center;">Queue is empty. Add tasks above, then hit Start Queue.</div>';
+                document.getElementById('queueProgress').style.display = 'none';
+                return;
+            }
+
+            const statusIcons = {
+                queued: '○', submitted: '◐', running: '◑', completed: '●',
+                failed: '✗', retrying: '↻'
+            };
+            const statusColors = {
+                queued: '#888', submitted: '#00d4ff', running: '#00d4ff',
+                completed: '#00ff88', failed: '#ff4444', retrying: '#ffaa00'
+            };
+
+            container.innerHTML = taskQueue.map((q, i) => `
+                <div class="queue-item ${q.status === 'running' ? 'current' : ''} ${q.status === 'completed' ? 'done' : ''} ${q.status === 'failed' ? 'failed' : ''} ${q.status === 'retrying' ? 'retrying' : ''}">
+                    <span class="queue-item-num">${i + 1}</span>
+                    <span style="color:${statusColors[q.status]}; font-size:14px;">${statusIcons[q.status]}</span>
+                    <span class="queue-item-text">${escapeHtml(q.objective)}</span>
+                    <span style="color:#666; font-size:11px;">${q.domain}</span>
+                    ${q.retries > 0 ? `<span style="color:#ffaa00; font-size:10px;">retry ${q.retries}</span>` : ''}
+                    ${q.error ? `<span style="color:#ff4444; font-size:10px;" title="${escapeHtml(q.error)}">err</span>` : ''}
+                    ${q.status === 'queued' ? `<button class="queue-item-remove" onclick="queueRemove(${q.id})">×</button>` : ''}
+                </div>
+            `).join('');
+
+            // Update progress
+            const total = taskQueue.length;
+            const completed = taskQueue.filter(q => q.status === 'completed').length;
+            const progressEl = document.getElementById('queueProgress');
+            progressEl.style.display = 'block';
+            document.getElementById('queueProgressText').textContent = `${completed} / ${total} completed`;
+            document.getElementById('queueProgressFill').style.width = `${(completed / total * 100).toFixed(0)}%`;
+
+            updateQueueUI();
+        }
+
+        // Update queue control buttons and badge
+        function updateQueueUI() {
+            const badge = document.getElementById('queueStatusBadge');
+            const startBtn = document.getElementById('queueStartBtn');
+            const pauseBtn = document.getElementById('queuePauseBtn');
+
+            badge.className = 'queue-status-badge ' + queueState;
+            badge.textContent = queueState === 'idle' ? 'Idle' :
+                               queueState === 'running' ? 'Running' :
+                               queueState === 'paused' ? 'Paused' :
+                               queueState === 'waiting' ? 'Waiting to retry...' : queueState;
+
+            if (queueState === 'running' || queueState === 'waiting') {
+                startBtn.style.display = 'none';
+                pauseBtn.style.display = '';
+            } else {
+                startBtn.style.display = '';
+                pauseBtn.style.display = 'none';
+                startBtn.textContent = queueState === 'paused' ? 'Resume' : 'Start Queue';
+            }
+        }
+    </script>
+</body>
+</html>

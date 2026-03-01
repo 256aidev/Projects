@@ -1,0 +1,23 @@
+
+Command	What it does
+
+submit a task	Create a new task for workers to execute
+check task status	Get status/result of a specific task
+list tasks	Show recent tasks (can filter by status)
+cancel a task	Cancel a pending or running task
+
+Workers & Health
+
+list workers	Show all workers with role, IP, online status
+system health	Overall health summary (workers, apps, escalations)
+remove a worker	Delete a stale/dead worker from registry
+
+
+Escalations
+list escalations	Show escalations needing human review
+dispose an escalation	Accept, reject, or defer an escalation
+
+
+Activity
+Command	What it does
+show activity	Recent activity log (tasks created, completed, etc.)

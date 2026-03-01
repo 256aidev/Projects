@@ -1,0 +1,11 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+torch==2.5.1
+torchaudio==2.5.1
+torch-directml==0.2.5.dev250211
+transformers==4.47.1
+audiocraft
+soundfile==0.13.1
+scipy==1.14.1
+kokoro>=0.3.4
+sounddevice==0.5.1

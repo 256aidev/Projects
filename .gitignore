@@ -1,0 +1,72 @@
+# ===== Secrets & Credentials =====
+.env
+.env.*
+!.env.example
+!.env.*.example
+CREDENTIALS.md
+**/CREDENTIALS.md
+ADMIN_CREDENTIALS.md
+**/ADMIN_CREDENTIALS.md
+TEST_USERS.md
+**/TEST_USERS.md
+DEMO_ACCOUNTS.md
+**/DEMO_ACCOUNTS.md
+secrets.json
+credentials.json
+
+# ===== Logs =====
+*.log
+logs/
+**/logs/
+
+# ===== Databases =====
+*.db
+*.db-shm
+*.db-wal
+*.db.corrupted.bak
+*.sqlite
+*.sqlite3
+
+# ===== Node =====
+node_modules/
+
+# ===== Python =====
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# ===== C# / .NET =====
+bin/
+obj/
+publish/
+.vs/
+*.user
+*.suo
+
+# ===== macOS =====
+.DS_Store
+**/.DS_Store
+
+# ===== Windows =====
+Thumbs.db
+Desktop.ini
+nul
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===== Temp / trash =====
+**/temp delete/
+**/temp_delete/
+
+# ===== Build artifacts =====
+*.dll
+*.exe
+*.pdb
+output/

@@ -1,0 +1,17 @@
+{
+  "apps": [
+    {
+      "name": "BaZi API",
+      "health_url": "https://256ai.xyz/health",
+      "timeout": 10
+    },
+    {
+      "name": "Ollama",
+      "health_url": "http://localhost:11434/api/tags",
+      "timeout": 5,
+      "restart_cmd": "net start ollama"
+    }
+  ],
+  "check_interval_seconds": 30,
+  "log_file": "C:\\Projects\\MonitoringHub\\logs\\health.log"
+}

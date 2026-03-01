@@ -1,0 +1,60 @@
+    def generate_explanations(
+        self,
+        events: List[Dict],
+        ten_god: Dict,
+        relationship_type: str,
+        ease_score: int = 70,
+        dur_score: int = 70
+    ) -> Tuple[List[str], List[str]]:
+        """
+        Generate top 3 strengths and top 3 watchouts from events.
+        Now includes fallback strengths based on scores and Ten-God psychology.
+        """
+        strengths = []
+        watchouts = []
+
+        # Sort events by absolute impact
+        sorted_events = sorted(
+            events,
+            key=lambda e: abs(e.get("ease", 0)) + abs(e.get("durability", 0)),
+            reverse=True
+        )
+
+        for event in sorted_events:
+            if event.get("ease", 0) > 0 or event.get("durability", 0) > 0:
+                if len(strengths) < 3:
+                    palace_name = event["palace"].replace("_", " ").title()
+                    strengths.append(f"{palace_name}: {event['label']}")
+            else:
+                if len(watchouts) < 3 and event["type"] != "NEUTRAL":
+                    palace_name = event["palace"].replace("_", " ").title()
+                    watchouts.append(f"{palace_name}: {event['label']}")
+
+        # Add Ten-God positive psychology to strengths
+        if ten_god["god"] not in ["Unknown"] and ten_god.get("psychology"):
+            positive_gods = ["DirectWealth", "IndirectWealth", "DirectResource",
+                           "IndirectResource", "EatingGod", "Friend"]
+            if ten_god["god"] in positive_gods and len(strengths) < 3:
+                strengths.append(f"Ten-God ({ten_god['god']}): {ten_god['psychology']}")
+
+        # Add Ten-God risk to watchouts for challenging gods
+        if ten_god["god"] not in ["Unknown", "Friend"] and ten_god.get("risk"):
+            challenging_gods = ["SevenKillings", "DirectOfficer", "HurtingOfficer", "RobWealth"]
+            if ten_god["god"] in challenging_gods and len(watchouts) < 3:
+                watchouts.append(f"Ten-God ({ten_god['god']}): {ten_god['risk']}")
+
+        # Generate fallback strengths if none found but scores are decent
+        if len(strengths) == 0:
+            if ease_score >= 70:
+                strengths.append("Overall Harmony: No major conflicts in core palaces")
+            if dur_score >= 70 and len(strengths) < 3:
+                strengths.append("Stable Foundation: Compatible life directions")
+            if ease_score >= 60 and dur_score >= 60 and len(strengths) < 3:
+                strengths.append("Balanced Energy: Natural understanding possible")
+
+        # If still no strengths but score is moderate
+        if len(strengths) == 0 and (ease_score >= 50 or dur_score >= 50):
+            strengths.append("Potential Growth: Differences can complement each other")
+
+        return strengths, watchouts
+

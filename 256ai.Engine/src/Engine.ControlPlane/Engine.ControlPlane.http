@@ -1,0 +1,6 @@
+@Engine.ControlPlane_HostAddress = http://localhost:5056
+
+GET {{Engine.ControlPlane_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
