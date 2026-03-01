@@ -121,6 +121,26 @@ Full diagram: [00_SYSTEM_OVERVIEW.md](docs/shared/00_SYSTEM_OVERVIEW.md)
 
 ---
 
+## Git Backup (MANDATORY)
+
+**Repo:** `git@github.com:256aidev/Projects.git` (private)
+**Root:** `C:\Projects` is the repo root.
+
+**After making changes, always commit and push:**
+```bash
+cd C:/Projects
+git add -A
+git commit -m "Brief description of changes"
+git push
+```
+
+- Commit after completing each task or logical set of changes
+- Write clear commit messages describing what changed
+- The `.gitignore` protects secrets (`.env`, `CREDENTIALS.md`, databases, build output)
+- **Never commit credentials or API keys** — check `git diff --cached` if unsure
+
+---
+
 ## Golden Rules
 
 1. **If it's not written down, it doesn't exist**
@@ -128,6 +148,7 @@ Full diagram: [00_SYSTEM_OVERVIEW.md](docs/shared/00_SYSTEM_OVERVIEW.md)
 3. **Every escalation must receive a disposition**
 4. **Apps are disposable; the engine is permanent**
 5. **If uncertain → escalate to Strategy Layer**
+6. **Always commit and push changes to GitHub**
 
 ---
 

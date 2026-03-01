@@ -64,8 +64,25 @@ Calculates BaZi compatibility with:
 | `GET /admin/launch-health` | System health dashboard |
 | `GET /admin/scheduler/status` | Job scheduler status |
 
+## Git Backup (MANDATORY)
+
+**Repo:** `git@github.com:256aidev/Projects.git` (private)
+**Root:** `C:\Projects` is the repo root.
+
+**After making changes, always commit and push:**
+```bash
+cd C:/Projects
+git add -A
+git commit -m "Brief description of changes"
+git push
+```
+
+- Commit after completing each task or logical set of changes
+- The `.gitignore` protects secrets (`.env`, `CREDENTIALS.md`, databases, build output)
+- **Never commit credentials or API keys**
+
 ## Deployment Workflow
 
-1. Edit files locally in `I:\2026CodeProjects\BaZi\iOS\AstrologyApp\`
+1. Edit files locally in `C:\Projects\256ai-projects\bazi\iOS\AstrologyApp\`
 2. SCP files to server: `scp file.py nazmin@10.0.1.76:/home/nazmin/AstrologyApp/path/`
 3. Restart service: `ssh nazmin@10.0.1.76 "pkill -f 'uvicorn app:app' && cd /home/nazmin/AstrologyApp && source venv/bin/activate && nohup uvicorn app:app --host 0.0.0.0 --port 8000 --workers 4 &"`
