@@ -59,6 +59,19 @@ public class TaskPollingService : BackgroundService
                 };
                 // Remove CLAUDECODE env var to prevent nested session blocking
                 psi.Environment.Remove("CLAUDECODE");
+                // Add npm bin to PATH on Windows
+                if (OperatingSystem.IsWindows())
+                {
+                    var npmBin = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm");
+                    if (Directory.Exists(npmBin))
+                    {
+                        var path = psi.Environment.ContainsKey("PATH")
+                            ? psi.Environment["PATH"]
+                            : Environment.GetEnvironmentVariable("PATH") ?? "";
+                        psi.Environment["PATH"] = npmBin + ";" + path;
+                    }
+                }
                 using var proc = Process.Start(psi);
                 if (proc != null)
                 {
@@ -266,7 +279,7 @@ public class TaskPollingService : BackgroundService
         try
         {
             var (fileName, baseArgs) = ResolveClaudeCli();
-            var taskArgs = $"--task - --output-format json --max-turns {_workerConfig.MaxTurns}";
+            var taskArgs = "-p --output-format json --dangerously-skip-permissions";
             var fullArgs = string.IsNullOrEmpty(baseArgs) ? taskArgs : $"{baseArgs} {taskArgs}";
 
             var psi = new ProcessStartInfo
@@ -289,6 +302,21 @@ public class TaskPollingService : BackgroundService
 
             // Remove CLAUDECODE env var to prevent nested session blocking
             psi.Environment.Remove("CLAUDECODE");
+
+            // Ensure npm global bin is on PATH (Windows) so claude CLI can be found
+            if (OperatingSystem.IsWindows())
+            {
+                var npmBin = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm");
+                if (Directory.Exists(npmBin))
+                {
+                    var existingPath = psi.Environment.ContainsKey("PATH")
+                        ? psi.Environment["PATH"]
+                        : Environment.GetEnvironmentVariable("PATH") ?? "";
+                    if (!existingPath.Contains(npmBin, StringComparison.OrdinalIgnoreCase))
+                        psi.Environment["PATH"] = npmBin + ";" + existingPath;
+                }
+            }
 
             // Set environment variables for context
             psi.Environment["TASK_WORKER_ID"] = _workerConfig.WorkerId;
@@ -385,31 +413,44 @@ public class TaskPollingService : BackgroundService
 
     /// <summary>
     /// Resolves how to invoke the Claude CLI. Returns (FileName, BaseArgs).
-    /// - If ClaudeCodePath is "claude" or an exe, call it directly: ("claude", "")
-    /// - If ClaudeCodePath ends in .js, use NodePath: ("node.exe", "\"path/cli.js\"")
+    /// Tries in order:
+    /// 1. Configured ClaudeCodePath (if .js, uses NodePath)
+    /// 2. claude.cmd in npm global bin (Windows)
+    /// 3. "claude" on PATH (Linux/Mac)
     /// </summary>
     private (string FileName, string BaseArgs) ResolveClaudeCli()
     {
         var cliPath = _workerConfig.ClaudeCodePath;
+        _logger.LogDebug("Resolving Claude CLI: configured path = '{Path}'", cliPath);
 
         // If it's a .js file, run it via node
         if (cliPath.EndsWith(".js", StringComparison.OrdinalIgnoreCase))
         {
             var nodePath = _workerConfig.NodePath;
-            if (string.IsNullOrEmpty(nodePath))
-                throw new InvalidOperationException(
-                    "ClaudeCodePath points to a .js file but NodePath is not configured");
-
-            if (!File.Exists(nodePath))
-                throw new FileNotFoundException($"Node.js not found at: {nodePath}");
-
-            if (!File.Exists(cliPath))
-                throw new FileNotFoundException($"Claude CLI script not found at: {cliPath}");
-
-            return (nodePath, $"\"{cliPath}\"");
+            if (!string.IsNullOrEmpty(nodePath) && File.Exists(nodePath) && File.Exists(cliPath))
+            {
+                _logger.LogInformation("Using Node.js CLI: {Node} \"{Cli}\"", nodePath, cliPath);
+                return (nodePath, $"\"{cliPath}\"");
+            }
+            _logger.LogWarning("Configured .js CLI path not found, trying fallbacks. NodePath={Node}, CliPath={Cli}",
+                nodePath, cliPath);
         }
 
-        // Direct binary (e.g. "claude" on PATH, or full path to claude.exe)
+        // Windows fallback: look for claude.cmd in npm global bin
+        if (OperatingSystem.IsWindows())
+        {
+            var npmBin = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm");
+            var claudeCmd = Path.Combine(npmBin, "claude.cmd");
+            if (File.Exists(claudeCmd))
+            {
+                _logger.LogInformation("Using claude.cmd at: {Path}", claudeCmd);
+                return (claudeCmd, "");
+            }
+        }
+
+        // Direct binary (e.g. "claude" on PATH)
+        _logger.LogInformation("Using claude CLI directly: {Path}", cliPath);
         return (cliPath, "");
     }
 

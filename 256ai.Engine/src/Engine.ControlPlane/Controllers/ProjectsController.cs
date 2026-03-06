@@ -62,11 +62,14 @@ public class ProjectsController : ControllerBase
             {
                 TaskId = Guid.NewGuid().ToString(),
                 Objective = objective,
-                Domain = "general",
+                Domain = "coordination",
                 ProjectId = projectId,
                 ExpectedOutputs = "Decomposed sub-tasks dispatched to appropriate workers",
                 Status = Status.PENDING,
-                CreatedAt = now
+                CreatedAt = now,
+                InputsJson = !string.IsNullOrEmpty(request.WorkingDirectory)
+                    ? JsonSerializer.Serialize(new Dictionary<string, string> { ["workingDirectory"] = request.WorkingDirectory })
+                    : null
             };
             _db.Tasks.Add(leadTask);
             await _db.SaveChangesAsync();
