@@ -164,7 +164,8 @@ public class TaskPollingService : BackgroundService
                     timeout,
                     taskResponse.TaskId,
                     taskResponse.ProjectId,
-                    stoppingToken),
+                    stoppingToken,
+                    taskResponse.Domain),
 
                 "ollama" => await ExecuteWithOllama(
                     taskResponse.Objective!,
@@ -250,13 +251,15 @@ public class TaskPollingService : BackgroundService
         int timeoutSeconds,
         string? taskId,
         string? projectId,
-        CancellationToken stoppingToken)
+        CancellationToken stoppingToken,
+        string? taskDomain = null)
     {
         // Build the full prompt with context
         var prompt = new StringBuilder();
 
-        // Lead workers decompose tasks instead of executing directly
-        if (_workerConfig.Role.Equals("lead", StringComparison.OrdinalIgnoreCase))
+        // Lead workers decompose coordination tasks; execute all other domains directly
+        var isCoordinationTask = taskDomain?.Equals("coordination", StringComparison.OrdinalIgnoreCase) == true;
+        if (_workerConfig.Role.Equals("lead", StringComparison.OrdinalIgnoreCase) && isCoordinationTask)
         {
             prompt.AppendLine(BuildLeadPrompt(objective, taskId, projectId));
         }
