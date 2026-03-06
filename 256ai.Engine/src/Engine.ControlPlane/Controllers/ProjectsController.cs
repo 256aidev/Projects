@@ -48,13 +48,39 @@ public class ProjectsController : ControllerBase
         _db.Projects.Add(project);
         await _db.SaveChangesAsync();
 
+        // Auto-dispatch to Lead AI if spec or description provided
+        string? leadTaskId = null;
+        var specContent = request.SpecMarkdown ?? request.Description;
+        if (!string.IsNullOrEmpty(specContent))
+        {
+            var objective = $"Project: {request.Name}";
+            if (!string.IsNullOrEmpty(request.WorkingDirectory))
+                objective += $"\nWorking Directory: {request.WorkingDirectory}";
+            objective += $"\n\n{specContent}";
+
+            var leadTask = new TaskEntity
+            {
+                TaskId = Guid.NewGuid().ToString(),
+                Objective = objective,
+                Domain = "general",
+                ProjectId = projectId,
+                ExpectedOutputs = "Decomposed sub-tasks dispatched to appropriate workers",
+                Status = Status.PENDING,
+                CreatedAt = now
+            };
+            _db.Tasks.Add(leadTask);
+            await _db.SaveChangesAsync();
+            leadTaskId = leadTask.TaskId;
+        }
+
         return CreatedAtAction(nameof(GetProject), new { id = projectId }, new
         {
             ProjectId = projectId,
             project.Name,
             project.Domain,
             Status = "PENDING",
-            CreatedAt = now
+            CreatedAt = now,
+            LeadTaskId = leadTaskId
         });
     }
 

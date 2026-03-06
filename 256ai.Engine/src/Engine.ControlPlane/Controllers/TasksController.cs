@@ -196,7 +196,8 @@ public class TasksController : ControllerBase
             constraints = task.ConstraintsJson != null ? JsonSerializer.Deserialize<List<string>>(task.ConstraintsJson) : new List<string>(),
             inputs = task.InputsJson != null ? JsonSerializer.Deserialize<Dictionary<string, object>>(task.InputsJson) : new Dictionary<string, object>(),
             expectedOutputs = task.ExpectedOutputs,
-            validationCriteria = task.ValidationCriteria
+            validationCriteria = task.ValidationCriteria,
+            projectId = task.ProjectId
         });
     }
 

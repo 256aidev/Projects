@@ -194,6 +194,17 @@ nav {
     color: #888;
     margin-bottom: 24px;
 }
+.legal-content h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    margin: 24px 0 8px;
+}
+.legal-content hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 40px 0;
+}
 
 /* Footer */
 footer {

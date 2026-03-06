@@ -150,6 +150,7 @@ public class TaskPollingService : BackgroundService
                     workingDir,
                     timeout,
                     taskResponse.TaskId,
+                    taskResponse.ProjectId,
                     stoppingToken),
 
                 "ollama" => await ExecuteWithOllama(
@@ -235,6 +236,7 @@ public class TaskPollingService : BackgroundService
         string? workingDirectory,
         int timeoutSeconds,
         string? taskId,
+        string? projectId,
         CancellationToken stoppingToken)
     {
         // Build the full prompt with context
@@ -243,7 +245,7 @@ public class TaskPollingService : BackgroundService
         // Lead workers decompose tasks instead of executing directly
         if (_workerConfig.Role.Equals("lead", StringComparison.OrdinalIgnoreCase))
         {
-            prompt.AppendLine(BuildLeadPrompt(objective, taskId));
+            prompt.AppendLine(BuildLeadPrompt(objective, taskId, projectId));
         }
         else
         {
@@ -293,6 +295,8 @@ public class TaskPollingService : BackgroundService
             psi.Environment["TASK_CONTROL_PLANE"] = _controlPlaneUrl;
             if (!string.IsNullOrEmpty(taskId))
                 psi.Environment["TASK_ID"] = taskId;
+            if (!string.IsNullOrEmpty(projectId))
+                psi.Environment["TASK_PROJECT_ID"] = projectId;
 
             _logger.LogInformation("Spawning Claude Code CLI: {Path} {Args}",
                 psi.FileName, psi.Arguments);
@@ -419,7 +423,7 @@ public class TaskPollingService : BackgroundService
     /// 2. Decompose — break it into sub-tasks for workers
     /// 3. Dispatch — submit sub-tasks via the Control Plane API
     /// </summary>
-    private string BuildLeadPrompt(string objective, string? parentTaskId)
+    private string BuildLeadPrompt(string objective, string? parentTaskId, string? projectId = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine("You are the SWARM LEAD for 256ai.Engine — the coordinator of a distributed AI worker swarm.");
@@ -474,6 +478,11 @@ public class TaskPollingService : BackgroundService
         if (!string.IsNullOrEmpty(parentTaskId))
         {
             sb.AppendLine($"    \"parentTaskId\": \"{parentTaskId}\",");
+        }
+
+        if (!string.IsNullOrEmpty(projectId))
+        {
+            sb.AppendLine($"    \"projectId\": \"{projectId}\",");
         }
 
         sb.AppendLine("    \"dependsOn\": []");
@@ -812,4 +821,5 @@ public class TaskPollResponse
     public Dictionary<string, object>? Inputs { get; set; }
     public string? ExpectedOutputs { get; set; }
     public int? TimeLimitSeconds { get; set; }
+    public string? ProjectId { get; set; }
 }

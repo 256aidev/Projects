@@ -9,7 +9,8 @@ param(
     [string]$ApiHost = "10.0.1.76",
     [string]$ApiSshUser = "nazmin",
     [int]$MetricsPollSec = 3,
-    [switch]$SkipMetrics
+    [switch]$SkipMetrics,
+    [switch]$PreGenerate
 )
 
 # ============================================================
@@ -714,6 +715,7 @@ Write-Host "Max test users:   $maxUsers"
 Write-Host "Requests/user:    $RequestsPerUser"
 Write-Host "Timeout:          ${TimeoutSec}s"
 Write-Host "Metrics:          $(if ($SkipMetrics) { 'Disabled' } else { 'Enabled (poll every ' + $MetricsPollSec + 's)' })"
+Write-Host "Pre-generate:     $(if ($PreGenerate) { 'Yes (trigger scheduler jobs first)' } else { 'No (test on-demand generation)' })"
 Write-Host "Timestamp:        $(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')"
 Write-Host ""
 
@@ -794,6 +796,38 @@ if ($users.Count -eq 0) {
 
 # Warm-up
 Test-WarmUp -Users $users
+
+# Pre-generate readings (trigger background jobs)
+if ($PreGenerate) {
+    Write-Host ""
+    Write-Host "--- Pre-Generate Phase ---" -ForegroundColor Cyan
+    Write-Host "  Triggering background jobs to generate readings for all test users..."
+    Write-Host "  This simulates the scheduled jobs that run daily/weekly/monthly."
+    Write-Host ""
+
+    $genEndpoints = @(
+        @{ Name = "daily";   Path = "/admin/scheduler/trigger-daily" },
+        @{ Name = "weekly";  Path = "/admin/scheduler/trigger-weekly" },
+        @{ Name = "monthly"; Path = "/admin/scheduler/trigger-monthly" },
+        @{ Name = "yearly";  Path = "/admin/scheduler/trigger-yearly" }
+    )
+
+    foreach ($ep in $genEndpoints) {
+        Write-Host "  Triggering $($ep.Name) generation..." -NoNewline
+        $genStart = Get-Date
+        $result = Invoke-Api -Method "POST" -Path $ep.Path -Token $users[0].Token
+        $genTime = [Math]::Round(((Get-Date) - $genStart).TotalSeconds, 1)
+        if ($result.Success) {
+            Write-Host " done (${genTime}s)" -ForegroundColor Green
+        } else {
+            Write-Host " FAILED ($($result.StatusCode): $($result.Error))" -ForegroundColor Yellow
+        }
+    }
+
+    Write-Host ""
+    Write-Host "  Pre-generation complete. Readings should now be cached." -ForegroundColor Green
+    Write-Host "  Throughput test will now measure cached read performance." -ForegroundColor DarkGray
+}
 
 # Run throughput levels
 $allMetrics = @()

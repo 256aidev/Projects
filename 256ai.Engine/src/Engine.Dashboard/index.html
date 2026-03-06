@@ -2093,6 +2093,15 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
                     // Select the new project
                     selectProject(data.projectId, name);
                     fetchProjects();
+                    // Show feedback
+                    if (data.leadTaskId) {
+                        const status = document.getElementById('sendStatus');
+                        if (status) {
+                            status.textContent = `Project "${name}" created — Lead AI will decompose it shortly`;
+                            status.style.color = '#00ff88';
+                            setTimeout(() => { status.textContent = ''; }, 8000);
+                        }
+                    }
                 } else {
                     const err = await res.json();
                     alert('Error creating project: ' + (err.error || 'Unknown'));
