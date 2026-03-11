@@ -239,7 +239,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     purchaseCost: 0,
     upgradeCosts: [],  // can't be upgraded — starter room only
     strainSlots: [
-      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 60, harvestYield: 8 },
+      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 48, harvestYield: 8 },
     ],
   },
   {
@@ -248,10 +248,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     purchaseCost: 1500,
     upgradeCosts: [2000, 4000, 7000],
     strainSlots: [
-      { strainName: 'OG Kush',     pricePerUnit: 12, plantsCapacity: 12, growTimerTicks: 50, harvestYield: 28 },
-      { strainName: 'White Widow', pricePerUnit: 16, plantsCapacity: 12, growTimerTicks: 48, harvestYield: 28 },
-      { strainName: 'Purple Haze', pricePerUnit: 22, plantsCapacity: 12, growTimerTicks: 45, harvestYield: 28 },
-      { strainName: 'Blue Dream',  pricePerUnit: 30, plantsCapacity: 12, growTimerTicks: 43, harvestYield: 28 },
+      { strainName: 'OG Kush',     pricePerUnit: 12, plantsCapacity: 12, growTimerTicks: 40, harvestYield: 28 },
+      { strainName: 'White Widow', pricePerUnit: 16, plantsCapacity: 12, growTimerTicks: 38, harvestYield: 28 },
+      { strainName: 'Purple Haze', pricePerUnit: 22, plantsCapacity: 12, growTimerTicks: 36, harvestYield: 28 },
+      { strainName: 'Blue Dream',  pricePerUnit: 30, plantsCapacity: 12, growTimerTicks: 34, harvestYield: 28 },
     ],
   },
   {
@@ -260,10 +260,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     purchaseCost: 6000,
     upgradeCosts: [8000, 15000, 25000],
     strainSlots: [
-      { strainName: 'Sour Diesel',        pricePerUnit: 20, plantsCapacity: 20, growTimerTicks: 45, harvestYield: 55 },
-      { strainName: 'AK-47',              pricePerUnit: 28, plantsCapacity: 20, growTimerTicks: 43, harvestYield: 55 },
-      { strainName: 'Gorilla Glue',       pricePerUnit: 36, plantsCapacity: 20, growTimerTicks: 40, harvestYield: 55 },
-      { strainName: "Girl Scout Cookies", pricePerUnit: 46, plantsCapacity: 20, growTimerTicks: 38, harvestYield: 55 },
+      { strainName: 'Sour Diesel',        pricePerUnit: 20, plantsCapacity: 20, growTimerTicks: 36, harvestYield: 55 },
+      { strainName: 'AK-47',              pricePerUnit: 28, plantsCapacity: 20, growTimerTicks: 34, harvestYield: 55 },
+      { strainName: 'Gorilla Glue',       pricePerUnit: 36, plantsCapacity: 20, growTimerTicks: 32, harvestYield: 55 },
+      { strainName: "Girl Scout Cookies", pricePerUnit: 46, plantsCapacity: 20, growTimerTicks: 30, harvestYield: 55 },
     ],
   },
   {
@@ -272,10 +272,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     purchaseCost: 20000,
     upgradeCosts: [25000, 45000, 80000],
     strainSlots: [
-      { strainName: 'Durban Poison', pricePerUnit: 35, plantsCapacity: 30, growTimerTicks: 40, harvestYield: 100 },
-      { strainName: 'Jack Herer',    pricePerUnit: 45, plantsCapacity: 30, growTimerTicks: 38, harvestYield: 100 },
-      { strainName: 'Amnesia Haze',  pricePerUnit: 58, plantsCapacity: 30, growTimerTicks: 35, harvestYield: 100 },
-      { strainName: 'Wedding Cake',  pricePerUnit: 72, plantsCapacity: 30, growTimerTicks: 33, harvestYield: 100 },
+      { strainName: 'Durban Poison', pricePerUnit: 35, plantsCapacity: 30, growTimerTicks: 32, harvestYield: 100 },
+      { strainName: 'Jack Herer',    pricePerUnit: 45, plantsCapacity: 30, growTimerTicks: 30, harvestYield: 100 },
+      { strainName: 'Amnesia Haze',  pricePerUnit: 58, plantsCapacity: 30, growTimerTicks: 28, harvestYield: 100 },
+      { strainName: 'Wedding Cake',  pricePerUnit: 72, plantsCapacity: 30, growTimerTicks: 26, harvestYield: 100 },
     ],
   },
   {
@@ -284,10 +284,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     purchaseCost: 80000,
     upgradeCosts: [100000, 200000, 400000],
     strainSlots: [
-      { strainName: 'Gelato',   pricePerUnit: 60,  plantsCapacity: 50, growTimerTicks: 35, harvestYield: 200 },
-      { strainName: 'Runtz',    pricePerUnit: 78,  plantsCapacity: 50, growTimerTicks: 33, harvestYield: 200 },
-      { strainName: 'Zkittlez', pricePerUnit: 95,  plantsCapacity: 50, growTimerTicks: 30, harvestYield: 200 },
-      { strainName: 'Biscotti', pricePerUnit: 120, plantsCapacity: 50, growTimerTicks: 28, harvestYield: 200 },
+      { strainName: 'Gelato',   pricePerUnit: 60,  plantsCapacity: 50, growTimerTicks: 28, harvestYield: 200 },
+      { strainName: 'Runtz',    pricePerUnit: 78,  plantsCapacity: 50, growTimerTicks: 26, harvestYield: 200 },
+      { strainName: 'Zkittlez', pricePerUnit: 95,  plantsCapacity: 50, growTimerTicks: 24, harvestYield: 200 },
+      { strainName: 'Biscotti', pricePerUnit: 120, plantsCapacity: 50, growTimerTicks: 22, harvestYield: 200 },
     ],
   },
 ];
@@ -312,7 +312,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
       name: 'Closet',
       upgradeLevel: 0,
       slots: [
-        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 60, harvestYield: 8, isHarvesting: true, ticksRemaining: 60 },
+        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 48, harvestYield: 8, isHarvesting: true, ticksRemaining: 48 },
       ],
     },
   ],
