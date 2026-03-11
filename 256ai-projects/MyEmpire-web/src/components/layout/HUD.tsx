@@ -1,5 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
+import { useUIStore } from '../../store/uiStore';
 import { formatMoney, formatUnits } from '../../engine/economy';
 import CannabisLeaf from '../ui/CannabisLeaf';
 
@@ -11,7 +12,8 @@ export default function HUD() {
   const bizCount = useGameStore((s) => s.businesses.length);
   const productInventory = useGameStore((s) => s.operation.productInventory);
 
-  const { user, syncing, signOut } = useAuthStore();
+  const { user, syncing } = useAuthStore();
+  const setShowAccountScreen = useUIStore((s) => s.setShowAccountScreen);
   const isGuest = !user || (user as { uid: string }).uid === 'guest';
 
   return (
@@ -61,7 +63,7 @@ export default function HUD() {
             : <span className="text-green-600 text-[10px]">☁ saved</span>
         )}
         <button
-          onClick={signOut}
+          onClick={() => setShowAccountScreen(true)}
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
             isGuest
               ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'
@@ -69,7 +71,7 @@ export default function HUD() {
           }`}
         >
           <span>{isGuest ? '👤' : '🔓'}</span>
-          <span>{isGuest ? 'Sign In' : (user?.displayName?.split(' ')[0] ?? 'Sign Out')}</span>
+          <span>{isGuest ? 'Sign In' : (user?.displayName?.split(' ')[0] ?? 'Account')}</span>
         </button>
       </div>
     </div>

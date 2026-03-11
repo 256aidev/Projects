@@ -92,6 +92,10 @@ export const useGameStore = create<GameStore>()(
         const { newOp, unitsHarvested } = harvestSlot(state.operation, roomId, slotIndex);
         if (unitsHarvested > 0) {
           if (newOp.seedStock > 0) {
+            const room = newOp.growRooms.find((r) => r.id === roomId);
+            const canonicalTimer = room
+              ? (GROW_ROOM_TYPE_MAP[room.typeId]?.strainSlots[slotIndex]?.growTimerTicks ?? room.slots[slotIndex]?.growTimerTicks ?? 30)
+              : 30;
             const replanted = {
               ...newOp,
               seedStock: newOp.seedStock - 1,
@@ -100,7 +104,7 @@ export const useGameStore = create<GameStore>()(
                   ? {
                       ...r,
                       slots: r.slots.map((s, i) =>
-                        i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: s.growTimerTicks } : s
+                        i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: canonicalTimer, growTimerTicks: canonicalTimer } : s
                       ),
                     }
                   : r
@@ -298,6 +302,8 @@ export const useGameStore = create<GameStore>()(
         if (!room) return false;
         const slot = room.slots[slotIndex];
         if (!slot || slot.isHarvesting) return false;
+        // Always use the canonical grow time from the def, not whatever is saved in the slot
+        const canonicalTimer = GROW_ROOM_TYPE_MAP[room.typeId]?.strainSlots[slotIndex]?.growTimerTicks ?? slot.growTimerTicks;
         set({
           operation: {
             ...state.operation,
@@ -307,7 +313,7 @@ export const useGameStore = create<GameStore>()(
                 ? {
                     ...r,
                     slots: r.slots.map((s, i) =>
-                      i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: s.growTimerTicks } : s
+                      i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: canonicalTimer, growTimerTicks: canonicalTimer } : s
                     ),
                   }
                 : r
@@ -424,7 +430,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 6,
+      version: 7,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -445,8 +451,12 @@ export const useGameStore = create<GameStore>()(
                 slots: room.slots.map((slot, i) => {
                   const defSlot = def.strainSlots[i];
                   if (!defSlot) return slot;
-                  // Update grow timer from canonical def — preserves in-progress ticksRemaining
-                  return { ...slot, growTimerTicks: defSlot.growTimerTicks };
+                  // Update grow timer AND cap in-progress ticksRemaining to the new max
+                  return {
+                    ...slot,
+                    growTimerTicks: defSlot.growTimerTicks,
+                    ticksRemaining: Math.min(slot.ticksRemaining, defSlot.growTimerTicks),
+                  };
                 }),
               };
             }),

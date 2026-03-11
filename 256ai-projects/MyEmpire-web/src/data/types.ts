@@ -353,7 +353,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
   dealerTierIndex: 0,
   dealerCount: 0,
   seedStock: 10,
-  seedCostPerUnit: 10,
+  seedCostPerUnit: 5,
 };
 
 export const INITIAL_GAME_STATE: GameState = {
