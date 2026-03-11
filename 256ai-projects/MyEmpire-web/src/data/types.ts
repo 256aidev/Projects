@@ -325,7 +325,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
 export const GROW_ROOM_TYPE_MAP = Object.fromEntries(GROW_ROOM_TYPE_DEFS.map((d) => [d.id, d]));
 
 export const DEALER_TIERS: DealerTier[] = [
-  { id: 'corner',    name: 'Corner Boys',           salesRatePerTick: 0.5,  hireCost: 50,    cutPercent: 30, heatPerTick: 0.005 },
+  { id: 'corner',    name: 'Corner Boys',           salesRatePerTick: 0.5,  hireCost: 500,   cutPercent: 30, heatPerTick: 0.005 },
   { id: 'crew',      name: 'Street Crew',           salesRatePerTick: 1.5,  hireCost: 300,   cutPercent: 25, heatPerTick: 0.012 },
   { id: 'network',   name: 'Distribution Network',  salesRatePerTick: 4.0,  hireCost: 1200,  cutPercent: 20, heatPerTick: 0.020 },
   { id: 'syndicate', name: 'City Syndicate',        salesRatePerTick: 12.0, hireCost: 6000,  cutPercent: 15, heatPerTick: 0.035 },
