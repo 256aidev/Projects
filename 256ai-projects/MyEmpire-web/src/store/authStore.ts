@@ -66,10 +66,11 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
 
   signOut: async () => {
     const { user } = get();
-    if (user) {
-      await saveToCloud(user.uid, getGameSnapshot());
+    const isGuest = !user || (user as { uid: string }).uid === 'guest';
+    if (!isGuest) {
+      await saveToCloud(user!.uid, getGameSnapshot());
+      await firebaseSignOut(auth);
     }
-    await firebaseSignOut(auth);
     set({ user: null });
   },
 

@@ -53,21 +53,23 @@ export default function HUD() {
         <span className="text-gray-500 text-xs">fronts</span>
       </div>
 
-      {/* Cloud save / auth indicator */}
+      {/* Account / save indicator */}
       <div className="ml-auto flex items-center gap-2">
-        {isGuest ? (
-          <span className="text-gray-600 text-[10px]">local save</span>
-        ) : syncing ? (
-          <span className="text-blue-500 text-[10px]">☁ saving…</span>
-        ) : (
-          <span className="text-green-600 text-[10px]">☁ saved</span>
+        {!isGuest && (
+          syncing
+            ? <span className="text-blue-500 text-[10px]">☁ saving…</span>
+            : <span className="text-green-600 text-[10px]">☁ saved</span>
         )}
         <button
-          onClick={isGuest ? undefined : signOut}
-          title={isGuest ? 'Playing as guest' : `Signed in as ${user?.displayName ?? user?.email}`}
-          className="text-gray-600 text-[10px] hover:text-gray-400 transition"
+          onClick={signOut}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+            isGuest
+              ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'
+              : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+          }`}
         >
-          {isGuest ? '👤' : '🔓'}
+          <span>{isGuest ? '👤' : '🔓'}</span>
+          <span>{isGuest ? 'Sign In' : (user?.displayName?.split(' ')[0] ?? 'Sign Out')}</span>
         </button>
       </div>
     </div>
