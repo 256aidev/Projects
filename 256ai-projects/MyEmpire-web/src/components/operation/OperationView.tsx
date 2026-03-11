@@ -78,10 +78,9 @@ export default function OperationView() {
               <div key={room.id} className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <p className="text-white font-semibold text-sm">
-                      {['Closet', 'Bedroom', 'Garage', 'Hydro Setup', 'Pro Facility'][room.tier - 1]}
-                    </p>
-                    <p className="text-gray-400 text-xs">{room.plantsCapacity} plants · {room.harvestYield} units/harvest</p>
+                    <p className="text-white font-semibold text-sm">{room.name}</p>
+                    <p className="text-green-500 text-xs font-medium">{room.strainName}</p>
+                    <p className="text-gray-500 text-[10px]">{room.plantsCapacity} plants · {room.harvestYield} units · ${room.pricePerUnit}/unit</p>
                   </div>
                   <span className="text-2xl">
                     {ready ? '🌿' : idle ? '💤' : '🌱'}
@@ -164,10 +163,9 @@ export default function OperationView() {
                 }`}
               >
                 <p className="text-green-400 text-lg mb-1">+</p>
-                <p className="text-white text-xs font-semibold">
-                  {['Closet', 'Bedroom', 'Garage', 'Hydro Setup', 'Pro Facility'][def.tier - 1]}
-                </p>
-                <p className="text-gray-400 text-[10px]">{def.plantsCapacity} plants · {def.harvestYield} units</p>
+                <p className="text-white text-xs font-semibold">{def.name}</p>
+                <p className="text-green-400 text-[10px] font-medium">{def.strainName}</p>
+                <p className="text-gray-400 text-[10px]">{def.plantsCapacity} plants · {def.harvestYield} units · ${def.pricePerUnit}/unit</p>
                 <p className="text-yellow-400 text-xs font-bold mt-1">{formatMoney(def.purchaseCost)} 💵</p>
               </button>
             );

@@ -7,6 +7,9 @@ export type GrowRoomTier = 1 | 2 | 3 | 4 | 5;
 export interface GrowRoom {
   id: string;
   tier: GrowRoomTier;
+  name: string;               // room name (Closet, Shed, Garage…)
+  strainName: string;         // weed strain grown in this room
+  pricePerUnit: number;       // dirty cash earned per unit sold
   plantsCapacity: number;
   growTimerTicks: number;     // total ticks per harvest cycle
   harvestYield: number;       // product units per harvest
@@ -217,11 +220,11 @@ export interface GameState {
 // ─────────────────────────────────────────
 
 export const GROW_ROOM_DEFS: Omit<GrowRoom, 'id' | 'isHarvesting' | 'ticksRemaining'>[] = [
-  { tier: 1, plantsCapacity: 4,   growTimerTicks: 120, harvestYield: 8,   purchaseCost: 0 },
-  { tier: 2, plantsCapacity: 12,  growTimerTicks: 100, harvestYield: 28,  purchaseCost: 2500 },
-  { tier: 3, plantsCapacity: 30,  growTimerTicks: 90,  harvestYield: 75,  purchaseCost: 8000 },
-  { tier: 4, plantsCapacity: 60,  growTimerTicks: 75,  harvestYield: 180, purchaseCost: 25000 },
-  { tier: 5, plantsCapacity: 150, growTimerTicks: 60,  harvestYield: 500, purchaseCost: 100000 },
+  { tier: 1, name: 'Closet',          strainName: 'Basic Bud',    pricePerUnit: 8,  plantsCapacity: 4,   growTimerTicks: 120, harvestYield: 8,   purchaseCost: 0 },
+  { tier: 2, name: 'Shed',            strainName: 'OG Kush',      pricePerUnit: 12, plantsCapacity: 12,  growTimerTicks: 100, harvestYield: 28,  purchaseCost: 1500 },
+  { tier: 3, name: 'Garage',          strainName: 'White Widow',  pricePerUnit: 16, plantsCapacity: 30,  growTimerTicks: 90,  harvestYield: 75,  purchaseCost: 6000 },
+  { tier: 4, name: 'Hydro Facility',  strainName: 'Purple Haze',  pricePerUnit: 22, plantsCapacity: 60,  growTimerTicks: 75,  harvestYield: 180, purchaseCost: 20000 },
+  { tier: 5, name: 'Grow Facility',   strainName: 'Blue Dream',   pricePerUnit: 30, plantsCapacity: 150, growTimerTicks: 60,  harvestYield: 500, purchaseCost: 80000 },
 ];
 
 export const DEALER_TIERS: DealerTier[] = [
@@ -236,7 +239,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
   location: 'basement',
   locationName: "Grandma's Basement",
   growRooms: [
-    { id: 'room_start', tier: 1, plantsCapacity: 4, growTimerTicks: 120, harvestYield: 8, purchaseCost: 0, isHarvesting: true, ticksRemaining: 120 },
+    { id: 'room_start', tier: 1, name: 'Closet', strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 120, harvestYield: 8, purchaseCost: 0, isHarvesting: true, ticksRemaining: 120 },
   ],
   productInventory: 0,
   dealerTierIndex: 0,

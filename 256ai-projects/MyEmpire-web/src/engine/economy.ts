@@ -14,9 +14,13 @@ export function tickCriminalOperation(op: CriminalOperation): {
   let newProductInventory = op.productInventory;
 
   // Dealers sell product → dirty cash (salesRatePerTick = units sold per tick per dealer)
+  // Price per unit = average across all grow rooms (better rooms raise the street value)
   if (op.dealerCount > 0 && newProductInventory > 0) {
+    const avgPrice = op.growRooms.length > 0
+      ? op.growRooms.reduce((sum, r) => sum + r.pricePerUnit, 0) / op.growRooms.length
+      : 10;
     const unitsSold = Math.min(newProductInventory, dealerTier.salesRatePerTick * op.dealerCount);
-    const saleValue = unitsSold * 10 * (1 - dealerTier.cutPercent / 100);
+    const saleValue = unitsSold * avgPrice * (1 - dealerTier.cutPercent / 100);
     newProductInventory -= unitsSold;
     dirtyEarned = saleValue;
   }

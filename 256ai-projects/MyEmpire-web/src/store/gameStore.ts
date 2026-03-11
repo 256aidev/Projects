@@ -108,7 +108,11 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         const toSell = Math.min(units, state.operation.productInventory);
         if (toSell <= 0) return 0;
-        const dirtyEarned = toSell * 7; // street price — less than dealer rate of $10
+        // Street price = 70% of avg dealer price (quick cash, no network needed)
+        const avgPrice = state.operation.growRooms.length > 0
+          ? state.operation.growRooms.reduce((sum, r) => sum + r.pricePerUnit, 0) / state.operation.growRooms.length
+          : 10;
+        const dirtyEarned = Math.floor(toSell * avgPrice * 0.7);
         set({
           dirtyCash: state.dirtyCash + dirtyEarned,
           totalDirtyEarned: state.totalDirtyEarned + dirtyEarned,
@@ -124,6 +128,9 @@ export const useGameStore = create<GameStore>()(
         const newRoom = {
           id: `room_${Date.now()}`,
           tier: def.tier,
+          name: def.name,
+          strainName: def.strainName,
+          pricePerUnit: def.pricePerUnit,
           plantsCapacity: def.plantsCapacity,
           growTimerTicks: def.growTimerTicks,
           harvestYield: def.harvestYield,
