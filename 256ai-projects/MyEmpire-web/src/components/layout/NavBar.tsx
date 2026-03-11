@@ -1,8 +1,9 @@
 import { useUIStore, type ViewName } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
+import CannabisLeaf from '../ui/CannabisLeaf';
 
-const TABS: { id: ViewName; label: string; icon: string }[] = [
-  { id: 'operation', label: 'Operation', icon: '🌿' },
+const TABS: { id: ViewName; label: string; icon: string | null }[] = [
+  { id: 'operation', label: 'Operation', icon: null },  // null = use CannabisLeaf
   { id: 'city',      label: 'City',      icon: '🏙️' },
   { id: 'warehouse', label: 'Warehouse', icon: '🏬' },
   { id: 'legal',     label: 'Legal',     icon: '⚖️' },
@@ -30,8 +31,11 @@ export default function NavBar() {
               }
             `}
           >
-            <span className="text-lg relative">
-              {tab.icon}
+            <span className="relative flex items-center justify-center">
+              {tab.icon === null
+                ? <CannabisLeaf size={22} className={active ? 'opacity-100' : 'opacity-40'} />
+                : <span className="text-lg">{tab.icon}</span>
+              }
               {hasBadge && (
                 <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-red-500" />
               )}

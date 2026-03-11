@@ -1,5 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
 import { formatUnits } from '../../engine/economy';
+import CannabisLeaf from '../ui/CannabisLeaf';
 
 export default function WarehouseView() {
   const operation = useGameStore((s) => s.operation);
@@ -24,7 +25,7 @@ export default function WarehouseView() {
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-white font-semibold">Product Stash</h3>
-          <span className="text-2xl">🌿</span>
+          <CannabisLeaf size={32} />
         </div>
         <div className="grid grid-cols-2 gap-3 text-center">
           <div className="bg-gray-900/60 rounded-lg p-3">

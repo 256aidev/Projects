@@ -23,12 +23,35 @@ export interface StrainSlot extends StrainSlotDef {
   ticksRemaining: number;
 }
 
+export interface MaintenanceTier {
+  name: string;
+  cost: number;       // dirty cash one-time upgrade cost
+  yieldBonus: number; // fraction added to harvest yield (0.2 = +20%)
+  icon: string;
+}
+
+export const WATER_TIERS: MaintenanceTier[] = [
+  { name: 'Tap Water',    cost: 0,     yieldBonus: 0,    icon: '🚰' },
+  { name: 'Drip System', cost: 500,   yieldBonus: 0.15, icon: '💧' },
+  { name: 'Hydro Setup', cost: 2500,  yieldBonus: 0.35, icon: '🌊' },
+  { name: 'Aeroponics',  cost: 10000, yieldBonus: 0.60, icon: '⚗️' },
+];
+
+export const LIGHT_TIERS: MaintenanceTier[] = [
+  { name: 'Single Bulb',    cost: 0,     yieldBonus: 0,    icon: '💡' },
+  { name: 'LED Strip',      cost: 800,   yieldBonus: 0.15, icon: '🔆' },
+  { name: 'Full Spec LED',  cost: 4000,  yieldBonus: 0.35, icon: '☀️' },
+  { name: 'HPS + CO2',      cost: 15000, yieldBonus: 0.60, icon: '🌡️' },
+];
+
 export interface GrowRoom {
   id: string;
   typeId: string;          // references GrowRoomTypeDef.id
   name: string;
   upgradeLevel: number;    // 0 = 1 slot active, 1 = 2 slots, 2 = 3 slots, 3 = 4 slots
   slots: StrainSlot[];     // length = upgradeLevel + 1
+  waterTier: number;       // index into WATER_TIERS (0–3)
+  lightTier: number;       // index into LIGHT_TIERS (0–3)
 }
 
 export interface DealerTier {
@@ -239,7 +262,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     purchaseCost: 0,
     upgradeCosts: [],  // can't be upgraded — starter room only
     strainSlots: [
-      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 48, harvestYield: 8 },
+      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 8 },
     ],
   },
   {
@@ -311,8 +334,10 @@ export const INITIAL_OPERATION: CriminalOperation = {
       typeId: 'closet',
       name: 'Closet',
       upgradeLevel: 0,
+      waterTier: 0,
+      lightTier: 0,
       slots: [
-        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 48, harvestYield: 8, isHarvesting: true, ticksRemaining: 48 },
+        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 8, isHarvesting: true, ticksRemaining: 30 },
       ],
     },
   ],

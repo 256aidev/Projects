@@ -10,7 +10,12 @@ export default function LoginScreen() {
     <div className="h-full flex flex-col items-center justify-center bg-gray-950 px-6">
       {/* Logo / title */}
       <div className="text-center mb-10">
-        <div className="text-6xl mb-4">🌿</div>
+        <div className="mb-4 flex justify-center">
+          <svg width="72" height="72" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#22c55e" d="M256 16c0 0-58 62-62 130c-16-22-54-62-110-70c0 0 6 68 76 100c-24-4-62-2-94 18c0 0 30 50 90 50c-20 10-44 30-54 62c0 0 44 8 82-18c-6 20-8 46 0 78l28-8l28 8c8-32 6-58 0-78c38 26 82 18 82 18c-10-32-34-52-54-62c60 0 90-50 90-50c-32-20-70-22-94-18c70-32 76-100 76-100c-56 8-94 48-110 70C314 78 256 16 256 16z"/>
+            <rect fill="#22c55e" x="244" y="370" width="24" height="90" rx="8"/>
+          </svg>
+        </div>
         <h1 className="text-white text-3xl font-black tracking-tight">My Empire</h1>
         <p className="text-gray-500 text-sm mt-1">Build your criminal empire</p>
       </div>

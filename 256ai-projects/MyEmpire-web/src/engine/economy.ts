@@ -1,7 +1,7 @@
 import type { BusinessInstance, CriminalOperation } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
-import { DEALER_TIERS } from '../data/types';
+import { DEALER_TIERS, WATER_TIERS, LIGHT_TIERS } from '../data/types';
 
 // ─── CRIMINAL OPERATION ───────────────────────────
 
@@ -51,9 +51,14 @@ export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: nu
   const slot = room.slots[slotIndex];
   if (!slot || !slot.isHarvesting || slot.ticksRemaining > 0) return { newOp: op, unitsHarvested: 0 };
 
+  // Apply maintenance bonuses to yield
+  const waterBonus = WATER_TIERS[room.waterTier ?? 0]?.yieldBonus ?? 0;
+  const lightBonus = LIGHT_TIERS[room.lightTier ?? 0]?.yieldBonus ?? 0;
+  const unitsHarvested = Math.floor(slot.harvestYield * (1 + waterBonus + lightBonus));
+
   const newOp = {
     ...op,
-    productInventory: op.productInventory + slot.harvestYield,
+    productInventory: op.productInventory + unitsHarvested,
     growRooms: op.growRooms.map((r) =>
       r.id === roomId
         ? {
@@ -65,7 +70,7 @@ export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: nu
         : r
     ),
   };
-  return { newOp, unitsHarvested: slot.harvestYield };
+  return { newOp, unitsHarvested };
 }
 
 // ─── FRONT BUSINESS LAUNDERING ────────────────────

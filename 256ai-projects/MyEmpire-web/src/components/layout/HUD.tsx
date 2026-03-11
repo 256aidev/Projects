@@ -1,6 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { formatMoney, formatUnits } from '../../engine/economy';
+import CannabisLeaf from '../ui/CannabisLeaf';
 
 export default function HUD() {
   const dirtyCash = useGameStore((s) => s.dirtyCash);
@@ -42,7 +43,7 @@ export default function HUD() {
       <div className="h-6 w-px bg-gray-700 mx-1" />
 
       <div className="flex items-center gap-1">
-        <span>🌿</span>
+        <CannabisLeaf size={18} />
         <span className="text-green-400 font-semibold text-xs">{formatUnits(productInventory)}</span>
       </div>
 

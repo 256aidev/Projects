@@ -1,7 +1,8 @@
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
-import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS } from '../../data/types';
+import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS } from '../../data/types';
 import { formatMoney, formatUnits } from '../../engine/economy';
+import CannabisLeaf from '../ui/CannabisLeaf';
 
 export default function OperationView() {
   const op = useGameStore((s) => s.operation);
@@ -9,6 +10,8 @@ export default function OperationView() {
   const harvestGrowRoom = useGameStore((s) => s.harvestGrowRoom);
   const buyGrowRoom = useGameStore((s) => s.buyGrowRoom);
   const upgradeRoom = useGameStore((s) => s.upgradeRoom);
+  const upgradeWater = useGameStore((s) => s.upgradeWater);
+  const upgradeLighting = useGameStore((s) => s.upgradeLighting);
   const hireDealers = useGameStore((s) => s.hireDealers);
   const upgradeDealerTier = useGameStore((s) => s.upgradeDealerTier);
   const buySeed = useGameStore((s) => s.buySeed);
@@ -42,7 +45,7 @@ export default function OperationView() {
             <h3 className="text-green-400 font-semibold text-sm">Product Inventory</h3>
             <p className="text-gray-400 text-xs">{formatUnits(op.productInventory)} · avg ${avgPrice.toFixed(0)}/oz</p>
           </div>
-          <span className="text-2xl">🌿</span>
+          <CannabisLeaf size={32} />
         </div>
         {op.productInventory > 0 ? (
           <div className="flex gap-2">
@@ -81,13 +84,21 @@ export default function OperationView() {
             const canUpgrade = !!nextUpgradeCost && dirtyCash >= nextUpgradeCost;
             const isMaxLevel = !nextUpgradeCost;
 
+            const waterTier = room.waterTier ?? 0;
+            const lightTier = room.lightTier ?? 0;
+            const waterData = WATER_TIERS[waterTier];
+            const lightData = LIGHT_TIERS[lightTier];
+            const nextWater = WATER_TIERS[waterTier + 1];
+            const nextLight = LIGHT_TIERS[lightTier + 1];
+            const totalYieldBonus = waterData.yieldBonus + lightData.yieldBonus;
+
             return (
-              <div key={room.id} className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
+              <div key={room.id} className="bg-gray-800/60 border border-gray-700 rounded-xl overflow-hidden">
                 {/* Room header */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between px-3 py-2 bg-gray-900/50 border-b border-gray-700">
                   <div>
                     <p className="text-white font-bold text-sm">{room.name}</p>
-                    <p className="text-gray-500 text-xs">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} active</p>
+                    <p className="text-gray-500 text-xs">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield</p>
                   </div>
                   {isMaxLevel ? (
                     <span className="text-yellow-500 text-xs font-bold px-2 py-0.5 bg-yellow-900/30 rounded-full">MAX</span>
@@ -102,89 +113,101 @@ export default function OperationView() {
                         }
                       }}
                       disabled={!canUpgrade}
-                      className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${
-                        canUpgrade
-                          ? 'bg-purple-700 hover:bg-purple-600 text-white'
-                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      className={`text-xs px-2 py-1 rounded-lg font-semibold transition ${
+                        canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       }`}
                     >
-                      + Unlock {def?.strainSlots[room.upgradeLevel + 1]?.strainName}<br />
-                      <span className="font-normal">{formatMoney(nextUpgradeCost)} 💵</span>
+                      + {def?.strainSlots[room.upgradeLevel + 1]?.strainName} · {formatMoney(nextUpgradeCost)}
                     </button>
                   )}
                 </div>
 
-                {/* Strain slots */}
-                <div className="flex flex-col gap-2">
-                  {room.slots.map((slot, slotIndex) => {
-                    const progress = slot.isHarvesting && slot.growTimerTicks > 0
-                      ? 1 - slot.ticksRemaining / slot.growTimerTicks
-                      : slot.isHarvesting ? 1 : 0;
-                    const ready = slot.isHarvesting && slot.ticksRemaining === 0;
-                    const idle = !slot.isHarvesting;
+                {/* Split layout: left = strains, right = maintenance */}
+                <div className="flex">
+                  {/* LEFT — Strain slots */}
+                  <div className="flex-1 p-3 flex flex-col gap-2 border-r border-gray-700">
+                    {room.slots.map((slot, slotIndex) => {
+                      const progress = slot.isHarvesting && slot.growTimerTicks > 0
+                        ? 1 - slot.ticksRemaining / slot.growTimerTicks
+                        : slot.isHarvesting ? 1 : 0;
+                      const ready = slot.isHarvesting && slot.ticksRemaining === 0;
+                      const idle = !slot.isHarvesting;
 
-                    return (
-                      <div key={slotIndex} className="bg-gray-900/50 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div>
-                            <p className="text-green-400 font-semibold text-xs">{slot.strainName}</p>
-                            <p className="text-gray-600 text-[10px]">{slot.plantsCapacity} plants · {slot.harvestYield}oz harvest · ${slot.pricePerUnit}/oz</p>
+                      return (
+                        <div key={slotIndex} className="bg-gray-900/50 rounded-lg p-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <div>
+                              <p className="text-green-400 font-semibold text-xs">{slot.strainName}</p>
+                              <p className="text-gray-600 text-[10px]">${slot.pricePerUnit}/oz · {slot.plantsCapacity}p</p>
+                            </div>
+                            <span>{ready ? <CannabisLeaf size={18} /> : idle ? '💤' : '🌱'}</span>
                           </div>
-                          <span className="text-lg">{ready ? '🌿' : idle ? '💤' : '🌱'}</span>
+                          <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden mb-1.5">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${progress * 100}%`, backgroundColor: ready ? '#22c55e' : '#65a30d' }} />
+                          </div>
+                          {ready ? (
+                            <button onClick={() => { const u = harvestGrowRoom(room.id, slotIndex); if (u > 0) addNotification(`Harvested ${formatUnits(u)} ${slot.strainName}!${op.seedStock > 0 ? ' Auto-replanting…' : ' Buy seeds.'}`, 'success'); }}
+                              className="w-full py-1 rounded bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold transition">
+                              Harvest!
+                            </button>
+                          ) : idle ? (
+                            <button onClick={() => { if (plantSeeds(room.id, slotIndex)) addNotification(`${slot.strainName} planted!`, 'success'); else addNotification('No seeds', 'warning'); }}
+                              disabled={op.seedStock < 1}
+                              className={`w-full py-1 rounded text-[10px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
+                              🌱 Plant {op.seedStock < 1 ? '(no seeds)' : ''}
+                            </button>
+                          ) : (
+                            <p className="text-center text-gray-500 text-[10px]">{slot.ticksRemaining}s left</p>
+                          )}
                         </div>
+                      );
+                    })}
+                  </div>
 
-                        {/* Progress bar */}
-                        <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden mb-2">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{
-                              width: `${progress * 100}%`,
-                              backgroundColor: ready ? '#22c55e' : '#65a30d',
-                            }}
-                          />
-                        </div>
+                  {/* RIGHT — Maintenance */}
+                  <div className="w-32 p-3 flex flex-col gap-3">
+                    <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center">Maintenance</p>
 
-                        {ready ? (
-                          <button
-                            onClick={() => {
-                              const units = harvestGrowRoom(room.id, slotIndex);
-                              if (units > 0) {
-                                const msg = op.seedStock > 0
-                                  ? `Harvested ${units} ${slot.strainName}! Auto-replanting…`
-                                  : `Harvested ${units} ${slot.strainName}! Buy seeds to replant.`;
-                                addNotification(msg, 'success');
-                              }
-                            }}
-                            className="w-full py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-bold transition"
-                          >
-                            🌿 Harvest {slot.strainName}!
-                          </button>
-                        ) : idle ? (
-                          <button
-                            onClick={() => {
-                              if (plantSeeds(room.id, slotIndex)) {
-                                addNotification(`${slot.strainName} seeds planted!`, 'success');
-                              } else {
-                                addNotification('No seeds — buy some below', 'warning');
-                              }
-                            }}
-                            disabled={op.seedStock < 1}
-                            className={`w-full py-1.5 rounded-lg text-xs font-semibold transition ${
-                              op.seedStock > 0
-                                ? 'bg-lime-700 hover:bg-lime-600 text-lime-100'
-                                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                            }`}
-                          >
-                            🌱 Plant {slot.strainName} {op.seedStock < 1 ? '(no seeds)' : ''}
-                          </button>
-                        ) : (
-                          <p className="text-center text-gray-500 text-[10px]">
-                            Growing… {slot.ticksRemaining}s left
-                          </p>
-                        )}
+                    {/* Water */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-gray-400">💧 Water</span>
+                        <span className="text-[10px] text-blue-400">+{Math.round(waterData.yieldBonus * 100)}%</span>
                       </div>
-                    );
-                  })}
+                      <p className="text-[10px] text-gray-500">{waterData.name}</p>
+                      {nextWater ? (
+                        <button
+                          onClick={() => { if (upgradeWater(room.id)) addNotification(`${nextWater.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextWater.cost)} dirty cash`, 'warning'); }}
+                          disabled={dirtyCash < nextWater.cost}
+                          className={`w-full py-1 rounded text-[10px] font-semibold transition ${dirtyCash >= nextWater.cost ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                        >
+                          {nextWater.icon} {nextWater.name}<br/>{formatMoney(nextWater.cost)}
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-blue-500 text-center">MAX ✓</span>
+                      )}
+                    </div>
+
+                    {/* Lighting */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-gray-400">💡 Light</span>
+                        <span className="text-[10px] text-yellow-400">+{Math.round(lightData.yieldBonus * 100)}%</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500">{lightData.name}</p>
+                      {nextLight ? (
+                        <button
+                          onClick={() => { if (upgradeLighting(room.id)) addNotification(`${nextLight.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextLight.cost)} dirty cash`, 'warning'); }}
+                          disabled={dirtyCash < nextLight.cost}
+                          className={`w-full py-1 rounded text-[10px] font-semibold transition ${dirtyCash >= nextLight.cost ? 'bg-yellow-800 hover:bg-yellow-700 text-yellow-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                        >
+                          {nextLight.icon} {nextLight.name}<br/>{formatMoney(nextLight.cost)}
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-yellow-500 text-center">MAX ✓</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             );

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BusinessInstance, GameState } from '../data/types';
-import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS } from '../data/types';
+import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
 import { RESOURCE_MAP } from '../data/resources';
@@ -23,6 +23,8 @@ interface GameActions {
   buySeed: (quantity: number) => boolean;
   plantSeeds: (roomId: string, slotIndex: number) => boolean;
   sellProduct: (units: number) => number;
+  upgradeWater: (roomId: string) => boolean;
+  upgradeLighting: (roomId: string) => boolean;
   purchaseBusiness: (businessDefId: string, districtId: string, slotIndex: number) => boolean;
   sellBusiness: (instanceId: string) => void;
   upgradeBusiness: (instanceId: string) => boolean;
@@ -138,6 +140,8 @@ export const useGameStore = create<GameStore>()(
           typeId: def.id,
           name: def.name,
           upgradeLevel: 0,
+          waterTier: 0,
+          lightTier: 0,
           slots: [
             { ...firstSlot, isHarvesting: true, ticksRemaining: firstSlot.growTimerTicks },
           ],
@@ -176,6 +180,48 @@ export const useGameStore = create<GameStore>()(
               r.id === roomId
                 ? { ...r, upgradeLevel: nextLevel, slots: [...r.slots, newSlot] }
                 : r
+            ),
+          },
+        });
+        return true;
+      },
+
+      upgradeWater: (roomId) => {
+        const state = get();
+        const room = state.operation.growRooms.find((r) => r.id === roomId);
+        if (!room) return false;
+        const nextTier = (room.waterTier ?? 0) + 1;
+        if (nextTier >= WATER_TIERS.length) return false;
+        const cost = WATER_TIERS[nextTier].cost;
+        if (state.dirtyCash < cost) return false;
+        set({
+          dirtyCash: state.dirtyCash - cost,
+          totalSpent: state.totalSpent + cost,
+          operation: {
+            ...state.operation,
+            growRooms: state.operation.growRooms.map((r) =>
+              r.id === roomId ? { ...r, waterTier: nextTier } : r
+            ),
+          },
+        });
+        return true;
+      },
+
+      upgradeLighting: (roomId) => {
+        const state = get();
+        const room = state.operation.growRooms.find((r) => r.id === roomId);
+        if (!room) return false;
+        const nextTier = (room.lightTier ?? 0) + 1;
+        if (nextTier >= LIGHT_TIERS.length) return false;
+        const cost = LIGHT_TIERS[nextTier].cost;
+        if (state.dirtyCash < cost) return false;
+        set({
+          dirtyCash: state.dirtyCash - cost,
+          totalSpent: state.totalSpent + cost,
+          operation: {
+            ...state.operation,
+            growRooms: state.operation.growRooms.map((r) =>
+              r.id === roomId ? { ...r, lightTier: nextTier } : r
             ),
           },
         });
