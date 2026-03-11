@@ -424,12 +424,36 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 5,
-      // Merge persisted state with current defaults — new fields get their initial values,
-      // existing player data is preserved. This prevents save wipes on future updates.
+      version: 6,
+      // Merge saved state with defaults (preserves money, progress, etc.),
+      // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
         const saved = (persisted ?? {}) as Partial<GameState>;
-        return { ...INITIAL_GAME_STATE, ...saved } as GameState;
+        const merged = { ...INITIAL_GAME_STATE, ...saved } as GameState;
+
+        // Re-sync operation constants and slot grow timers from canonical defs
+        if (merged.operation) {
+          merged.operation = {
+            ...merged.operation,
+            // Always use current seed cost (balance change takes effect on load)
+            seedCostPerUnit: INITIAL_GAME_STATE.operation.seedCostPerUnit,
+            growRooms: merged.operation.growRooms.map((room) => {
+              const def = GROW_ROOM_TYPE_MAP[room.typeId];
+              if (!def) return room;
+              return {
+                ...room,
+                slots: room.slots.map((slot, i) => {
+                  const defSlot = def.strainSlots[i];
+                  if (!defSlot) return slot;
+                  // Update grow timer from canonical def — preserves in-progress ticksRemaining
+                  return { ...slot, growTimerTicks: defSlot.growTimerTicks };
+                }),
+              };
+            }),
+          };
+        }
+
+        return merged;
       },
     }
   )
