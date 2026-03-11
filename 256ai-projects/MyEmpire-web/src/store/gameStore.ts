@@ -25,6 +25,7 @@ interface GameActions {
   sellProduct: (units: number) => number;
   upgradeWater: (roomId: string) => boolean;
   upgradeLighting: (roomId: string) => boolean;
+  buyAutoHarvest: (roomId: string) => boolean;
   purchaseBusiness: (businessDefId: string, districtId: string, slotIndex: number) => boolean;
   sellBusiness: (instanceId: string) => void;
   upgradeBusiness: (instanceId: string) => boolean;
@@ -142,6 +143,7 @@ export const useGameStore = create<GameStore>()(
           upgradeLevel: 0,
           waterTier: 0,
           lightTier: 0,
+          autoHarvest: false,
           slots: [
             { ...firstSlot, isHarvesting: true, ticksRemaining: firstSlot.growTimerTicks },
           ],
@@ -222,6 +224,27 @@ export const useGameStore = create<GameStore>()(
             ...state.operation,
             growRooms: state.operation.growRooms.map((r) =>
               r.id === roomId ? { ...r, lightTier: nextTier } : r
+            ),
+          },
+        });
+        return true;
+      },
+
+      buyAutoHarvest: (roomId) => {
+        const state = get();
+        const room = state.operation.growRooms.find((r) => r.id === roomId);
+        if (!room || room.autoHarvest) return false;
+        const def = GROW_ROOM_TYPE_MAP[room.typeId];
+        if (!def) return false;
+        const cost = def.autoHarvestCost;
+        if (state.dirtyCash < cost) return false;
+        set({
+          dirtyCash: state.dirtyCash - cost,
+          totalSpent: state.totalSpent + cost,
+          operation: {
+            ...state.operation,
+            growRooms: state.operation.growRooms.map((r) =>
+              r.id === roomId ? { ...r, autoHarvest: true } : r
             ),
           },
         });

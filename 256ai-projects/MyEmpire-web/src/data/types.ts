@@ -16,6 +16,7 @@ export interface GrowRoomTypeDef {
   purchaseCost: number;      // dirty cash to buy
   upgradeCosts: number[];    // [cost to unlock slot 2, slot 3, slot 4] — max 3 upgrades
   strainSlots: StrainSlotDef[];  // index = unlock order (max 4)
+  autoHarvestCost: number;   // one-time cost to enable auto-harvest for this room
 }
 
 export interface StrainSlot extends StrainSlotDef {
@@ -52,6 +53,7 @@ export interface GrowRoom {
   slots: StrainSlot[];     // length = upgradeLevel + 1
   waterTier: number;       // index into WATER_TIERS (0–3)
   lightTier: number;       // index into LIGHT_TIERS (0–3)
+  autoHarvest: boolean;    // auto-harvests and replants on tick
 }
 
 export interface DealerTier {
@@ -261,6 +263,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     name: 'Closet',
     purchaseCost: 0,
     upgradeCosts: [],  // can't be upgraded — starter room only
+    autoHarvestCost: 500,
     strainSlots: [
       { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 8 },
     ],
@@ -270,6 +273,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     name: 'Shed',
     purchaseCost: 1500,
     upgradeCosts: [2000, 4000, 7000],
+    autoHarvestCost: 2500,
     strainSlots: [
       { strainName: 'OG Kush',     pricePerUnit: 12, plantsCapacity: 12, growTimerTicks: 40, harvestYield: 28 },
       { strainName: 'White Widow', pricePerUnit: 16, plantsCapacity: 12, growTimerTicks: 38, harvestYield: 28 },
@@ -282,6 +286,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     name: 'Garage',
     purchaseCost: 6000,
     upgradeCosts: [8000, 15000, 25000],
+    autoHarvestCost: 8000,
     strainSlots: [
       { strainName: 'Sour Diesel',        pricePerUnit: 20, plantsCapacity: 20, growTimerTicks: 36, harvestYield: 55 },
       { strainName: 'AK-47',              pricePerUnit: 28, plantsCapacity: 20, growTimerTicks: 34, harvestYield: 55 },
@@ -294,6 +299,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     name: 'Small Grow Facility',
     purchaseCost: 20000,
     upgradeCosts: [25000, 45000, 80000],
+    autoHarvestCost: 25000,
     strainSlots: [
       { strainName: 'Durban Poison', pricePerUnit: 35, plantsCapacity: 30, growTimerTicks: 32, harvestYield: 100 },
       { strainName: 'Jack Herer',    pricePerUnit: 45, plantsCapacity: 30, growTimerTicks: 30, harvestYield: 100 },
@@ -306,6 +312,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     name: 'Grow Facility',
     purchaseCost: 80000,
     upgradeCosts: [100000, 200000, 400000],
+    autoHarvestCost: 100000,
     strainSlots: [
       { strainName: 'Gelato',   pricePerUnit: 60,  plantsCapacity: 50, growTimerTicks: 28, harvestYield: 200 },
       { strainName: 'Runtz',    pricePerUnit: 78,  plantsCapacity: 50, growTimerTicks: 26, harvestYield: 200 },
@@ -336,6 +343,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
       upgradeLevel: 0,
       waterTier: 0,
       lightTier: 0,
+      autoHarvest: false,
       slots: [
         { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 8, isHarvesting: true, ticksRemaining: 30 },
       ],

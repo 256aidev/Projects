@@ -26,18 +26,46 @@ export function tickCriminalOperation(op: CriminalOperation): {
     dirtyEarned = saleValue;
   }
 
-  // Tick all grow room slots
-  const newGrowRooms = op.growRooms.map((room) => ({
-    ...room,
-    slots: room.slots.map((slot) => {
+  // Tick all grow room slots — auto-harvest if enabled
+  let autoHarvestedUnits = 0;
+  let newSeedStock = op.seedStock;
+
+  const newGrowRooms = op.growRooms.map((room) => {
+    const waterBonus = WATER_TIERS[room.waterTier ?? 0]?.yieldBonus ?? 0;
+    const lightBonus = LIGHT_TIERS[room.lightTier ?? 0]?.yieldBonus ?? 0;
+
+    const newSlots = room.slots.map((slot) => {
       if (!slot.isHarvesting) return slot;
-      if (slot.ticksRemaining <= 0) return slot; // ready, waiting for harvest
+
+      // Count down
+      if (slot.ticksRemaining > 1) return { ...slot, ticksRemaining: slot.ticksRemaining - 1 };
+
+      // ticksRemaining === 1: reaches 0 this tick
+      if (slot.ticksRemaining === 1) {
+        if (room.autoHarvest && newSeedStock > 0) {
+          // Auto-harvest: collect yield, consume a seed, restart timer
+          const units = Math.floor(slot.harvestYield * (1 + waterBonus + lightBonus));
+          autoHarvestedUnits += units;
+          newSeedStock -= 1;
+          return { ...slot, ticksRemaining: slot.growTimerTicks }; // restart
+        }
+        // No auto-harvest: let it reach 0 for manual harvest
+        return { ...slot, ticksRemaining: 0 };
+      }
+
+      // ticksRemaining === 0: already ready, waiting for manual harvest
+      if (slot.ticksRemaining <= 0) return slot;
+
       return { ...slot, ticksRemaining: slot.ticksRemaining - 1 };
-    }),
-  }));
+    });
+
+    return { ...room, slots: newSlots };
+  });
+
+  newProductInventory += autoHarvestedUnits;
 
   return {
-    newOp: { ...op, growRooms: newGrowRooms, productInventory: Math.max(0, newProductInventory) },
+    newOp: { ...op, growRooms: newGrowRooms, productInventory: Math.max(0, newProductInventory), seedStock: newSeedStock },
     dirtyEarned,
   };
 }

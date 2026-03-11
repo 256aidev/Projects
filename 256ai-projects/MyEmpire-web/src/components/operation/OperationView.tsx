@@ -12,6 +12,7 @@ export default function OperationView() {
   const upgradeRoom = useGameStore((s) => s.upgradeRoom);
   const upgradeWater = useGameStore((s) => s.upgradeWater);
   const upgradeLighting = useGameStore((s) => s.upgradeLighting);
+  const buyAutoHarvest = useGameStore((s) => s.buyAutoHarvest);
   const hireDealers = useGameStore((s) => s.hireDealers);
   const upgradeDealerTier = useGameStore((s) => s.upgradeDealerTier);
   const buySeed = useGameStore((s) => s.buySeed);
@@ -205,6 +206,25 @@ export default function OperationView() {
                         </button>
                       ) : (
                         <span className="text-[10px] text-yellow-500 text-center">MAX ✓</span>
+                      )}
+                    </div>
+
+                    {/* Auto-Harvest */}
+                    <div className="flex flex-col gap-1 pt-1 border-t border-gray-700">
+                      <span className="text-[10px] text-gray-400 text-center">⚙️ Auto-Harvest</span>
+                      {room.autoHarvest ? (
+                        <span className="text-[10px] text-green-400 text-center font-bold">ACTIVE ✓</span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (buyAutoHarvest(room.id)) addNotification(`Auto-harvest enabled for ${room.name}!`, 'success');
+                            else addNotification(`Need ${formatMoney(def?.autoHarvestCost ?? 0)} dirty cash`, 'warning');
+                          }}
+                          disabled={dirtyCash < (def?.autoHarvestCost ?? Infinity)}
+                          className={`w-full py-1 rounded text-[10px] font-semibold transition ${dirtyCash >= (def?.autoHarvestCost ?? Infinity) ? 'bg-orange-800 hover:bg-orange-700 text-orange-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                        >
+                          Enable<br/>{formatMoney(def?.autoHarvestCost ?? 0)}
+                        </button>
                       )}
                     </div>
                   </div>
