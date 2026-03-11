@@ -1,5 +1,5 @@
 import { useGameStore } from '../../store/gameStore';
-import { formatNumber } from '../../engine/economy';
+import { formatUnits } from '../../engine/economy';
 
 export default function WarehouseView() {
   const operation = useGameStore((s) => s.operation);
@@ -28,22 +28,23 @@ export default function WarehouseView() {
         </div>
         <div className="grid grid-cols-2 gap-3 text-center">
           <div className="bg-gray-900/60 rounded-lg p-3">
-            <p className="text-gray-500 text-xs">Units Ready</p>
-            <p className="text-green-400 font-bold text-xl">{formatNumber(operation.productInventory)}</p>
+            <p className="text-gray-500 text-xs">In Stock</p>
+            <p className="text-green-400 font-bold text-lg">{formatUnits(operation.productInventory)}</p>
           </div>
           <div className="bg-gray-900/60 rounded-lg p-3">
-            <p className="text-gray-500 text-xs">Seeds in Stock</p>
+            <p className="text-gray-500 text-xs">Seeds</p>
             <p className="text-lime-400 font-bold text-xl">{operation.seedStock}</p>
           </div>
           <div className="bg-gray-900/60 rounded-lg p-3">
             <p className="text-gray-500 text-xs">Avg Dealer Price</p>
-            <p className="text-yellow-400 font-bold text-lg">${avgPrice.toFixed(0)}/unit</p>
+            <p className="text-yellow-400 font-bold text-lg">${avgPrice.toFixed(0)}/oz</p>
           </div>
           <div className="bg-gray-900/60 rounded-lg p-3">
             <p className="text-gray-500 text-xs">Street Price</p>
-            <p className="text-orange-400 font-bold text-lg">${streetPrice}/unit</p>
+            <p className="text-orange-400 font-bold text-lg">${streetPrice}/oz</p>
           </div>
         </div>
+        <p className="text-gray-700 text-[10px] text-center mt-2">1 oz · 16oz = 1lb · 100lb = 1 crate</p>
       </div>
 
       {/* Active strains */}
@@ -58,8 +59,8 @@ export default function WarehouseView() {
                   <p className="text-gray-500 text-xs">{room.name} · {slot.plantsCapacity} plants</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-yellow-400 text-sm font-bold">${slot.pricePerUnit}/unit</p>
-                  <p className="text-gray-500 text-xs">{slot.harvestYield} units/harvest</p>
+                  <p className="text-yellow-400 text-sm font-bold">${slot.pricePerUnit}/oz</p>
+                  <p className="text-gray-500 text-xs">{formatUnits(slot.harvestYield)}/harvest</p>
                 </div>
               </div>
             ))

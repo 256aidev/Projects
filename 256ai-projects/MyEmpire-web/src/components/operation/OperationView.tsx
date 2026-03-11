@@ -1,7 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS } from '../../data/types';
-import { formatMoney, formatNumber } from '../../engine/economy';
+import { formatMoney, formatUnits } from '../../engine/economy';
 
 export default function OperationView() {
   const op = useGameStore((s) => s.operation);
@@ -40,25 +40,26 @@ export default function OperationView() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-green-400 font-semibold text-sm">Product Inventory</h3>
-            <p className="text-gray-400 text-xs">{formatNumber(op.productInventory)} units · avg ${avgPrice.toFixed(0)}/unit</p>
+            <p className="text-gray-400 text-xs">{formatUnits(op.productInventory)} · avg ${avgPrice.toFixed(0)}/oz</p>
           </div>
           <span className="text-2xl">🌿</span>
         </div>
         {op.productInventory > 0 ? (
           <div className="flex gap-2">
-            {([10, 25, 'All'] as const).map((qty) => {
-              const units = qty === 'All' ? Math.floor(op.productInventory) : Math.min(qty, Math.floor(op.productInventory));
+            {([16, 160, 'All'] as const).map((qty) => {
+              const units = qty === 'All' ? Math.floor(op.productInventory) : Math.min(qty as number, Math.floor(op.productInventory));
               const earned = Math.floor(units * avgPrice * 0.7);
+              const label = qty === 'All' ? 'All' : qty === 16 ? '1lb' : '10lb';
               return (
                 <button
                   key={qty}
                   onClick={() => {
                     const cash = sellProduct(units);
-                    if (cash > 0) addNotification(`Sold ${units} units for ${formatMoney(cash)} 💵`, 'success');
+                    if (cash > 0) addNotification(`Sold ${formatUnits(units)} for ${formatMoney(cash)} 💵`, 'success');
                   }}
                   className="flex-1 py-2 rounded-lg text-xs font-semibold bg-green-800 hover:bg-green-700 text-green-200 transition"
                 >
-                  Sell {qty === 'All' ? 'All' : `x${qty}`}<br />
+                  Sell {label}<br />
                   <span className="text-green-400">{formatMoney(earned)}</span>
                 </button>
               );
@@ -67,7 +68,7 @@ export default function OperationView() {
         ) : (
           <p className="text-gray-600 text-xs text-center py-1">No product — grow some weed first</p>
         )}
-        <p className="text-gray-600 text-[10px] mt-2 text-center">Street sell = 70% of avg price · Dealers pay full price (passive)</p>
+        <p className="text-gray-600 text-[10px] mt-2 text-center">Street sell = 70% of avg price · 1 unit = 1 oz · 16oz = 1lb · 100lb = 1 crate</p>
       </section>
 
       {/* Grow Rooms */}
@@ -127,7 +128,7 @@ export default function OperationView() {
                         <div className="flex items-center justify-between mb-1.5">
                           <div>
                             <p className="text-green-400 font-semibold text-xs">{slot.strainName}</p>
-                            <p className="text-gray-600 text-[10px]">{slot.plantsCapacity} plants · {slot.harvestYield} units · ${slot.pricePerUnit}/unit</p>
+                            <p className="text-gray-600 text-[10px]">{slot.plantsCapacity} plants · {slot.harvestYield}oz harvest · ${slot.pricePerUnit}/oz</p>
                           </div>
                           <span className="text-lg">{ready ? '🌿' : idle ? '💤' : '🌱'}</span>
                         </div>

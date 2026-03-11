@@ -353,6 +353,15 @@ export const useGameStore = create<GameStore>()(
 
       resetGame: () => set({ ...INITIAL_GAME_STATE }),
     }),
-    { name: 'myempire-save', version: 4 }
+    {
+      name: 'myempire-save',
+      version: 5,
+      // Merge persisted state with current defaults — new fields get their initial values,
+      // existing player data is preserved. This prevents save wipes on future updates.
+      migrate: (persisted: unknown, _version: number) => {
+        const saved = (persisted ?? {}) as Partial<GameState>;
+        return { ...INITIAL_GAME_STATE, ...saved } as GameState;
+      },
+    }
   )
 );

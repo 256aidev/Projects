@@ -126,3 +126,19 @@ export function formatNumber(n: number): string {
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return Math.floor(n).toString();
 }
+
+// Unit naming: 1 unit = 1 oz  |  16 oz = 1 lb  |  100 lbs = 1 crate (1,600 units)
+export function formatUnits(units: number): string {
+  const oz = Math.floor(units);
+  if (oz >= 1_600) {
+    const crates = Math.floor(oz / 1_600);
+    const lbsRem = Math.floor((oz % 1_600) / 16);
+    return lbsRem > 0 ? `${crates} crate${crates > 1 ? 's' : ''} ${lbsRem}lb` : `${crates} crate${crates > 1 ? 's' : ''}`;
+  }
+  if (oz >= 16) {
+    const lbs = Math.floor(oz / 16);
+    const ozRem = oz % 16;
+    return ozRem > 0 ? `${lbs}lb ${ozRem}oz` : `${lbs}lb`;
+  }
+  return `${oz}oz`;
+}
