@@ -21,6 +21,7 @@ interface GameActions {
   upgradeDealerTier: () => boolean;
   buySeed: (quantity: number) => boolean;
   plantSeeds: (roomId: string) => boolean;
+  sellProduct: (units: number) => number;
   purchaseBusiness: (businessDefId: string, districtId: string, slotIndex: number) => boolean;
   sellBusiness: (instanceId: string) => void;
   upgradeBusiness: (instanceId: string) => boolean;
@@ -85,8 +86,35 @@ export const useGameStore = create<GameStore>()(
       harvestGrowRoom: (roomId) => {
         const state = get();
         const { newOp, unitsHarvested } = harvestRoom(state.operation, roomId);
-        if (unitsHarvested > 0) set({ operation: newOp });
+        if (unitsHarvested > 0) {
+          // Auto-replant if seeds are available
+          if (newOp.seedStock > 0) {
+            const replanted = {
+              ...newOp,
+              seedStock: newOp.seedStock - 1,
+              growRooms: newOp.growRooms.map((r) =>
+                r.id === roomId ? { ...r, isHarvesting: true, ticksRemaining: r.growTimerTicks } : r
+              ),
+            };
+            set({ operation: replanted });
+          } else {
+            set({ operation: newOp });
+          }
+        }
         return unitsHarvested;
+      },
+
+      sellProduct: (units) => {
+        const state = get();
+        const toSell = Math.min(units, state.operation.productInventory);
+        if (toSell <= 0) return 0;
+        const dirtyEarned = toSell * 7; // street price — less than dealer rate of $10
+        set({
+          dirtyCash: state.dirtyCash + dirtyEarned,
+          totalDirtyEarned: state.totalDirtyEarned + dirtyEarned,
+          operation: { ...state.operation, productInventory: state.operation.productInventory - toSell },
+        });
+        return dirtyEarned;
       },
 
       buyGrowRoom: (tier) => {
@@ -273,6 +301,6 @@ export const useGameStore = create<GameStore>()(
 
       resetGame: () => set({ ...INITIAL_GAME_STATE }),
     }),
-    { name: 'myempire-save', version: 2 }
+    { name: 'myempire-save', version: 3 }
   )
 );

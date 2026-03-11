@@ -13,23 +13,19 @@ export function tickCriminalOperation(op: CriminalOperation): {
   let dirtyEarned = 0;
   let newProductInventory = op.productInventory;
 
-  // Dealers sell product → dirty cash
+  // Dealers sell product → dirty cash (salesRatePerTick = units sold per tick per dealer)
   if (op.dealerCount > 0 && newProductInventory > 0) {
-    const salesRate = dealerTier.salesRatePerTick * op.dealerCount;
-    const productConsumed = Math.min(newProductInventory, salesRate * 0.1); // 0.1 units per $1 earned
-    const saleValue = productConsumed * 10 * (1 - dealerTier.cutPercent / 100);
-    newProductInventory -= productConsumed;
+    const unitsSold = Math.min(newProductInventory, dealerTier.salesRatePerTick * op.dealerCount);
+    const saleValue = unitsSold * 10 * (1 - dealerTier.cutPercent / 100);
+    newProductInventory -= unitsSold;
     dirtyEarned = saleValue;
   }
 
-  // Tick grow rooms
+  // Tick grow rooms — keep isHarvesting: true when done, just stop the counter
   const newGrowRooms = op.growRooms.map((room) => {
     if (!room.isHarvesting) return room;
+    if (room.ticksRemaining <= 0) return room; // already ready, waiting for harvest
     const newTicks = room.ticksRemaining - 1;
-    if (newTicks <= 0) {
-      // Harvest!
-      return { ...room, isHarvesting: false, ticksRemaining: 0 };
-    }
     return { ...room, ticksRemaining: newTicks };
   });
 
@@ -44,16 +40,18 @@ export function harvestRoom(op: CriminalOperation, roomId: string): {
   unitsHarvested: number;
 } {
   const room = op.growRooms.find((r) => r.id === roomId);
-  if (!room || room.isHarvesting || room.ticksRemaining > 0) {
+  // Can harvest when isHarvesting is true (currently in cycle) and timer has hit 0
+  if (!room || !room.isHarvesting || room.ticksRemaining > 0) {
     return { newOp: op, unitsHarvested: 0 };
   }
 
+  // Mark room as idle after harvest — caller (store) decides whether to auto-replant
   const newOp = {
     ...op,
     productInventory: op.productInventory + room.harvestYield,
     growRooms: op.growRooms.map((r) =>
       r.id === roomId
-        ? { ...r, isHarvesting: true, ticksRemaining: r.growTimerTicks }
+        ? { ...r, isHarvesting: false, ticksRemaining: 0 }
         : r
     ),
   };

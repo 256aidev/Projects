@@ -225,11 +225,11 @@ export const GROW_ROOM_DEFS: Omit<GrowRoom, 'id' | 'isHarvesting' | 'ticksRemain
 ];
 
 export const DEALER_TIERS: DealerTier[] = [
-  { id: 'corner',    name: 'Corner Boys',           salesRatePerTick: 0.5,  hireCost: 200,   cutPercent: 30, heatPerTick: 0.005 },
-  { id: 'crew',      name: 'Street Crew',           salesRatePerTick: 1.5,  hireCost: 800,   cutPercent: 25, heatPerTick: 0.012 },
-  { id: 'network',   name: 'Distribution Network',  salesRatePerTick: 4.0,  hireCost: 3000,  cutPercent: 20, heatPerTick: 0.020 },
-  { id: 'syndicate', name: 'City Syndicate',        salesRatePerTick: 12.0, hireCost: 15000, cutPercent: 15, heatPerTick: 0.035 },
-  { id: 'cartel',    name: 'Regional Cartel',       salesRatePerTick: 40.0, hireCost: 75000, cutPercent: 10, heatPerTick: 0.060 },
+  { id: 'corner',    name: 'Corner Boys',           salesRatePerTick: 0.5,  hireCost: 50,    cutPercent: 30, heatPerTick: 0.005 },
+  { id: 'crew',      name: 'Street Crew',           salesRatePerTick: 1.5,  hireCost: 300,   cutPercent: 25, heatPerTick: 0.012 },
+  { id: 'network',   name: 'Distribution Network',  salesRatePerTick: 4.0,  hireCost: 1200,  cutPercent: 20, heatPerTick: 0.020 },
+  { id: 'syndicate', name: 'City Syndicate',        salesRatePerTick: 12.0, hireCost: 6000,  cutPercent: 15, heatPerTick: 0.035 },
+  { id: 'cartel',    name: 'Regional Cartel',       salesRatePerTick: 40.0, hireCost: 30000, cutPercent: 10, heatPerTick: 0.060 },
 ];
 
 export const INITIAL_OPERATION: CriminalOperation = {
@@ -247,7 +247,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
 
 export const INITIAL_GAME_STATE: GameState = {
   dirtyCash: 500,
-  cleanCash: 0,
+  cleanCash: 1500,  // grandma's savings — enough to buy first front business
   totalDirtyEarned: 0,
   totalCleanEarned: 0,
   totalSpent: 0,
