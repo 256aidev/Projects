@@ -25,6 +25,8 @@ import { AdBanner, interstitialManager } from '../../components/ads';
 import { adGatedAccessManager } from '../../ads';
 import { translatePillar, translateReadingContent, translateStem } from '../../utils/translateChinese';
 import { LuckyHoursChart } from '../../components/LuckyHoursChart';
+import { ShareButton } from '../../components/ShareButton';
+import { shareDailyReading } from '../../utils/share';
 import { ReadingsStackParamList } from '../../navigation/ReadingsStack';
 
 type NavigationProp = NativeStackNavigationProp<ReadingsStackParamList>;
@@ -139,7 +141,15 @@ export default function ReadingsScreen() {
 
           {/* Reading Content */}
           <View style={styles.readingCard}>
-            <Text style={styles.readingTitle}>Your Reading</Text>
+            <View style={styles.readingHeader}>
+              <Text style={styles.readingTitle}>Your Reading</Text>
+              {reading && (
+                <ShareButton
+                  variant="icon"
+                  onPress={() => shareDailyReading(reading)}
+                />
+              )}
+            </View>
             <Text style={styles.readingContent}>
               {reading?.content
                 ? translateReadingContent(reading.content, user?.language || 'en')
@@ -301,11 +311,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D4A574',
   },
+  readingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   readingTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#5D3A1A',
-    marginBottom: 12,
   },
   readingContent: {
     fontSize: 16,

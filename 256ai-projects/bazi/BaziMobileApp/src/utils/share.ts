@@ -5,7 +5,7 @@
 
 import { Share, Platform } from 'react-native';
 import { Achievement } from '../types/achievements';
-import { DailyReading, User, CompatibilityReading } from '../types';
+import { DailyReading, WeeklyReading, User, CompatibilityReading } from '../types';
 
 const APP_STORE_LINK = 'https://apps.apple.com/app/bazi-astrology';
 
@@ -46,23 +46,53 @@ export async function shareStreak(streakDays: number): Promise<boolean> {
 }
 
 /**
- * Share daily reading (teaser only)
+ * Share daily reading with meaningful content excerpt
  */
 export async function shareDailyReading(reading: DailyReading): Promise<boolean> {
   try {
-    // Get first 100 characters of content as teaser
-    const teaser = reading.content.slice(0, 100).trim();
-    const ellipsis = reading.content.length > 100 ? '...' : '';
+    const elementEmoji: Record<string, string> = {
+      Wood: '🌳', Fire: '🔥', Earth: '🏔️', Metal: '⚔️', Water: '🌊',
+    };
+    const element = reading.daily_element || 'Nature';
+    const emoji = elementEmoji[element] || '✨';
+    const pillar = reading.daily_pillar ? ` ${reading.daily_pillar}` : '';
 
-    const message = `Today's BaZi energy: ${reading.daily_element || 'Nature'} day!\n\n"${teaser}${ellipsis}"\n\nGet your daily reading: ${APP_STORE_LINK}`;
+    // Format date for display
+    const readingDate = new Date(reading.date + 'T00:00:00');
+    const dateStr = readingDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
-    const result = await Share.share({
-      message,
-    });
+    // 280-char teaser (Twitter-length)
+    const teaser = reading.content.slice(0, 280).trim();
+    const ellipsis = reading.content.length > 280 ? '...' : '';
 
+    const message = `${emoji} My BaZi Reading for ${dateStr} — ${element} Day${pillar}\n\n"${teaser}${ellipsis}"\n\n✨ Get your personalized daily reading:\n${APP_STORE_LINK}`;
+
+    const result = await Share.share({ message });
     return result.action === Share.sharedAction;
   } catch (error) {
     console.error('Failed to share daily reading:', error);
+    return false;
+  }
+}
+
+/**
+ * Share weekly reading with content excerpt
+ */
+export async function shareWeeklyReading(reading: WeeklyReading): Promise<boolean> {
+  try {
+    const startDate = new Date(reading.week_start + 'T00:00:00');
+    const endDate = new Date(reading.week_end + 'T00:00:00');
+    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    const teaser = reading.content.slice(0, 280).trim();
+    const ellipsis = reading.content.length > 280 ? '...' : '';
+
+    const message = `📅 My BaZi Weekly Forecast (${fmt(startDate)} – ${fmt(endDate)})\n\n"${teaser}${ellipsis}"\n\n✨ Get your personalized forecast:\n${APP_STORE_LINK}`;
+
+    const result = await Share.share({ message });
+    return result.action === Share.sharedAction;
+  } catch (error) {
+    console.error('Failed to share weekly reading:', error);
     return false;
   }
 }
