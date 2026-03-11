@@ -6,6 +6,7 @@ import DistrictSelector from './components/city/DistrictSelector';
 import CityMap from './components/city/CityMap';
 import OperationView from './components/operation/OperationView';
 import LegalView from './components/legal/LegalView';
+import WarehouseView from './components/warehouse/WarehouseView';
 import BuyBusinessPanel from './components/panels/BuyBusinessPanel';
 import BuildingMenu from './components/panels/BuildingMenu';
 import ResourceMarketPanel from './components/panels/ResourceMarketPanel';
@@ -44,6 +45,7 @@ export default function App() {
           </>
         )}
 
+        {activeView === 'warehouse' && <WarehouseView />}
         {activeView === 'legal' && <LegalView />}
       </div>
 

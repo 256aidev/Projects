@@ -2,20 +2,33 @@
 // CRIMINAL OPERATION
 // ─────────────────────────────────────────
 
-export type GrowRoomTier = 1 | 2 | 3 | 4 | 5;
+export interface StrainSlotDef {
+  strainName: string;
+  pricePerUnit: number;    // dirty cash per unit when sold through dealers
+  plantsCapacity: number;
+  growTimerTicks: number;
+  harvestYield: number;
+}
+
+export interface GrowRoomTypeDef {
+  id: string;
+  name: string;
+  purchaseCost: number;      // dirty cash to buy
+  upgradeCosts: number[];    // [cost to unlock slot 2, slot 3, slot 4] — max 3 upgrades
+  strainSlots: StrainSlotDef[];  // index = unlock order (max 4)
+}
+
+export interface StrainSlot extends StrainSlotDef {
+  isHarvesting: boolean;
+  ticksRemaining: number;
+}
 
 export interface GrowRoom {
   id: string;
-  tier: GrowRoomTier;
-  name: string;               // room name (Closet, Shed, Garage…)
-  strainName: string;         // weed strain grown in this room
-  pricePerUnit: number;       // dirty cash earned per unit sold
-  plantsCapacity: number;
-  growTimerTicks: number;     // total ticks per harvest cycle
-  harvestYield: number;       // product units per harvest
-  purchaseCost: number;       // dirty cash
-  isHarvesting: boolean;
-  ticksRemaining: number;     // ticks left in current grow cycle
+  typeId: string;          // references GrowRoomTypeDef.id
+  name: string;
+  upgradeLevel: number;    // 0 = 1 slot active, 1 = 2 slots, 2 = 3 slots, 3 = 4 slots
+  slots: StrainSlot[];     // length = upgradeLevel + 1
 }
 
 export interface DealerTier {
@@ -219,13 +232,67 @@ export interface GameState {
 // STATIC DEFINITIONS
 // ─────────────────────────────────────────
 
-export const GROW_ROOM_DEFS: Omit<GrowRoom, 'id' | 'isHarvesting' | 'ticksRemaining'>[] = [
-  { tier: 1, name: 'Closet',          strainName: 'Basic Bud',    pricePerUnit: 8,  plantsCapacity: 4,   growTimerTicks: 120, harvestYield: 8,   purchaseCost: 0 },
-  { tier: 2, name: 'Shed',            strainName: 'OG Kush',      pricePerUnit: 12, plantsCapacity: 12,  growTimerTicks: 100, harvestYield: 28,  purchaseCost: 1500 },
-  { tier: 3, name: 'Garage',          strainName: 'White Widow',  pricePerUnit: 16, plantsCapacity: 30,  growTimerTicks: 90,  harvestYield: 75,  purchaseCost: 6000 },
-  { tier: 4, name: 'Hydro Facility',  strainName: 'Purple Haze',  pricePerUnit: 22, plantsCapacity: 60,  growTimerTicks: 75,  harvestYield: 180, purchaseCost: 20000 },
-  { tier: 5, name: 'Grow Facility',   strainName: 'Blue Dream',   pricePerUnit: 30, plantsCapacity: 150, growTimerTicks: 60,  harvestYield: 500, purchaseCost: 80000 },
+export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
+  {
+    id: 'closet',
+    name: 'Closet',
+    purchaseCost: 0,
+    upgradeCosts: [],  // can't be upgraded — starter room only
+    strainSlots: [
+      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 120, harvestYield: 8 },
+    ],
+  },
+  {
+    id: 'shed',
+    name: 'Shed',
+    purchaseCost: 1500,
+    upgradeCosts: [2000, 4000, 7000],
+    strainSlots: [
+      { strainName: 'OG Kush',     pricePerUnit: 12, plantsCapacity: 12, growTimerTicks: 100, harvestYield: 28 },
+      { strainName: 'White Widow', pricePerUnit: 16, plantsCapacity: 12, growTimerTicks:  95, harvestYield: 28 },
+      { strainName: 'Purple Haze', pricePerUnit: 22, plantsCapacity: 12, growTimerTicks:  90, harvestYield: 28 },
+      { strainName: 'Blue Dream',  pricePerUnit: 30, plantsCapacity: 12, growTimerTicks:  85, harvestYield: 28 },
+    ],
+  },
+  {
+    id: 'garage',
+    name: 'Garage',
+    purchaseCost: 6000,
+    upgradeCosts: [8000, 15000, 25000],
+    strainSlots: [
+      { strainName: 'Sour Diesel',        pricePerUnit: 20, plantsCapacity: 20, growTimerTicks: 90, harvestYield: 55 },
+      { strainName: 'AK-47',              pricePerUnit: 28, plantsCapacity: 20, growTimerTicks: 85, harvestYield: 55 },
+      { strainName: 'Gorilla Glue',       pricePerUnit: 36, plantsCapacity: 20, growTimerTicks: 80, harvestYield: 55 },
+      { strainName: "Girl Scout Cookies", pricePerUnit: 46, plantsCapacity: 20, growTimerTicks: 75, harvestYield: 55 },
+    ],
+  },
+  {
+    id: 'small_grow',
+    name: 'Small Grow Facility',
+    purchaseCost: 20000,
+    upgradeCosts: [25000, 45000, 80000],
+    strainSlots: [
+      { strainName: 'Durban Poison', pricePerUnit: 35, plantsCapacity: 30, growTimerTicks: 80, harvestYield: 100 },
+      { strainName: 'Jack Herer',    pricePerUnit: 45, plantsCapacity: 30, growTimerTicks: 75, harvestYield: 100 },
+      { strainName: 'Amnesia Haze',  pricePerUnit: 58, plantsCapacity: 30, growTimerTicks: 70, harvestYield: 100 },
+      { strainName: 'Wedding Cake',  pricePerUnit: 72, plantsCapacity: 30, growTimerTicks: 65, harvestYield: 100 },
+    ],
+  },
+  {
+    id: 'grow_facility',
+    name: 'Grow Facility',
+    purchaseCost: 80000,
+    upgradeCosts: [100000, 200000, 400000],
+    strainSlots: [
+      { strainName: 'Gelato',   pricePerUnit: 60,  plantsCapacity: 50, growTimerTicks: 70, harvestYield: 200 },
+      { strainName: 'Runtz',    pricePerUnit: 78,  plantsCapacity: 50, growTimerTicks: 65, harvestYield: 200 },
+      { strainName: 'Zkittlez', pricePerUnit: 95,  plantsCapacity: 50, growTimerTicks: 60, harvestYield: 200 },
+      { strainName: 'Biscotti', pricePerUnit: 120, plantsCapacity: 50, growTimerTicks: 55, harvestYield: 200 },
+    ],
+  },
 ];
+
+export const GROW_ROOM_TYPE_MAP = Object.fromEntries(GROW_ROOM_TYPE_DEFS.map((d) => [d.id, d]));
 
 export const DEALER_TIERS: DealerTier[] = [
   { id: 'corner',    name: 'Corner Boys',           salesRatePerTick: 0.5,  hireCost: 50,    cutPercent: 30, heatPerTick: 0.005 },
@@ -239,7 +306,15 @@ export const INITIAL_OPERATION: CriminalOperation = {
   location: 'basement',
   locationName: "Grandma's Basement",
   growRooms: [
-    { id: 'room_start', tier: 1, name: 'Closet', strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 120, harvestYield: 8, purchaseCost: 0, isHarvesting: true, ticksRemaining: 120 },
+    {
+      id: 'room_start',
+      typeId: 'closet',
+      name: 'Closet',
+      upgradeLevel: 0,
+      slots: [
+        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 120, harvestYield: 8, isHarvesting: true, ticksRemaining: 120 },
+      ],
+    },
   ],
   productInventory: 0,
   dealerTierIndex: 0,

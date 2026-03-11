@@ -4,6 +4,7 @@ import { useGameStore } from '../../store/gameStore';
 const TABS: { id: ViewName; label: string; icon: string }[] = [
   { id: 'operation', label: 'Operation', icon: '🌿' },
   { id: 'city',      label: 'City',      icon: '🏙️' },
+  { id: 'warehouse', label: 'Warehouse', icon: '🏬' },
   { id: 'legal',     label: 'Legal',     icon: '⚖️' },
 ];
 

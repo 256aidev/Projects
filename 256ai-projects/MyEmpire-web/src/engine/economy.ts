@@ -13,11 +13,12 @@ export function tickCriminalOperation(op: CriminalOperation): {
   let dirtyEarned = 0;
   let newProductInventory = op.productInventory;
 
-  // Dealers sell product → dirty cash (salesRatePerTick = units sold per tick per dealer)
-  // Price per unit = average across all grow rooms (better rooms raise the street value)
+  // Dealers sell product → dirty cash
+  // avgPrice = average pricePerUnit across ALL active slots in ALL rooms
   if (op.dealerCount > 0 && newProductInventory > 0) {
-    const avgPrice = op.growRooms.length > 0
-      ? op.growRooms.reduce((sum, r) => sum + r.pricePerUnit, 0) / op.growRooms.length
+    const allSlots = op.growRooms.flatMap((r) => r.slots);
+    const avgPrice = allSlots.length > 0
+      ? allSlots.reduce((sum, s) => sum + s.pricePerUnit, 0) / allSlots.length
       : 10;
     const unitsSold = Math.min(newProductInventory, dealerTier.salesRatePerTick * op.dealerCount);
     const saleValue = unitsSold * avgPrice * (1 - dealerTier.cutPercent / 100);
@@ -25,13 +26,15 @@ export function tickCriminalOperation(op: CriminalOperation): {
     dirtyEarned = saleValue;
   }
 
-  // Tick grow rooms — keep isHarvesting: true when done, just stop the counter
-  const newGrowRooms = op.growRooms.map((room) => {
-    if (!room.isHarvesting) return room;
-    if (room.ticksRemaining <= 0) return room; // already ready, waiting for harvest
-    const newTicks = room.ticksRemaining - 1;
-    return { ...room, ticksRemaining: newTicks };
-  });
+  // Tick all grow room slots
+  const newGrowRooms = op.growRooms.map((room) => ({
+    ...room,
+    slots: room.slots.map((slot) => {
+      if (!slot.isHarvesting) return slot;
+      if (slot.ticksRemaining <= 0) return slot; // ready, waiting for harvest
+      return { ...slot, ticksRemaining: slot.ticksRemaining - 1 };
+    }),
+  }));
 
   return {
     newOp: { ...op, growRooms: newGrowRooms, productInventory: Math.max(0, newProductInventory) },
@@ -39,27 +42,30 @@ export function tickCriminalOperation(op: CriminalOperation): {
   };
 }
 
-export function harvestRoom(op: CriminalOperation, roomId: string): {
+export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: number): {
   newOp: CriminalOperation;
   unitsHarvested: number;
 } {
   const room = op.growRooms.find((r) => r.id === roomId);
-  // Can harvest when isHarvesting is true (currently in cycle) and timer has hit 0
-  if (!room || !room.isHarvesting || room.ticksRemaining > 0) {
-    return { newOp: op, unitsHarvested: 0 };
-  }
+  if (!room) return { newOp: op, unitsHarvested: 0 };
+  const slot = room.slots[slotIndex];
+  if (!slot || !slot.isHarvesting || slot.ticksRemaining > 0) return { newOp: op, unitsHarvested: 0 };
 
-  // Mark room as idle after harvest — caller (store) decides whether to auto-replant
   const newOp = {
     ...op,
-    productInventory: op.productInventory + room.harvestYield,
+    productInventory: op.productInventory + slot.harvestYield,
     growRooms: op.growRooms.map((r) =>
       r.id === roomId
-        ? { ...r, isHarvesting: false, ticksRemaining: 0 }
+        ? {
+            ...r,
+            slots: r.slots.map((s, i) =>
+              i === slotIndex ? { ...s, isHarvesting: false, ticksRemaining: 0 } : s
+            ),
+          }
         : r
     ),
   };
-  return { newOp, unitsHarvested: room.harvestYield };
+  return { newOp, unitsHarvested: slot.harvestYield };
 }
 
 // ─── FRONT BUSINESS LAUNDERING ────────────────────

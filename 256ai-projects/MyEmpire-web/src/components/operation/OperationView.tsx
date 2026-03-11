@@ -1,6 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
-import { DEALER_TIERS, GROW_ROOM_DEFS } from '../../data/types';
+import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS } from '../../data/types';
 import { formatMoney, formatNumber } from '../../engine/economy';
 
 export default function OperationView() {
@@ -8,6 +8,7 @@ export default function OperationView() {
   const dirtyCash = useGameStore((s) => s.dirtyCash);
   const harvestGrowRoom = useGameStore((s) => s.harvestGrowRoom);
   const buyGrowRoom = useGameStore((s) => s.buyGrowRoom);
+  const upgradeRoom = useGameStore((s) => s.upgradeRoom);
   const hireDealers = useGameStore((s) => s.hireDealers);
   const upgradeDealerTier = useGameStore((s) => s.upgradeDealerTier);
   const buySeed = useGameStore((s) => s.buySeed);
@@ -17,7 +18,14 @@ export default function OperationView() {
 
   const currentDealerTier = DEALER_TIERS[op.dealerTierIndex];
   const nextDealerTier = DEALER_TIERS[op.dealerTierIndex + 1];
-  const dealerIncome = currentDealerTier.salesRatePerTick * op.dealerCount * 10 * (1 - currentDealerTier.cutPercent / 100);
+  const allSlots = op.growRooms.flatMap((r) => r.slots);
+  const avgPrice = allSlots.length > 0
+    ? allSlots.reduce((sum, s) => sum + s.pricePerUnit, 0) / allSlots.length
+    : 10;
+  const dealerIncome = currentDealerTier.salesRatePerTick * op.dealerCount * avgPrice * (1 - currentDealerTier.cutPercent / 100);
+
+  // Which room types are already owned
+  const ownedTypeIds = new Set(op.growRooms.map((r) => r.typeId));
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -32,16 +40,15 @@ export default function OperationView() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-green-400 font-semibold text-sm">Product Inventory</h3>
-            <p className="text-gray-400 text-xs">{formatNumber(op.productInventory)} units ready to move</p>
+            <p className="text-gray-400 text-xs">{formatNumber(op.productInventory)} units · avg ${avgPrice.toFixed(0)}/unit</p>
           </div>
           <span className="text-2xl">🌿</span>
         </div>
-
         {op.productInventory > 0 ? (
           <div className="flex gap-2">
-            {[10, 25, 'All'].map((qty) => {
-              const units = qty === 'All' ? op.productInventory : Math.min(qty as number, op.productInventory);
-              const earned = units * 7;
+            {([10, 25, 'All'] as const).map((qty) => {
+              const units = qty === 'All' ? Math.floor(op.productInventory) : Math.min(qty, Math.floor(op.productInventory));
+              const earned = Math.floor(units * avgPrice * 0.7);
               return (
                 <button
                   key={qty}
@@ -60,113 +67,152 @@ export default function OperationView() {
         ) : (
           <p className="text-gray-600 text-xs text-center py-1">No product — grow some weed first</p>
         )}
-        <p className="text-gray-600 text-[10px] mt-2 text-center">Street price $7/unit · Dealers pay $10/unit (passive)</p>
+        <p className="text-gray-600 text-[10px] mt-2 text-center">Street sell = 70% of avg price · Dealers pay full price (passive)</p>
       </section>
 
       {/* Grow Rooms */}
       <section>
         <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-2 px-1">Grow Rooms · 🌱 {op.seedStock} seeds</h3>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-4">
           {op.growRooms.map((room) => {
-            const progress = room.isHarvesting && room.growTimerTicks > 0
-              ? 1 - room.ticksRemaining / room.growTimerTicks
-              : room.isHarvesting ? 1 : 0;
-            const ready = room.isHarvesting && room.ticksRemaining === 0;
-            const idle = !room.isHarvesting;
+            const def = GROW_ROOM_TYPE_DEFS.find((d) => d.id === room.typeId);
+            const nextUpgradeCost = def?.upgradeCosts[room.upgradeLevel];
+            const canUpgrade = !!nextUpgradeCost && dirtyCash >= nextUpgradeCost;
+            const isMaxLevel = !nextUpgradeCost;
 
             return (
               <div key={room.id} className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
+                {/* Room header */}
+                <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="text-white font-semibold text-sm">{room.name}</p>
-                    <p className="text-green-500 text-xs font-medium">{room.strainName}</p>
-                    <p className="text-gray-500 text-[10px]">{room.plantsCapacity} plants · {room.harvestYield} units · ${room.pricePerUnit}/unit</p>
+                    <p className="text-white font-bold text-sm">{room.name}</p>
+                    <p className="text-gray-500 text-xs">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} active</p>
                   </div>
-                  <span className="text-2xl">
-                    {ready ? '🌿' : idle ? '💤' : '🌱'}
-                  </span>
+                  {isMaxLevel ? (
+                    <span className="text-yellow-500 text-xs font-bold px-2 py-0.5 bg-yellow-900/30 rounded-full">MAX</span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (upgradeRoom(room.id)) {
+                          const newSlotName = def?.strainSlots[room.upgradeLevel + 1]?.strainName;
+                          addNotification(`Unlocked ${newSlotName} slot!`, 'success');
+                        } else {
+                          addNotification(`Need ${formatMoney(nextUpgradeCost!)} dirty cash to upgrade`, 'warning');
+                        }
+                      }}
+                      disabled={!canUpgrade}
+                      className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${
+                        canUpgrade
+                          ? 'bg-purple-700 hover:bg-purple-600 text-white'
+                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      + Unlock {def?.strainSlots[room.upgradeLevel + 1]?.strainName}<br />
+                      <span className="font-normal">{formatMoney(nextUpgradeCost)} 💵</span>
+                    </button>
+                  )}
                 </div>
 
-                {/* Progress bar */}
-                <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden mb-3">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${progress * 100}%`,
-                      backgroundColor: ready ? '#22c55e' : '#65a30d',
-                    }}
-                  />
-                </div>
+                {/* Strain slots */}
+                <div className="flex flex-col gap-2">
+                  {room.slots.map((slot, slotIndex) => {
+                    const progress = slot.isHarvesting && slot.growTimerTicks > 0
+                      ? 1 - slot.ticksRemaining / slot.growTimerTicks
+                      : slot.isHarvesting ? 1 : 0;
+                    const ready = slot.isHarvesting && slot.ticksRemaining === 0;
+                    const idle = !slot.isHarvesting;
 
-                {ready ? (
-                  <button
-                    onClick={() => {
-                      const units = harvestGrowRoom(room.id);
-                      if (units > 0) {
-                        const msg = op.seedStock > 0
-                          ? `Harvested ${units} units! Auto-replanting… 🌱`
-                          : `Harvested ${units} units! Buy seeds to replant.`;
-                        addNotification(msg, 'success');
-                      }
-                    }}
-                    className="w-full py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-bold transition"
-                  >
-                    🌿 Harvest Now!
-                  </button>
-                ) : idle ? (
-                  <button
-                    onClick={() => {
-                      if (plantSeeds(room.id)) {
-                        addNotification('Seeds planted! Growing…', 'success');
-                      } else {
-                        addNotification('No seeds in stock — buy some below', 'warning');
-                      }
-                    }}
-                    disabled={op.seedStock < 1}
-                    className={`w-full py-2 rounded-lg text-sm font-semibold transition ${
-                      op.seedStock > 0
-                        ? 'bg-lime-700 hover:bg-lime-600 text-lime-100'
-                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    🌱 Plant Seeds {op.seedStock < 1 ? '(no seeds)' : `(${op.seedStock} available)`}
-                  </button>
-                ) : (
-                  <p className="text-center text-gray-500 text-xs">
-                    {room.ticksRemaining}s remaining
-                  </p>
-                )}
+                    return (
+                      <div key={slotIndex} className="bg-gray-900/50 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div>
+                            <p className="text-green-400 font-semibold text-xs">{slot.strainName}</p>
+                            <p className="text-gray-600 text-[10px]">{slot.plantsCapacity} plants · {slot.harvestYield} units · ${slot.pricePerUnit}/unit</p>
+                          </div>
+                          <span className="text-lg">{ready ? '🌿' : idle ? '💤' : '🌱'}</span>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden mb-2">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${progress * 100}%`,
+                              backgroundColor: ready ? '#22c55e' : '#65a30d',
+                            }}
+                          />
+                        </div>
+
+                        {ready ? (
+                          <button
+                            onClick={() => {
+                              const units = harvestGrowRoom(room.id, slotIndex);
+                              if (units > 0) {
+                                const msg = op.seedStock > 0
+                                  ? `Harvested ${units} ${slot.strainName}! Auto-replanting…`
+                                  : `Harvested ${units} ${slot.strainName}! Buy seeds to replant.`;
+                                addNotification(msg, 'success');
+                              }
+                            }}
+                            className="w-full py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-bold transition"
+                          >
+                            🌿 Harvest {slot.strainName}!
+                          </button>
+                        ) : idle ? (
+                          <button
+                            onClick={() => {
+                              if (plantSeeds(room.id, slotIndex)) {
+                                addNotification(`${slot.strainName} seeds planted!`, 'success');
+                              } else {
+                                addNotification('No seeds — buy some below', 'warning');
+                              }
+                            }}
+                            disabled={op.seedStock < 1}
+                            className={`w-full py-1.5 rounded-lg text-xs font-semibold transition ${
+                              op.seedStock > 0
+                                ? 'bg-lime-700 hover:bg-lime-600 text-lime-100'
+                                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                            }`}
+                          >
+                            🌱 Plant {slot.strainName} {op.seedStock < 1 ? '(no seeds)' : ''}
+                          </button>
+                        ) : (
+                          <p className="text-center text-gray-500 text-[10px]">
+                            Growing… {slot.ticksRemaining}s left
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
 
-          {/* Buy new grow room */}
-          {GROW_ROOM_DEFS.map((def) => {
-            const alreadyOwned = op.growRooms.filter((r) => r.tier === def.tier).length;
-            if (alreadyOwned >= 3) return null;
-            if (def.tier === 1 && op.growRooms.length > 0) return null; // starter already placed
+          {/* Buy new room buttons */}
+          {GROW_ROOM_TYPE_DEFS.filter((def) => def.id !== 'closet' && !ownedTypeIds.has(def.id)).map((def) => {
             const canAfford = dirtyCash >= def.purchaseCost;
-
             return (
               <button
-                key={def.tier}
+                key={def.id}
                 onClick={() => {
-                  if (buyGrowRoom(def.tier)) {
-                    addNotification(`Added Tier ${def.tier} grow room!`, 'success');
+                  if (buyGrowRoom(def.id)) {
+                    addNotification(`Built ${def.name}!`, 'success');
                   } else {
                     addNotification(`Need ${formatMoney(def.purchaseCost)} dirty cash`, 'warning');
                   }
                 }}
                 disabled={!canAfford}
                 className={`border-2 border-dashed rounded-xl p-4 text-center transition ${
-                  canAfford ? 'border-green-600/50 hover:border-green-500 bg-green-900/10' : 'border-gray-700 opacity-50 cursor-not-allowed'
+                  canAfford ? 'border-green-600/50 hover:border-green-500 bg-green-900/10' : 'border-gray-700 opacity-40 cursor-not-allowed'
                 }`}
               >
                 <p className="text-green-400 text-lg mb-1">+</p>
-                <p className="text-white text-xs font-semibold">{def.name}</p>
-                <p className="text-green-400 text-[10px] font-medium">{def.strainName}</p>
-                <p className="text-gray-400 text-[10px]">{def.plantsCapacity} plants · {def.harvestYield} units · ${def.pricePerUnit}/unit</p>
-                <p className="text-yellow-400 text-xs font-bold mt-1">{formatMoney(def.purchaseCost)} 💵</p>
+                <p className="text-white text-sm font-semibold">{def.name}</p>
+                <p className="text-gray-400 text-xs mt-0.5">
+                  Starts with {def.strainSlots[0].strainName} · up to {def.strainSlots.length} strains
+                </p>
+                <p className="text-yellow-400 text-sm font-bold mt-1">{formatMoney(def.purchaseCost)} 💵</p>
               </button>
             );
           })}
@@ -190,11 +236,8 @@ export default function OperationView() {
               <button
                 key={qty}
                 onClick={() => {
-                  if (buySeed(qty)) {
-                    addNotification(`Bought ${qty} seeds`, 'success');
-                  } else {
-                    addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
-                  }
+                  if (buySeed(qty)) addNotification(`Bought ${qty} seeds`, 'success');
+                  else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
                 }}
                 disabled={!canAfford}
                 className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${
@@ -221,9 +264,8 @@ export default function OperationView() {
           <span className="text-2xl">🤝</span>
         </div>
         <p className="text-gray-600 text-[10px] mb-3">
-          Dealers sell your product passively at $10/unit ({currentDealerTier.cutPercent}% cut)
+          Sell passively at avg ${avgPrice.toFixed(0)}/unit ({currentDealerTier.cutPercent}% cut)
         </p>
-
         <div className="flex gap-2 mb-3">
           {[1, 3, 5].map((qty) => {
             const cost = currentDealerTier.hireCost * qty;
@@ -232,11 +274,8 @@ export default function OperationView() {
               <button
                 key={qty}
                 onClick={() => {
-                  if (hireDealers(qty)) {
-                    addNotification(`Hired ${qty} dealer${qty > 1 ? 's' : ''}`, 'success');
-                  } else {
-                    addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
-                  }
+                  if (hireDealers(qty)) addNotification(`Hired ${qty} dealer${qty > 1 ? 's' : ''}`, 'success');
+                  else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
                 }}
                 disabled={!canAfford}
                 className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${
@@ -248,15 +287,11 @@ export default function OperationView() {
             );
           })}
         </div>
-
         {nextDealerTier && (
           <button
             onClick={() => {
-              if (upgradeDealerTier()) {
-                addNotification(`Upgraded to ${nextDealerTier.name}!`, 'success');
-              } else {
-                addNotification(`Need ${formatMoney(nextDealerTier.hireCost * 3)} dirty cash`, 'warning');
-              }
+              if (upgradeDealerTier()) addNotification(`Upgraded to ${nextDealerTier.name}!`, 'success');
+              else addNotification(`Need ${formatMoney(nextDealerTier.hireCost * 3)} dirty cash`, 'warning');
             }}
             disabled={dirtyCash < nextDealerTier.hireCost * 3}
             className={`w-full py-2 rounded-lg text-xs font-semibold transition ${

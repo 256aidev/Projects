@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BusinessInstance, GameState } from '../data/types';
-import { INITIAL_GAME_STATE, GROW_ROOM_DEFS, DEALER_TIERS } from '../data/types';
+import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
 import { RESOURCE_MAP } from '../data/resources';
 import {
   tickCriminalOperation,
-  harvestRoom,
+  harvestSlot,
   calculateBusinessRevenue,
   calculateBusinessExpenses,
   calculateLaunderTick,
@@ -15,12 +15,13 @@ import {
 
 interface GameActions {
   tick: () => void;
-  harvestGrowRoom: (roomId: string) => number;
-  buyGrowRoom: (tier: number) => boolean;
+  harvestGrowRoom: (roomId: string, slotIndex: number) => number;
+  buyGrowRoom: (typeId: string) => boolean;
+  upgradeRoom: (roomId: string) => boolean;
   hireDealers: (count: number) => boolean;
   upgradeDealerTier: () => boolean;
   buySeed: (quantity: number) => boolean;
-  plantSeeds: (roomId: string) => boolean;
+  plantSeeds: (roomId: string, slotIndex: number) => boolean;
   sellProduct: (units: number) => number;
   purchaseBusiness: (businessDefId: string, districtId: string, slotIndex: number) => boolean;
   sellBusiness: (instanceId: string) => void;
@@ -83,17 +84,23 @@ export const useGameStore = create<GameStore>()(
         });
       },
 
-      harvestGrowRoom: (roomId) => {
+      harvestGrowRoom: (roomId, slotIndex) => {
         const state = get();
-        const { newOp, unitsHarvested } = harvestRoom(state.operation, roomId);
+        const { newOp, unitsHarvested } = harvestSlot(state.operation, roomId, slotIndex);
         if (unitsHarvested > 0) {
-          // Auto-replant if seeds are available
           if (newOp.seedStock > 0) {
             const replanted = {
               ...newOp,
               seedStock: newOp.seedStock - 1,
               growRooms: newOp.growRooms.map((r) =>
-                r.id === roomId ? { ...r, isHarvesting: true, ticksRemaining: r.growTimerTicks } : r
+                r.id === roomId
+                  ? {
+                      ...r,
+                      slots: r.slots.map((s, i) =>
+                        i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: s.growTimerTicks } : s
+                      ),
+                    }
+                  : r
               ),
             };
             set({ operation: replanted });
@@ -108,9 +115,9 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         const toSell = Math.min(units, state.operation.productInventory);
         if (toSell <= 0) return 0;
-        // Street price = 70% of avg dealer price (quick cash, no network needed)
-        const avgPrice = state.operation.growRooms.length > 0
-          ? state.operation.growRooms.reduce((sum, r) => sum + r.pricePerUnit, 0) / state.operation.growRooms.length
+        const allSlots = state.operation.growRooms.flatMap((r) => r.slots);
+        const avgPrice = allSlots.length > 0
+          ? allSlots.reduce((sum, s) => sum + s.pricePerUnit, 0) / allSlots.length
           : 10;
         const dirtyEarned = Math.floor(toSell * avgPrice * 0.7);
         set({
@@ -121,27 +128,56 @@ export const useGameStore = create<GameStore>()(
         return dirtyEarned;
       },
 
-      buyGrowRoom: (tier) => {
+      buyGrowRoom: (typeId) => {
         const state = get();
-        const def = GROW_ROOM_DEFS[tier - 1];
+        const def = GROW_ROOM_TYPE_MAP[typeId];
         if (!def || state.dirtyCash < def.purchaseCost) return false;
-        const newRoom = {
+        const firstSlot = def.strainSlots[0];
+        const newRoom: import('../data/types').GrowRoom = {
           id: `room_${Date.now()}`,
-          tier: def.tier,
+          typeId: def.id,
           name: def.name,
-          strainName: def.strainName,
-          pricePerUnit: def.pricePerUnit,
-          plantsCapacity: def.plantsCapacity,
-          growTimerTicks: def.growTimerTicks,
-          harvestYield: def.harvestYield,
-          purchaseCost: def.purchaseCost,
-          isHarvesting: true,
-          ticksRemaining: def.growTimerTicks,
+          upgradeLevel: 0,
+          slots: [
+            { ...firstSlot, isHarvesting: true, ticksRemaining: firstSlot.growTimerTicks },
+          ],
         };
         set({
           dirtyCash: state.dirtyCash - def.purchaseCost,
           totalSpent: state.totalSpent + def.purchaseCost,
           operation: { ...state.operation, growRooms: [...state.operation.growRooms, newRoom] },
+        });
+        return true;
+      },
+
+      upgradeRoom: (roomId) => {
+        const state = get();
+        const room = state.operation.growRooms.find((r) => r.id === roomId);
+        if (!room) return false;
+        const def = GROW_ROOM_TYPE_MAP[room.typeId];
+        if (!def) return false;
+        const nextLevel = room.upgradeLevel + 1;
+        if (nextLevel > def.upgradeCosts.length) return false; // already max
+        const cost = def.upgradeCosts[nextLevel - 1];
+        if (state.dirtyCash < cost) return false;
+        const newSlotDef = def.strainSlots[nextLevel];
+        if (!newSlotDef) return false;
+        const newSlot: import('../data/types').StrainSlot = {
+          ...newSlotDef,
+          isHarvesting: false,
+          ticksRemaining: 0,
+        };
+        set({
+          dirtyCash: state.dirtyCash - cost,
+          totalSpent: state.totalSpent + cost,
+          operation: {
+            ...state.operation,
+            growRooms: state.operation.growRooms.map((r) =>
+              r.id === roomId
+                ? { ...r, upgradeLevel: nextLevel, slots: [...r.slots, newSlot] }
+                : r
+            ),
+          },
         });
         return true;
       },
@@ -186,17 +222,26 @@ export const useGameStore = create<GameStore>()(
         return true;
       },
 
-      plantSeeds: (roomId) => {
+      plantSeeds: (roomId, slotIndex) => {
         const state = get();
         if (state.operation.seedStock < 1) return false;
         const room = state.operation.growRooms.find((r) => r.id === roomId);
-        if (!room || room.isHarvesting) return false;
+        if (!room) return false;
+        const slot = room.slots[slotIndex];
+        if (!slot || slot.isHarvesting) return false;
         set({
           operation: {
             ...state.operation,
             seedStock: state.operation.seedStock - 1,
             growRooms: state.operation.growRooms.map((r) =>
-              r.id === roomId ? { ...r, isHarvesting: true, ticksRemaining: r.growTimerTicks } : r
+              r.id === roomId
+                ? {
+                    ...r,
+                    slots: r.slots.map((s, i) =>
+                      i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: s.growTimerTicks } : s
+                    ),
+                  }
+                : r
             ),
           },
         });
@@ -308,6 +353,6 @@ export const useGameStore = create<GameStore>()(
 
       resetGame: () => set({ ...INITIAL_GAME_STATE }),
     }),
-    { name: 'myempire-save', version: 3 }
+    { name: 'myempire-save', version: 4 }
   )
 );

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 type PanelName = 'buy' | 'market' | 'lawyer' | 'event' | 'settings' | null;
-export type ViewName = 'operation' | 'city' | 'legal';
+export type ViewName = 'operation' | 'city' | 'warehouse' | 'legal';
 
 interface UIState {
   activeView: ViewName;
