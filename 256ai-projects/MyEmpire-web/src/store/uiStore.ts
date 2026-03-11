@@ -1,0 +1,51 @@
+import { create } from 'zustand';
+
+type PanelName = 'buy' | 'market' | 'lawyer' | 'event' | 'settings' | null;
+export type ViewName = 'operation' | 'city' | 'legal';
+
+interface UIState {
+  activeView: ViewName;
+  activeDistrictId: string;
+  selectedSlot: { districtId: string; slotIndex: number } | null;
+  selectedBusinessId: string | null;
+  activePanel: PanelName;
+  notifications: { id: number; message: string; type: 'success' | 'warning' | 'error' }[];
+}
+
+interface UIActions {
+  setActiveView: (view: ViewName) => void;
+  setActiveDistrict: (id: string) => void;
+  selectSlot: (districtId: string, slotIndex: number) => void;
+  selectBusiness: (instanceId: string | null) => void;
+  setPanel: (panel: PanelName) => void;
+  closeAll: () => void;
+  addNotification: (message: string, type: 'success' | 'warning' | 'error') => void;
+  removeNotification: (id: number) => void;
+}
+
+let notifId = 0;
+
+export const useUIStore = create<UIState & UIActions>()((set) => ({
+  activeView: 'operation',
+  activeDistrictId: 'starter',
+  selectedSlot: null,
+  selectedBusinessId: null,
+  activePanel: null,
+  notifications: [],
+
+  setActiveView: (view) => set({ activeView: view, selectedSlot: null, selectedBusinessId: null, activePanel: null }),
+  setActiveDistrict: (id) => set({ activeDistrictId: id, selectedSlot: null, selectedBusinessId: null }),
+  selectSlot: (districtId, slotIndex) => set({ selectedSlot: { districtId, slotIndex }, selectedBusinessId: null, activePanel: null }),
+  selectBusiness: (instanceId) => set({ selectedBusinessId: instanceId, selectedSlot: null }),
+  setPanel: (panel) => set({ activePanel: panel, selectedSlot: null, selectedBusinessId: null }),
+  closeAll: () => set({ selectedSlot: null, selectedBusinessId: null, activePanel: null }),
+
+  addNotification: (message, type) => {
+    const id = ++notifId;
+    set((s) => ({ notifications: [...s.notifications, { id, message, type }] }));
+    setTimeout(() => {
+      set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) }));
+    }, 3000);
+  },
+  removeNotification: (id) => set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
+}));

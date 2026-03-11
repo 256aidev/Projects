@@ -154,6 +154,9 @@ public class TaskPollingService : BackgroundService
                 ? taskResponse.Inputs["workingDirectory"]?.ToString()
                 : null;
             var timeout = taskResponse.TimeLimitSeconds ?? _workerConfig.DefaultTimeoutSeconds;
+            // Coordination tasks need more time (plan + dispatch many sub-tasks)
+            if (taskResponse.Domain?.Equals("coordination", StringComparison.OrdinalIgnoreCase) == true && timeout < 1800)
+                timeout = 1800; // 30 minutes
 
             result = _workerConfig.Provider switch
             {
@@ -204,6 +207,16 @@ public class TaskPollingService : BackgroundService
 
         stopwatch.Stop();
 
+        // Detect error results that weren't thrown as exceptions
+        // (e.g. Claude Code returned empty output with stderr errors)
+        if (success && result.StartsWith("[Error]", StringComparison.OrdinalIgnoreCase))
+        {
+            success = false;
+            errorMessage = result;
+            _logger.LogWarning("Task {TaskId} produced error result: {Error}",
+                taskResponse.TaskId, result.Length > 200 ? result[..200] : result);
+        }
+
         // Submit result
         var resultUrl = $"{_controlPlaneUrl}/tasks/{taskResponse.TaskId}/result";
         var resultPayload = new
@@ -220,17 +233,33 @@ public class TaskPollingService : BackgroundService
             Encoding.UTF8,
             "application/json");
 
-        var resultResponse = await client.PostAsync(resultUrl, resultContent, stoppingToken);
+        // Retry result submission up to 3 times (ControlPlane may have restarted)
+        for (int attempt = 1; attempt <= 3; attempt++)
+        {
+            try
+            {
+                var resultResponse = await client.PostAsync(resultUrl,
+                    new StringContent(JsonSerializer.Serialize(resultPayload), Encoding.UTF8, "application/json"),
+                    stoppingToken);
 
-        if (resultResponse.IsSuccessStatusCode)
-        {
-            _logger.LogInformation("Task {TaskId} completed in {Ms}ms (provider: {Provider})",
-                taskResponse.TaskId, stopwatch.ElapsedMilliseconds, _workerConfig.Provider);
-        }
-        else
-        {
-            _logger.LogWarning("Failed to submit result for task {TaskId}: {StatusCode}",
-                taskResponse.TaskId, resultResponse.StatusCode);
+                if (resultResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Task {TaskId} completed in {Ms}ms (provider: {Provider})",
+                        taskResponse.TaskId, stopwatch.ElapsedMilliseconds, _workerConfig.Provider);
+                    break;
+                }
+
+                _logger.LogWarning("Failed to submit result for task {TaskId} (attempt {Attempt}/3): {StatusCode}",
+                    taskResponse.TaskId, attempt, resultResponse.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Result submission error for task {TaskId} (attempt {Attempt}/3): {Error}",
+                    taskResponse.TaskId, attempt, ex.Message);
+            }
+
+            if (attempt < 3)
+                await Task.Delay(TimeSpan.FromSeconds(5 * attempt), stoppingToken);
         }
     }
 
@@ -261,7 +290,7 @@ public class TaskPollingService : BackgroundService
         var isCoordinationTask = taskDomain?.Equals("coordination", StringComparison.OrdinalIgnoreCase) == true;
         if (_workerConfig.Role.Equals("lead", StringComparison.OrdinalIgnoreCase) && isCoordinationTask)
         {
-            prompt.AppendLine(BuildLeadPrompt(objective, taskId, projectId));
+            prompt.AppendLine(BuildLeadPrompt(objective, taskId, projectId, workingDirectory));
         }
         else
         {
@@ -467,8 +496,19 @@ public class TaskPollingService : BackgroundService
     /// 2. Decompose — break it into sub-tasks for workers
     /// 3. Dispatch — submit sub-tasks via the Control Plane API
     /// </summary>
-    private string BuildLeadPrompt(string objective, string? parentTaskId, string? projectId = null)
+    private string BuildLeadPrompt(string objective, string? parentTaskId, string? projectId = null, string? workingDirectory = null)
     {
+        // Map local path to network path for remote workers
+        var dispatchWorkingDir = workingDirectory;
+        if (!string.IsNullOrEmpty(dispatchWorkingDir) && !string.IsNullOrEmpty(_workerConfig.NetworkBasePath)
+            && !string.IsNullOrEmpty(_workerConfig.DefaultWorkingDirectory))
+        {
+            dispatchWorkingDir = dispatchWorkingDir.Replace(
+                _workerConfig.DefaultWorkingDirectory,
+                _workerConfig.NetworkBasePath,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
         var sb = new StringBuilder();
         sb.AppendLine("You are the SWARM LEAD for 256ai.Engine — the coordinator of a distributed AI worker swarm.");
         sb.AppendLine("Your job is to PLAN, DECOMPOSE, and DISPATCH. Do NOT execute the work yourself.");
@@ -529,6 +569,13 @@ public class TaskPollingService : BackgroundService
             sb.AppendLine($"    \"projectId\": \"{projectId}\",");
         }
 
+        if (!string.IsNullOrEmpty(dispatchWorkingDir))
+        {
+            // Escape backslashes for JSON
+            var jsonPath = dispatchWorkingDir.Replace("\\", "\\\\");
+            sb.AppendLine($"    \"inputs\": {{\"workingDirectory\": \"{jsonPath}\"}},");
+        }
+
         sb.AppendLine("    \"dependsOn\": []");
         sb.AppendLine("  }'");
         sb.AppendLine("```");
@@ -536,12 +583,23 @@ public class TaskPollingService : BackgroundService
         sb.AppendLine("**dependsOn:** Pass an array of task IDs that must complete first. Get the task ID from the curl response.");
         sb.AppendLine("Example: Task B depends on Task A → create Task A first, get its ID, then pass it in Task B's dependsOn.");
         sb.AppendLine();
+
+        if (!string.IsNullOrEmpty(dispatchWorkingDir))
+        {
+            sb.AppendLine($"**IMPORTANT:** Always include `\"inputs\": {{\"workingDirectory\": \"{dispatchWorkingDir.Replace("\\", "\\\\")}\"}}` in EVERY sub-task you dispatch.");
+            sb.AppendLine("This ensures workers create files in the correct project directory.");
+            sb.AppendLine();
+        }
+
         sb.AppendLine("## Rules");
-        sb.AppendLine("1. ALWAYS plan first — write out your thinking before dispatching");
-        sb.AppendLine("2. Make sub-task objectives DETAILED — include everything the worker needs to know");
-        sb.AppendLine("3. Use `dependsOn` for sequential tasks (e.g. backend API before frontend integration)");
-        sb.AppendLine("4. If a task is simple enough that you can handle it directly (answering a question, quick analysis), just do it");
-        sb.AppendLine("5. After dispatching, return a summary: your plan + each task ID, domain, and objective");
+        sb.AppendLine("1. ALWAYS read SPEC.md in the working directory first — it contains the implementation plan");
+        sb.AppendLine("2. Follow the plan's phase structure — create ONE task per phase (Phase 0, Phase 1, etc.)");
+        sb.AppendLine("3. Do NOT lump multiple phases into a single task. Each phase = one dispatched task.");
+        sb.AppendLine("4. Start each task objective with the phase name, e.g.: \"Phase 0 — Project Initialization: ...\"");
+        sb.AppendLine("5. Make sub-task objectives DETAILED — include everything the worker needs to know");
+        sb.AppendLine("6. Include ALL relevant specs, file paths, schemas, and requirements from the plan in each task objective");
+        sb.AppendLine("7. Use `dependsOn` for sequential phases (e.g. Phase 1 depends on Phase 0)");
+        sb.AppendLine("8. After dispatching, return a summary: your plan + each task ID, phase, domain, and objective");
         sb.AppendLine();
         sb.AppendLine("## Objective");
         sb.AppendLine();

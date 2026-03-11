@@ -1,0 +1,1 @@
+Family chore tracking app - on-prem only. NestJS + PostgreSQL + React Native. No cloud services.

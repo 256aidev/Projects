@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "ChoreQuest",
+    "slug": "chorequest",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#6366F1"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.twofivetysixai.chorequest"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#6366F1"
+      },
+      "package": "com.twofivetysixai.chorequest"
+    },
+    "extra": {
+      "apiUrl": "https://chorequest.256ai.xyz"
+    }
+  }
+}

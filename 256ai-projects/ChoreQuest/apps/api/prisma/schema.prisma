@@ -1,0 +1,290 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  parent
+  child
+
+  @@map("user_role")
+}
+
+enum RecurrenceType {
+  once
+  daily
+  weekly
+  weekdays
+  custom
+
+  @@map("recurrence_type")
+}
+
+enum AssigneeMode {
+  single
+  rotation
+
+  @@map("assignee_mode")
+}
+
+enum AssignmentStatus {
+  pending
+  completed
+  awaiting_approval
+  approved
+  rejected
+  overdue
+
+  @@map("assignment_status")
+}
+
+enum PointsEventType {
+  chore_approved
+  manual_adjustment
+
+  @@map("points_event_type")
+}
+
+enum NotificationType {
+  due_reminder
+  overdue
+  completion_alert
+  approval_alert
+  rejection_alert
+
+  @@map("notification_type")
+}
+
+// ─── Models ─────────────────────────────────────────────────────────────────
+
+model Household {
+  id         String   @id @default(uuid())
+  name       String
+  timezone   String   @default("America/New_York")
+  settings   Json     @default("{}")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  users                    User[]
+  chores                   Chore[]
+  chore_assignments        ChoreAssignment[]
+  points_ledger            PointsLedgerEntry[]
+  household_memberships    HouseholdMembership[]
+  notification_preferences NotificationPreference[]
+  notification_events      NotificationEvent[]
+  audit_logs               AuditLog[]
+
+  @@map("households")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  household_id  String
+  email         String?  @unique
+  password_hash String?
+  display_name  String
+  role          UserRole
+  avatar_color  String?
+  avatar_icon   String?
+  age           Int?
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  household              Household              @relation(fields: [household_id], references: [id])
+  assigned_chores        Chore[]                @relation("AssignedChores")
+  chore_assignments      ChoreAssignment[]      @relation("AssignedTo")
+  approved_assignments   ChoreAssignment[]      @relation("ApprovedBy")
+  points_ledger          PointsLedgerEntry[]
+  rotation_members       RotationMember[]
+  household_memberships  HouseholdMembership[]
+  notification_preferences NotificationPreference[]
+  notification_events    NotificationEvent[]
+  refresh_token_sessions RefreshTokenSession[]
+  audit_logs             AuditLog[]
+
+  @@map("users")
+}
+
+model HouseholdMembership {
+  id           String   @id @default(uuid())
+  household_id String
+  user_id      String
+  role         UserRole
+  joined_at    DateTime @default(now())
+
+  household Household @relation(fields: [household_id], references: [id])
+  user      User      @relation(fields: [user_id], references: [id])
+
+  @@unique([household_id, user_id])
+  @@map("household_memberships")
+}
+
+model Chore {
+  id                String         @id @default(uuid())
+  household_id      String
+  title             String
+  description       String?
+  points            Int            @default(0)
+  due_time          String?
+  recurrence_type   RecurrenceType @default(once)
+  recurrence_config Json           @default("[]")
+  assignee_mode     AssigneeMode   @default(single)
+  assigned_child_id String?
+  approval_required Boolean        @default(true)
+  is_active         Boolean        @default(true)
+  is_archived       Boolean        @default(false)
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+
+  household      Household         @relation(fields: [household_id], references: [id])
+  assigned_child User?             @relation("AssignedChores", fields: [assigned_child_id], references: [id])
+  assignments    ChoreAssignment[]
+  rotation_group RotationGroup?
+
+  @@index([household_id, is_active])
+  @@map("chores")
+}
+
+model ChoreAssignment {
+  id                    String           @id @default(uuid())
+  household_id          String
+  chore_id              String
+  assigned_child_id     String
+  effective_date        DateTime         @db.Date
+  due_at                DateTime?
+  status                AssignmentStatus @default(pending)
+  generated_by_rotation Boolean          @default(false)
+  completed_at          DateTime?
+  completion_note       String?
+  approved_at           DateTime?
+  approver_id           String?
+  rejected_at           DateTime?
+  rejection_reason      String?
+  created_at            DateTime         @default(now())
+
+  household     Household          @relation(fields: [household_id], references: [id])
+  chore         Chore              @relation(fields: [chore_id], references: [id])
+  assigned_child User              @relation("AssignedTo", fields: [assigned_child_id], references: [id])
+  approver      User?              @relation("ApprovedBy", fields: [approver_id], references: [id])
+  points_ledger PointsLedgerEntry?
+
+  @@unique([chore_id, effective_date, assigned_child_id])
+  @@index([household_id, effective_date, status])
+  @@index([assigned_child_id, effective_date])
+  @@map("chore_assignments")
+}
+
+model RotationGroup {
+  id            String           @id @default(uuid())
+  chore_id      String           @unique
+  current_index Int              @default(0)
+  created_at    DateTime         @default(now())
+
+  chore   Chore            @relation(fields: [chore_id], references: [id])
+  members RotationMember[]
+
+  @@map("rotation_groups")
+}
+
+model RotationMember {
+  id                String   @id @default(uuid())
+  rotation_group_id String
+  child_id          String
+  order_index       Int
+  created_at        DateTime @default(now())
+
+  rotation_group RotationGroup @relation(fields: [rotation_group_id], references: [id])
+  child          User          @relation(fields: [child_id], references: [id])
+
+  @@map("rotation_members")
+}
+
+model PointsLedgerEntry {
+  id            String          @id @default(uuid())
+  household_id  String
+  child_id      String
+  assignment_id String?         @unique
+  points        Int
+  reason        String?
+  awarded_at    DateTime        @default(now())
+  event_type    PointsEventType
+
+  household  Household        @relation(fields: [household_id], references: [id])
+  child      User             @relation(fields: [child_id], references: [id])
+  assignment ChoreAssignment? @relation(fields: [assignment_id], references: [id])
+
+  @@index([child_id, awarded_at])
+  @@index([household_id, awarded_at])
+  @@map("points_ledger")
+}
+
+model NotificationPreference {
+  id                     String  @id @default(uuid())
+  household_id           String
+  user_id                String
+  reminders_enabled      Boolean @default(true)
+  overdue_alerts_enabled Boolean @default(true)
+  approval_alerts_enabled Boolean @default(true)
+
+  household Household @relation(fields: [household_id], references: [id])
+  user      User      @relation(fields: [user_id], references: [id])
+
+  @@unique([household_id, user_id])
+  @@map("notification_preferences")
+}
+
+model NotificationEvent {
+  id                    String           @id @default(uuid())
+  household_id          String
+  target_user_id        String
+  type                  NotificationType
+  title                 String
+  body                  String
+  related_assignment_id String?
+  is_read               Boolean          @default(false)
+  created_at            DateTime         @default(now())
+
+  household   Household @relation(fields: [household_id], references: [id])
+  target_user User      @relation(fields: [target_user_id], references: [id])
+
+  @@index([target_user_id, is_read])
+  @@map("notification_events")
+}
+
+model RefreshTokenSession {
+  id          String    @id @default(uuid())
+  user_id     String
+  token       String
+  device_name String?
+  expires_at  DateTime
+  created_at  DateTime  @default(now())
+  revoked_at  DateTime?
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@map("refresh_token_sessions")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  household_id String
+  user_id      String
+  action       String
+  details      Json     @default("{}")
+  ip_address   String?
+  created_at   DateTime @default(now())
+
+  household Household @relation(fields: [household_id], references: [id])
+  user      User      @relation(fields: [user_id], references: [id])
+
+  @@index([household_id, created_at])
+  @@map("audit_logs")
+}

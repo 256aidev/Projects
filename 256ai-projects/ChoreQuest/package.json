@@ -1,0 +1,23 @@
+{
+  "name": "chorequest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ChoreQuest - Family chore tracking app (on-prem only)",
+  "scripts": {
+    "api:dev": "cd apps/api && npm run start:dev",
+    "api:build": "cd apps/api && npm run build",
+    "api:start": "cd apps/api && npm run start:prod",
+    "api:lint": "cd apps/api && npm run lint",
+    "api:test": "cd apps/api && npm run test",
+    "prisma:generate": "cd apps/api && npx prisma generate",
+    "prisma:migrate:dev": "cd apps/api && npx prisma migrate dev",
+    "prisma:migrate": "cd apps/api && npx prisma migrate deploy",
+    "prisma:studio": "cd apps/api && npx prisma studio",
+    "shared-types:build": "cd packages/shared-types && npm run build",
+    "shared-validation:build": "cd packages/shared-validation && npm run build",
+    "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "docker:up:dev": "docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.dev.yml up -d",
+    "docker:logs": "docker compose -f infra/docker/docker-compose.yml logs -f"
+  }
+}

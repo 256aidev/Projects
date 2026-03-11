@@ -40,9 +40,15 @@ builder.Services
     .WithHttpTransport()
     .WithToolsFromAssembly();
 
-// Background services disabled - using HTTP polling instead
+// RabbitMQ background services disabled - using HTTP polling instead
 // builder.Services.AddHostedService<HealthConsumerService>();
 // builder.Services.AddHostedService<TaskResultConsumerService>();
+
+// Auto-retry failed tasks (checks every 30s, excludes workers that already failed)
+builder.Services.AddHostedService<Engine.ControlPlane.Services.TaskAutoRetryService>();
+
+// Recover stale tasks stuck in LEASED/ACKED/RUNNING (checks every 60s)
+builder.Services.AddHostedService<Engine.ControlPlane.Services.StaleTaskCleanupService>();
 
 var app = builder.Build();
 

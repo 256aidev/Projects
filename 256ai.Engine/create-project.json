@@ -1,0 +1,6 @@
+{
+  "name": "ChoreQuest",
+  "domain": "general",
+  "description": "Family chore tracking app - on-prem only. NestJS + PostgreSQL + React Native. No cloud services.",
+  "workingDirectory": "C:\\Projects\\256ai-projects\\ChoreQuest"
+}

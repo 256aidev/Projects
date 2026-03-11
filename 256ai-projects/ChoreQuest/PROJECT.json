@@ -1,0 +1,9 @@
+{
+  "projectId": "1be2cac6-54bc-48cd-8df5-004fbbffdd95",
+  "name": "ChoreQuest",
+  "description": "Family chore tracking app - on-prem only. NestJS \u002B PostgreSQL \u002B React Native. No cloud services.",
+  "domain": "general",
+  "createdAt": "2026-03-07T22:09:23.3441324+00:00",
+  "workingDirectory": "C:\\Projects\\256ai-projects\\ChoreQuest",
+  "templateId": null
+}

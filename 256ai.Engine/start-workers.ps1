@@ -1,0 +1,5 @@
+Write-Host "Starting lead worker..."
+Start-Process -FilePath "C:\Projects\256ai.Engine\publish\worker-win-x64\Engine.Worker.exe" -WorkingDirectory "C:\Projects\256ai.Engine\publish\worker-win-x64"
+Write-Host "Starting sound worker..."
+Start-Process -FilePath "C:\Projects\256ai.Engine\publish\sound-worker-win-x64\Engine.Worker.exe" -WorkingDirectory "C:\Projects\256ai.Engine\publish\sound-worker-win-x64"
+Write-Host "Workers started."

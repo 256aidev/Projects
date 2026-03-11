@@ -31,6 +31,11 @@ public class WorkerConfig
     // General execution settings
     public string DefaultWorkingDirectory { get; set; } = "";
     public int DefaultTimeoutSeconds { get; set; } = 300;
+
+    // Network path for remote workers — UNC share that maps to DefaultWorkingDirectory
+    // e.g. DefaultWorkingDirectory = "C:\Projects", NetworkBasePath = "\\DRAGON\Projects"
+    // When dispatching sub-tasks, NetworkBasePath is used so remote workers can access files
+    public string NetworkBasePath { get; set; } = "";
 }
 
 public class ClaudeConfig

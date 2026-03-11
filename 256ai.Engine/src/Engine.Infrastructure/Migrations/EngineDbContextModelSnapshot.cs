@@ -322,6 +322,9 @@ namespace Engine.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("FailedWorkersJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("InputsJson")
                         .HasColumnType("TEXT");
 

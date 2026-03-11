@@ -144,6 +144,39 @@
             margin-left: 8px;
         }
         .cancel-btn:hover { background: #ff880020; }
+        .retry-btn {
+            background: transparent;
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+        .retry-btn:hover { background: #00d4ff20; }
+        .terminate-btn {
+            background: transparent;
+            border: 1px solid #ff4444;
+            color: #ff4444;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+        .terminate-btn:hover { background: #ff444420; }
+        .delete-btn {
+            background: transparent;
+            border: 1px solid #888;
+            color: #888;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+        .delete-btn:hover { background: #88888820; }
 
         .response-section { grid-column: 1 / -1; }
         .response-box {
@@ -508,6 +541,250 @@
         }
         .project-filter-badge .clear-filter:hover { color: #fff; }
 
+        /* ===== PROJECT DETAIL PANEL ===== */
+        .project-detail {
+            display: none;
+            margin-top: 12px;
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 20px;
+            animation: slideDown 0.2s ease-out;
+        }
+        .project-detail.visible { display: block; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .project-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .project-detail-header h3 { color: #00d4ff; font-size: 18px; margin: 0 0 6px 0; }
+        .project-detail-meta {
+            display: flex; gap: 12px; align-items: center; font-size: 12px; color: #888;
+        }
+        .project-detail-meta .domain-badge {
+            padding: 3px 10px; background: #00d4ff20; color: #00d4ff;
+            border-radius: 4px; font-weight: 600; font-size: 11px;
+        }
+        .project-detail-meta .status-badge {
+            padding: 3px 10px; border-radius: 4px; font-weight: 600; font-size: 11px;
+        }
+        .project-detail-description {
+            color: #ccc; font-size: 13px; line-height: 1.6; margin-bottom: 16px;
+        }
+        .back-btn {
+            background: transparent; border: 1px solid #444; color: #888;
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .back-btn:hover { border-color: #00d4ff; color: #00d4ff; }
+
+        /* Overall progress */
+        .project-overall-progress { margin-bottom: 20px; }
+        .project-overall-progress .progress-label {
+            display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 6px;
+        }
+        .project-progress-bar {
+            height: 6px; background: #2a2a4a; border-radius: 3px; overflow: hidden;
+        }
+        .project-progress-fill {
+            height: 100%; background: linear-gradient(90deg, #00d4ff, #00ff88);
+            border-radius: 3px; transition: width 0.4s ease;
+        }
+
+        /* Phase accordion */
+        .phase-list { display: flex; flex-direction: column; gap: 6px; }
+        .phase-item {
+            background: #16213e; border-radius: 6px; overflow: hidden;
+            border: 1px solid #2a2a4a; transition: border-color 0.2s;
+        }
+        .phase-item:hover { border-color: #3a3a5a; }
+        .phase-item.completed { border-left: 3px solid #00ff88; }
+        .phase-item.in-progress { border-left: 3px solid #00d4ff; }
+        .phase-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; cursor: pointer; transition: background 0.2s; user-select: none;
+        }
+        .phase-header:hover { background: #1a2a4e; }
+        .phase-chevron {
+            color: #666; font-size: 12px; transition: transform 0.2s; min-width: 16px;
+        }
+        .phase-item.expanded .phase-chevron { transform: rotate(90deg); }
+        .phase-title { flex: 1; font-size: 14px; font-weight: 600; color: #eee; }
+        .phase-progress-mini {
+            display: flex; align-items: center; gap: 8px; font-size: 11px; color: #888;
+        }
+        .phase-progress-mini .mini-bar {
+            width: 60px; height: 4px; background: #2a2a4a; border-radius: 2px; overflow: hidden;
+        }
+        .phase-progress-mini .mini-fill {
+            height: 100%; background: #00d4ff; border-radius: 2px; transition: width 0.3s;
+        }
+        .phase-progress-mini .mini-fill.complete { background: #00ff88; }
+
+        /* Phase content */
+        .phase-content { display: none; padding: 0 16px 16px; }
+        .phase-item.expanded .phase-content { display: block; }
+        .phase-section { margin-bottom: 14px; }
+        .phase-section-title {
+            font-size: 12px; color: #00d4ff; text-transform: uppercase;
+            font-weight: 600; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .phase-section-content {
+            color: #ccc; font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+        }
+        .phase-section-content.editable {
+            cursor: text; padding: 6px 10px; border-radius: 4px;
+            border: 1px solid transparent; transition: all 0.2s;
+        }
+        .phase-section-content.editable:hover { border-color: #2a2a4a; background: #0f0f23; }
+
+        /* Inline editing */
+        .phase-edit-textarea {
+            width: 100%; background: #0f0f23; border: 1px solid #00d4ff;
+            border-radius: 4px; padding: 8px 10px; color: #eee;
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px;
+            line-height: 1.5; resize: vertical; min-height: 60px;
+        }
+        .phase-edit-textarea:focus { outline: none; }
+        .phase-edit-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+        .phase-edit-actions button {
+            padding: 4px 12px; border-radius: 4px; font-size: 11px;
+            font-weight: 600; cursor: pointer; border: none;
+        }
+        .phase-edit-actions .save-edit-btn { background: #00d4ff; color: #000; }
+        .phase-edit-actions .save-edit-btn:hover { background: #00b8e6; }
+        .phase-edit-actions .cancel-edit-btn { background: transparent; border: 1px solid #444; color: #888; }
+        .phase-edit-actions .cancel-edit-btn:hover { border-color: #888; color: #eee; }
+        .edit-icon {
+            background: none; border: none; color: #666; cursor: pointer;
+            font-size: 12px; padding: 2px 4px; transition: color 0.2s;
+        }
+        .edit-icon:hover { color: #00d4ff; }
+
+        /* Task checkboxes */
+        .phase-task-list { list-style: none; padding: 0; }
+        .phase-task-item {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 4px 0; font-size: 13px; color: #ccc;
+        }
+        .phase-task-item input[type="checkbox"] { accent-color: #00d4ff; margin-top: 3px; cursor: pointer; }
+        .phase-task-item.checked { color: #888; text-decoration: line-through; }
+        .phase-task-item label { cursor: pointer; flex: 1; min-width: 0; }
+
+        /* Done criteria */
+        .done-criteria-list { list-style: none; padding: 0; }
+        .done-criteria-item { padding: 3px 0; font-size: 12px; color: #888; }
+        .done-criteria-item::before { content: '\2713 '; color: #00ff88; }
+
+        /* No spec fallback */
+        .no-spec-message {
+            color: #666; font-style: italic; text-align: center; padding: 30px 20px; font-size: 14px;
+        }
+        .no-spec-message button {
+            display: block; margin: 12px auto 0; background: #00d4ff; color: #000;
+            border: none; padding: 8px 20px; border-radius: 6px; font-size: 13px;
+            font-weight: 600; cursor: pointer;
+        }
+        .no-spec-message button:hover { background: #00b8e6; }
+
+        /* Save indicator */
+        .save-indicator { font-size: 11px; padding: 4px 10px; border-radius: 4px; transition: opacity 0.3s; }
+        .save-indicator.saving { color: #ffaa00; }
+        .save-indicator.saved { color: #00ff88; }
+        .save-indicator.error { color: #ff4444; }
+
+        /* Task summary badges */
+        .task-summary-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .task-summary-badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .task-summary-badge.running { background: #00d4ff20; color: #00d4ff; }
+        .task-summary-badge.pending { background: #ffaa0020; color: #ffaa00; }
+        .task-summary-badge.completed { background: #00ff8820; color: #00ff88; }
+        .task-summary-badge.failed { background: #ff444420; color: #ff4444; }
+
+        /* Live Tasks section */
+        .live-tasks-section { margin-bottom: 20px; }
+        .live-tasks-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .live-tasks-header h4 { color: #eee; font-size: 15px; margin: 0; }
+        .live-pulse {
+            width: 8px; height: 8px; background: #00ff88; border-radius: 50%;
+            animation: livePulse 2s infinite;
+        }
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 #00ff8880; }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px #00ff8800; }
+        }
+        .live-tasks-empty { color: #666; font-style: italic; text-align: center; padding: 20px; font-size: 13px; }
+        .live-tasks-group { margin-bottom: 12px; }
+        .live-tasks-group-label {
+            font-size: 11px; font-weight: 600; text-transform: uppercase;
+            padding: 4px 0; margin-bottom: 6px;
+        }
+        .live-tasks-group-label.running-label { color: #00d4ff; }
+        .live-tasks-group-label.pending-label { color: #ffaa00; }
+        .live-tasks-group-label.completed-label { color: #00ff88; }
+        .live-tasks-group-label.failed-label { color: #ff4444; }
+
+        /* Individual live task row */
+        .live-task-item {
+            background: #16213e; border-radius: 6px; padding: 10px 14px;
+            margin-bottom: 4px; cursor: pointer; transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .live-task-item:hover { background: #1a2a4e; }
+        .live-task-item.RUNNING, .live-task-item.IN_PROGRESS, .live-task-item.ACKED, .live-task-item.LEASED {
+            border-left-color: #00d4ff;
+        }
+        .live-task-item.COMPLETED, .live-task-item.CLOSED { border-left-color: #00ff88; }
+        .live-task-item.FAIL, .live-task-item.DLQ { border-left-color: #ff4444; }
+        .live-task-item.PENDING { border-left-color: #ffaa00; }
+
+        .live-task-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .live-task-objective {
+            flex: 1; font-size: 13px; color: #ccc; min-width: 0;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .live-task-bottom { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+        .live-task-worker { font-size: 11px; color: #aa88ff; font-family: 'Consolas', monospace; }
+        .live-task-time { font-size: 11px; color: #666; }
+        .live-task-step { font-size: 11px; color: #888; font-style: italic; }
+        .live-task-progress { width: 80px; height: 4px; background: #2a2a4a; border-radius: 2px; overflow: hidden; }
+        .live-task-progress-fill { height: 100%; background: #00d4ff; border-radius: 2px; transition: width 0.3s; }
+
+        /* Plan match badges */
+        .plan-match-badge {
+            font-size: 10px; padding: 2px 8px; background: #00d4ff15; color: #00d4ff;
+            border-radius: 4px; white-space: nowrap; font-weight: 600;
+        }
+        .plan-no-match { font-size: 10px; padding: 2px 8px; color: #555; white-space: nowrap; }
+        .phase-match-count {
+            font-size: 10px; padding: 2px 8px; background: #00d4ff15; color: #00d4ff;
+            border-radius: 4px; white-space: nowrap;
+        }
+
+        /* Plan section header */
+        .plan-section-header {
+            margin-bottom: 8px; padding-bottom: 8px; border-top: 1px solid #2a2a4a;
+            padding-top: 16px; margin-top: 4px;
+        }
+        .plan-section-header h4 { color: #eee; font-size: 15px; margin: 0; }
+        .plan-subtitle { color: #666; font-size: 12px; font-weight: 400; }
+        .human-review-label { color: #666; font-size: 10px; font-weight: 400; }
+
+        /* Additional task status colors */
+        .task-status.LEASED { background: #ff88ff20; color: #ff88ff; }
+        .task-status.ACKED { background: #ff88ff20; color: #ff88ff; }
+        .task-status.RUNNING { background: #00d4ff20; color: #00d4ff; }
+        .task-status.CLOSED { background: #88888820; color: #888; }
+        .task-status.DLQ { background: #ff444420; color: #ff4444; }
+        .task-status.REJECTED { background: #ff880020; color: #ff8800; }
+
         /* Tab Navigation */
         .tab-bar {
             display: flex;
@@ -709,7 +986,7 @@
                 </div>
                 <div class="project-form-row">
                     <label>Working Dir</label>
-                    <input type="text" id="projWorkingDir" placeholder="C:\Projects\256ai-projects\my-app">
+                    <input type="text" id="projWorkingDir" placeholder="Auto-generated from project name (leave blank)">
                 </div>
                 <div class="project-form-row" style="align-items: flex-start;">
                     <label style="padding-top: 8px;">Spec / MD</label>
@@ -728,6 +1005,43 @@
                     <button class="cancel-form-btn" onclick="toggleProjectForm()">Cancel</button>
                     <button class="create-btn" onclick="createProject()">Create Project</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Project Detail Panel (expandable) -->
+        <div class="project-detail" id="projectDetail">
+            <div class="project-detail-header">
+                <div>
+                    <h3 id="detailProjectName">--</h3>
+                    <div class="project-detail-meta">
+                        <span class="domain-badge" id="detailProjectDomain">--</span>
+                        <span class="status-badge" id="detailProjectStatus">--</span>
+                        <span id="detailProjectCreated"></span>
+                        <span class="save-indicator" id="detailSaveIndicator"></span>
+                    </div>
+                </div>
+                <div>
+                    <button class="terminate-btn" id="terminateProjectBtn" onclick="terminateProject()">Terminate</button>
+                    <button class="delete-btn" id="deleteProjectBtn" onclick="deleteProject()">Delete</button>
+                    <button class="back-btn" onclick="closeProjectDetail()">&#8592; Back to Projects</button>
+                </div>
+            </div>
+            <div class="project-detail-description" id="detailProjectDescription"></div>
+            <div class="project-overall-progress" id="detailOverallProgress">
+                <div class="progress-label">
+                    <span>Overall Progress</span>
+                    <span id="detailProgressText">0%</span>
+                </div>
+                <div class="project-progress-bar">
+                    <div class="project-progress-fill" id="detailProgressFill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="liveTasksContainer"></div>
+            <div class="phase-list" id="phaseList"></div>
+            <div class="no-spec-message" id="noSpecMessage" style="display:none;">
+                This project has no spec markdown.<br>
+                Add a spec to see phases and track progress.
+                <button onclick="openSpecEditor()">Add Spec Markdown</button>
             </div>
         </div>
         </div><!-- /tab-projects -->
@@ -2023,9 +2337,10 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
 
         function selectProject(projectId, projectName) {
             if (selectedProjectId === projectId) {
-                // Deselect
+                // Deselect — close detail panel and clear filter
                 selectedProjectId = null;
                 document.getElementById('projectFilterBadge').innerHTML = '';
+                closeProjectDetail();
             } else {
                 selectedProjectId = projectId;
                 document.getElementById('projectFilterBadge').innerHTML = `
@@ -2034,6 +2349,8 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
                         <button class="clear-filter" onclick="event.stopPropagation(); selectProject('${projectId}', '${projectName}')">x</button>
                     </span>
                 `;
+                // Open the detail panel for this project
+                openProjectDetail(projectId);
             }
             fetchTasks();
             fetchProjects();
@@ -2044,13 +2361,24 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
             form.classList.toggle('visible');
         }
 
+        let _specFileContent = null; // Store file content in variable to avoid race conditions
+
         function loadSpecFile(input) {
             const file = input.files[0];
             if (!file) return;
-            document.getElementById('projSpecFileName').textContent = file.name;
+            _specFileContent = null;
+            document.getElementById('projSpecFileName').textContent = `Loading ${file.name}...`;
             const reader = new FileReader();
             reader.onload = (e) => {
-                document.getElementById('projSpecMarkdown').value = e.target.result;
+                const content = e.target.result;
+                _specFileContent = content;
+                document.getElementById('projSpecMarkdown').value = content;
+                document.getElementById('projSpecFileName').textContent = `${file.name} (${content.length.toLocaleString()} chars)`;
+                console.log('File loaded:', file.name, 'length:', content.length);
+            };
+            reader.onerror = () => {
+                document.getElementById('projSpecFileName').textContent = `Error reading ${file.name}`;
+                _specFileContent = null;
             };
             reader.readAsText(file);
         }
@@ -2060,24 +2388,33 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
             const domain = document.getElementById('projDomain').value;
             const description = document.getElementById('projDescription').value.trim();
             const workingDir = document.getElementById('projWorkingDir').value.trim();
-            const specMarkdown = document.getElementById('projSpecMarkdown').value.trim();
+            // Use textarea value, but fall back to stored file content if textarea is empty
+            let specMarkdown = document.getElementById('projSpecMarkdown').value.trim();
+            if (!specMarkdown && _specFileContent) {
+                specMarkdown = _specFileContent.trim();
+                console.log('Using stored file content as fallback, length:', specMarkdown.length);
+            }
 
             if (!name) {
                 alert('Project name is required');
                 return;
             }
 
+            console.log('createProject: specMarkdown length =', specMarkdown.length, ', first 100 chars:', specMarkdown.substring(0, 100));
+
             try {
+                const payload = {
+                    name,
+                    domain,
+                    description: description || null,
+                    workingDirectory: workingDir || null,
+                    specMarkdown: specMarkdown || null
+                };
+                console.log('createProject payload keys:', Object.keys(payload), 'specMarkdown is null?', payload.specMarkdown === null);
                 const res = await fetch(`${CONTROL_PLANE}/projects`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name,
-                        domain,
-                        description: description || null,
-                        workingDirectory: workingDir || null,
-                        specMarkdown: specMarkdown || null
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
@@ -2089,17 +2426,19 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
                     document.getElementById('projSpecMarkdown').value = '';
                     document.getElementById('projSpecFileName').textContent = '';
                     document.getElementById('projSpecFile').value = '';
+                    _specFileContent = null;
                     toggleProjectForm();
                     // Select the new project
                     selectProject(data.projectId, name);
                     fetchProjects();
                     // Show feedback
+                    const wdMsg = data.workingDirectory ? ` | Dir: ${data.workingDirectory}` : '';
                     if (data.leadTaskId) {
                         const status = document.getElementById('sendStatus');
                         if (status) {
-                            status.textContent = `Project "${name}" created — Lead AI will decompose it shortly`;
+                            status.textContent = `Project "${name}" created — Lead AI will decompose it shortly${wdMsg}`;
                             status.style.color = '#00ff88';
-                            setTimeout(() => { status.textContent = ''; }, 8000);
+                            setTimeout(() => { status.textContent = ''; }, 12000);
                         }
                     }
                 } else {
@@ -2109,6 +2448,558 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
             } catch (e) {
                 alert('Error: Could not reach Control Plane');
             }
+        }
+
+        // =============================================
+        // PROJECT DETAIL VIEW
+        // =============================================
+
+        let currentProjectDetail = null;
+        let parsedPhases = [];
+        let phaseProgress = {};
+        let detailSaveTimeout = null;
+        let projectLiveTasks = [];
+        let detailRefreshTimer = null;
+
+        function parseSpecMarkdown(markdown) {
+            if (!markdown || !markdown.trim()) return [];
+            const lines = markdown.split('\n');
+            const phases = [];
+            let currentPhase = null;
+            let currentSection = null;
+            let contentBuffer = [];
+
+            function flushSection() {
+                if (!currentPhase || !currentSection || contentBuffer.length === 0) return;
+                if (currentSection === 'goal') {
+                    currentPhase.goal = contentBuffer.map(l => l.trim()).filter(l => l).join('\n');
+                } else if (currentSection === 'tasks') {
+                    contentBuffer.forEach(line => {
+                        const m = line.trim().match(/^[-*]\s+(?:\[.\]\s+)?(.+)$/);
+                        if (m) currentPhase.tasks.push(m[1]);
+                    });
+                } else if (currentSection === 'done') {
+                    contentBuffer.forEach(line => {
+                        const m = line.trim().match(/^[-*]\s+(?:\[.\]\s+)?(.+)$/);
+                        if (m) currentPhase.doneCriteria.push(m[1]);
+                    });
+                }
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmed = line.trim();
+
+                // Match: # Phase N — Title or any # Heading
+                const phaseMatch = trimmed.match(/^#\s+(?:Phase\s+(\d+)\s*[—\-:]\s*(.+)|(.+))$/i);
+                const groupMatch = !phaseMatch ? trimmed.match(/^##\s+Task\s+Group\s+(\w+)\s*[—\-:]\s*(.+)$/i) : null;
+
+                if (phaseMatch) {
+                    if (currentPhase) { flushSection(); phases.push(currentPhase); }
+                    const num = phaseMatch[1];
+                    currentPhase = {
+                        id: num != null ? 'Phase ' + num : 'Section ' + phases.length,
+                        title: trimmed.replace(/^#\s+/, ''),
+                        goal: '', tasks: [], doneCriteria: [], rawContent: ''
+                    };
+                    currentSection = 'content';
+                    contentBuffer = [];
+                    continue;
+                }
+
+                if (groupMatch && !currentPhase) {
+                    currentPhase = {
+                        id: 'Group ' + groupMatch[1],
+                        title: 'Task Group ' + groupMatch[1] + ' \u2014 ' + groupMatch[2],
+                        goal: '', tasks: [], doneCriteria: [], rawContent: ''
+                    };
+                    currentSection = 'content';
+                    contentBuffer = [];
+                    continue;
+                }
+
+                if (!currentPhase) continue;
+                currentPhase.rawContent += line + '\n';
+
+                const sectionMatch = trimmed.match(/^##\s+(.+)$/);
+                if (sectionMatch) {
+                    flushSection();
+                    contentBuffer = [];
+                    const st = sectionMatch[1].toLowerCase();
+                    if (st.includes('goal') || st.includes('purpose')) currentSection = 'goal';
+                    else if (st.includes('task') && !st.includes('group')) currentSection = 'tasks';
+                    else if (st.includes('done') || st.includes('criteria') || st.includes('deliverable') || st.includes('output')) currentSection = 'done';
+                    else currentSection = 'content';
+                    continue;
+                }
+
+                const subMatch = trimmed.match(/^###\s+(.+)$/);
+                if (subMatch) {
+                    flushSection();
+                    contentBuffer = [];
+                    currentPhase.tasks.push(subMatch[1]);
+                    currentSection = 'content';
+                    continue;
+                }
+
+                contentBuffer.push(line);
+            }
+
+            if (currentPhase) { flushSection(); phases.push(currentPhase); }
+            return phases;
+        }
+
+        async function openProjectDetail(projectId) {
+            const indicator = document.getElementById('detailSaveIndicator');
+            indicator.textContent = '';
+            try {
+                const res = await fetch(CONTROL_PLANE + '/projects/' + projectId);
+                if (!res.ok) throw new Error('Failed to load project');
+                currentProjectDetail = await res.json();
+                selectedProjectId = projectId;
+                fetchProjects();
+                parsedPhases = parseSpecMarkdown(currentProjectDetail.specMarkdown || '');
+                phaseProgress = {};
+                if (currentProjectDetail.config && currentProjectDetail.config.phaseProgress) {
+                    phaseProgress = currentProjectDetail.config.phaseProgress;
+                }
+                // Fetch live tasks before first render
+                try {
+                    const tasksRes = await fetch(CONTROL_PLANE + '/projects/' + projectId + '/tasks');
+                    if (tasksRes.ok) { projectLiveTasks = await tasksRes.json(); }
+                } catch (e) { projectLiveTasks = []; }
+
+                renderProjectDetail();
+                document.getElementById('projectDetail').classList.add('visible');
+
+                // Start 5-second auto-refresh for live task data
+                if (detailRefreshTimer) clearInterval(detailRefreshTimer);
+                detailRefreshTimer = setInterval(fetchProjectTasks, 5000);
+            } catch (e) {
+                console.error('Error opening project detail:', e);
+            }
+        }
+
+        function closeProjectDetail() {
+            document.getElementById('projectDetail').classList.remove('visible');
+            currentProjectDetail = null;
+            parsedPhases = [];
+            projectLiveTasks = [];
+            if (detailRefreshTimer) { clearInterval(detailRefreshTimer); detailRefreshTimer = null; }
+        }
+
+        async function fetchProjectTasks() {
+            if (!currentProjectDetail) return;
+            const pid = currentProjectDetail.projectId;
+            try {
+                const [projRes, tasksRes] = await Promise.all([
+                    fetch(CONTROL_PLANE + '/projects/' + pid),
+                    fetch(CONTROL_PLANE + '/projects/' + pid + '/tasks')
+                ]);
+                if (projRes.ok) {
+                    const projData = await projRes.json();
+                    currentProjectDetail.tasks = projData.tasks;
+                }
+                if (tasksRes.ok) {
+                    projectLiveTasks = await tasksRes.json();
+                }
+                renderProjectDetail();
+            } catch (e) {
+                console.error('Error fetching project tasks:', e);
+            }
+        }
+
+        function matchTaskToPhase(taskObjective) {
+            if (!parsedPhases || parsedPhases.length === 0 || !taskObjective) return null;
+            const objLower = taskObjective.toLowerCase();
+            const stopWords = ['the','and','for','with','that','this','from','have','will','are','was','not','but','can','all','has','been','into','each','when','then','also','should','would','could','using','used','make','made','just'];
+            const objWords = objLower.match(/\b[a-z]{3,}\b/g)?.filter(w => !stopWords.includes(w)) || [];
+            if (objWords.length === 0) return null;
+
+            let bestMatch = null;
+            let bestScore = 0;
+
+            for (const phase of parsedPhases) {
+                for (let ti = 0; ti < phase.tasks.length; ti++) {
+                    const taskLower = phase.tasks[ti].toLowerCase();
+                    const taskWords = taskLower.match(/\b[a-z]{3,}\b/g)?.filter(w => !stopWords.includes(w)) || [];
+                    if (taskWords.length === 0) continue;
+                    const overlap = objWords.filter(w => taskWords.some(tw => tw.includes(w) || w.includes(tw))).length;
+                    const score = overlap / Math.max(objWords.length, taskWords.length);
+                    if (score > bestScore && score >= 0.3) {
+                        bestScore = score;
+                        bestMatch = { phaseId: phase.id, phaseTitle: phase.title, taskIdx: ti, taskText: phase.tasks[ti], score };
+                    }
+                }
+                // Also check phase title
+                const titleLower = phase.title.toLowerCase();
+                const titleWords = titleLower.match(/\b[a-z]{3,}\b/g)?.filter(w => !stopWords.includes(w)) || [];
+                const titleOverlap = objWords.filter(w => titleWords.some(tw => tw.includes(w) || w.includes(tw))).length;
+                const titleScore = titleWords.length > 0 ? titleOverlap / Math.max(objWords.length, titleWords.length) : 0;
+                if (titleScore > bestScore && titleScore >= 0.25) {
+                    bestScore = titleScore;
+                    bestMatch = { phaseId: phase.id, phaseTitle: phase.title, taskIdx: -1, taskText: phase.title, score: titleScore };
+                }
+            }
+            return bestMatch;
+        }
+
+        function getStatusColor(status) {
+            const c = {
+                PENDING: '#ffaa00', LEASED: '#ff88ff', ACKED: '#ff88ff',
+                IN_PROGRESS: '#00d4ff', RUNNING: '#00d4ff',
+                COMPLETED: '#00ff88', CLOSED: '#888',
+                FAIL: '#ff4444', CANCELLED: '#888888', DLQ: '#ff4444', REJECTED: '#ff8800'
+            };
+            return c[status] || '#888';
+        }
+
+        function renderProjectDetail() {
+            if (!currentProjectDetail) return;
+            const p = currentProjectDetail;
+
+            // --- Header ---
+            document.getElementById('detailProjectName').textContent = p.name;
+            document.getElementById('detailProjectDomain').textContent = p.domain;
+            const sb = document.getElementById('detailProjectStatus');
+            sb.textContent = p.status;
+            sb.style.background = getStatusColor(p.status) + '20';
+            sb.style.color = getStatusColor(p.status);
+            document.getElementById('detailProjectCreated').textContent = 'Created ' + new Date(p.createdAt).toLocaleDateString();
+
+            // Show/hide Terminate button based on project status
+            const termBtn = document.getElementById('terminateProjectBtn');
+            const isTerminal = ['COMPLETED', 'CANCELLED', 'CLOSED'].includes(p.status);
+            termBtn.style.display = isTerminal ? 'none' : '';
+
+            const descEl = document.getElementById('detailProjectDescription');
+            descEl.textContent = p.description || '';
+            descEl.style.display = p.description ? '' : 'none';
+
+            // --- Overall Progress (from REAL task data) ---
+            const progressSection = document.getElementById('detailOverallProgress');
+            const tasksSummary = p.tasks || { total: 0, byStatus: {} };
+            const totalTasks = tasksSummary.total || 0;
+            const completedTasks = (tasksSummary.byStatus?.COMPLETED || 0) + (tasksSummary.byStatus?.CLOSED || 0);
+            const failedTasks = tasksSummary.byStatus?.FAIL || 0;
+            const runningTasks = (tasksSummary.byStatus?.RUNNING || 0) + (tasksSummary.byStatus?.IN_PROGRESS || 0) + (tasksSummary.byStatus?.ACKED || 0) + (tasksSummary.byStatus?.LEASED || 0);
+            const pendingCount = tasksSummary.byStatus?.PENDING || 0;
+
+            if (totalTasks > 0) {
+                progressSection.style.display = '';
+                const overallPct = Math.round((completedTasks / totalTasks) * 100);
+                document.getElementById('detailProgressText').textContent = overallPct + '% (' + completedTasks + '/' + totalTasks + ' tasks)';
+                document.getElementById('detailProgressFill').style.width = overallPct + '%';
+            } else {
+                progressSection.style.display = parsedPhases.length > 0 ? '' : 'none';
+                document.getElementById('detailProgressText').textContent = 'No tasks yet';
+                document.getElementById('detailProgressFill').style.width = '0%';
+            }
+
+            // --- Status summary badges ---
+            let summaryHtml = '<div class="task-summary-row">';
+            if (totalTasks > 0) {
+                if (runningTasks > 0) summaryHtml += '<span class="task-summary-badge running">' + runningTasks + ' running</span>';
+                if (pendingCount > 0) summaryHtml += '<span class="task-summary-badge pending">' + pendingCount + ' pending</span>';
+                if (completedTasks > 0) summaryHtml += '<span class="task-summary-badge completed">' + completedTasks + ' completed</span>';
+                if (failedTasks > 0) summaryHtml += '<span class="task-summary-badge failed">' + failedTasks + ' failed</span>';
+            }
+            summaryHtml += '</div>';
+
+            // --- Live Tasks Section ---
+            let liveTasksHtml = '';
+            if (projectLiveTasks.length > 0) {
+                const active = projectLiveTasks.filter(t => ['RUNNING', 'IN_PROGRESS', 'ACKED', 'LEASED'].includes(t.status));
+                const pending = projectLiveTasks.filter(t => t.status === 'PENDING');
+                const completed = projectLiveTasks.filter(t => t.status === 'COMPLETED' || t.status === 'CLOSED')
+                    .sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt))
+                    .slice(0, 10);
+                const failed = projectLiveTasks.filter(t => t.status === 'FAIL' || t.status === 'DLQ');
+
+                function renderLiveTaskRow(task) {
+                    const match = matchTaskToPhase(task.objective);
+                    const matchBadge = match
+                        ? '<span class="plan-match-badge" title="Matches: ' + escapeHtml(match.taskText) + '">&#128279; ' + escapeHtml(match.phaseId) + '</span>'
+                        : '<span class="plan-no-match">unmatched</span>';
+
+                    let progressHtml = '';
+                    if (task.progress) {
+                        const prog = typeof task.progress === 'string' ? JSON.parse(task.progress) : task.progress;
+                        if (prog.percentComplete != null) {
+                            progressHtml = '<div class="live-task-progress"><div class="live-task-progress-fill" style="width:' + prog.percentComplete + '%"></div></div>';
+                        }
+                        if (prog.message) {
+                            progressHtml += '<span class="live-task-step">' + escapeHtml(prog.message.substring(0, 80)) + '</span>';
+                        }
+                    }
+
+                    const workerHtml = task.assignedWorkerId
+                        ? '<span class="live-task-worker">' + escapeHtml(task.assignedWorkerId) + '</span>'
+                        : '';
+                    const timeHtml = task.completedAt
+                        ? '<span class="live-task-time">' + formatTime(task.completedAt) + '</span>'
+                        : task.createdAt
+                        ? '<span class="live-task-time">' + formatTime(task.createdAt) + '</span>'
+                        : '';
+
+                    let actionBtns = '';
+                    if (['PENDING','LEASED','ACKED','IN_PROGRESS','RUNNING'].includes(task.status)) {
+                        actionBtns = '<button class="cancel-btn" onclick="event.stopPropagation(); cancelTask(\'' + task.taskId + '\'); setTimeout(fetchProjectTasks, 500);">Cancel</button>';
+                    } else if (task.status === 'FAIL' || task.status === 'CANCELLED') {
+                        actionBtns = '<button class="retry-btn" onclick="event.stopPropagation(); retryTask(\'' + task.taskId + '\'); setTimeout(fetchProjectTasks, 500);">Retry</button>';
+                    }
+
+                    return '<div class="live-task-item ' + task.status + '" onclick="viewTask(\'' + task.taskId + '\')" title="Click to view full details">'
+                        + '<div class="live-task-top">'
+                        + '<span class="task-status ' + task.status + '">' + task.status + '</span>'
+                        + '<span class="live-task-objective">' + escapeHtml(task.objective.substring(0, 120)) + (task.objective.length > 120 ? '...' : '') + '</span>'
+                        + matchBadge + actionBtns
+                        + '</div>'
+                        + '<div class="live-task-bottom">'
+                        + workerHtml + progressHtml + timeHtml
+                        + '</div>'
+                        + '</div>';
+                }
+
+                liveTasksHtml = '<div class="live-tasks-section">'
+                    + '<div class="live-tasks-header"><h4>Live Tasks</h4><span class="live-pulse"></span></div>';
+
+                if (active.length > 0) {
+                    liveTasksHtml += '<div class="live-tasks-group"><div class="live-tasks-group-label running-label">Active (' + active.length + ')</div>';
+                    liveTasksHtml += active.map(renderLiveTaskRow).join('');
+                    liveTasksHtml += '</div>';
+                }
+                if (pending.length > 0) {
+                    liveTasksHtml += '<div class="live-tasks-group"><div class="live-tasks-group-label pending-label">Pending (' + pending.length + ')</div>';
+                    liveTasksHtml += pending.map(renderLiveTaskRow).join('');
+                    liveTasksHtml += '</div>';
+                }
+                if (completed.length > 0) {
+                    liveTasksHtml += '<div class="live-tasks-group"><div class="live-tasks-group-label completed-label">Recently Completed (' + completed.length + (completedTasks > 10 ? ' of ' + completedTasks : '') + ')</div>';
+                    liveTasksHtml += completed.map(renderLiveTaskRow).join('');
+                    liveTasksHtml += '</div>';
+                }
+                if (failed.length > 0) {
+                    liveTasksHtml += '<div class="live-tasks-group"><div class="live-tasks-group-label failed-label">Failed (' + failed.length + ')</div>';
+                    liveTasksHtml += failed.map(renderLiveTaskRow).join('');
+                    liveTasksHtml += '</div>';
+                }
+
+                liveTasksHtml += '</div>';
+            } else if (totalTasks === 0) {
+                liveTasksHtml = '<div class="live-tasks-section"><div class="live-tasks-empty">No tasks dispatched yet. Tasks will appear here as agents begin work.</div></div>';
+            }
+
+            // --- Inject summary + live tasks into container ---
+            let liveContainer = document.getElementById('liveTasksContainer');
+            if (!liveContainer) {
+                liveContainer = document.createElement('div');
+                liveContainer.id = 'liveTasksContainer';
+                const phaseListEl = document.getElementById('phaseList');
+                phaseListEl.parentNode.insertBefore(liveContainer, phaseListEl);
+            }
+            liveContainer.innerHTML = summaryHtml + liveTasksHtml;
+
+            // --- Plan accordion (spec phases with human review checkboxes) ---
+            const phaseList = document.getElementById('phaseList');
+            const noSpec = document.getElementById('noSpecMessage');
+
+            if (parsedPhases.length === 0) {
+                phaseList.style.display = 'none';
+                noSpec.style.display = totalTasks > 0 ? 'none' : '';
+                return;
+            }
+
+            phaseList.style.display = '';
+            noSpec.style.display = 'none';
+
+            let planHeader = '<div class="plan-section-header"><h4>Plan <span class="plan-subtitle">(Spec Review)</span></h4></div>';
+
+            phaseList.innerHTML = planHeader + parsedPhases.map((phase, pi) => {
+                const prog = phaseProgress[phase.id] || { completedTasks: [], collapsed: true };
+                const cc = prog.completedTasks.length;
+                const tc = phase.tasks.length;
+                const pct = tc > 0 ? Math.round((cc / tc) * 100) : 0;
+                const isExp = prog.collapsed === false;
+                const isDone = tc > 0 && cc === tc;
+                const isWip = cc > 0 && !isDone;
+
+                // Count live tasks mapped to this phase
+                const matchCount = projectLiveTasks.filter(t => {
+                    const m = matchTaskToPhase(t.objective);
+                    return m && m.phaseId === phase.id;
+                }).length;
+                const matchIndicator = matchCount > 0
+                    ? '<span class="phase-match-count" title="' + matchCount + ' queue task(s) mapped to this phase">' + matchCount + ' task' + (matchCount > 1 ? 's' : '') + ' mapped</span>'
+                    : '';
+
+                return '<div class="phase-item ' + (isDone ? 'completed' : isWip ? 'in-progress' : '') + ' ' + (isExp ? 'expanded' : '') + '" data-phase-id="' + escapeHtml(phase.id) + '">'
+                    + '<div class="phase-header" onclick="togglePhase(\'' + escapeHtml(phase.id) + '\')">'
+                    + '<span class="phase-chevron">&#9654;</span>'
+                    + '<span class="phase-title">' + escapeHtml(phase.title) + '</span>'
+                    + matchIndicator
+                    + '<div class="phase-progress-mini">'
+                    + (tc > 0 ? '<div class="mini-bar"><div class="mini-fill ' + (isDone ? 'complete' : '') + '" style="width:' + pct + '%"></div></div><span>' + cc + '/' + tc + '</span>' : '<span style="color:#666">no tasks</span>')
+                    + '</div></div>'
+                    + '<div class="phase-content">'
+                    + (phase.goal ? '<div class="phase-section"><div class="phase-section-title">Goal <button class="edit-icon" onclick="event.stopPropagation(); startSectionEdit(' + pi + ', \'goal\')" title="Edit">&#9998;</button></div><div class="phase-section-content editable" id="section-goal-' + pi + '" ondblclick="startSectionEdit(' + pi + ', \'goal\')">' + escapeHtml(phase.goal) + '</div></div>' : '')
+                    + (phase.tasks.length > 0 ? '<div class="phase-section"><div class="phase-section-title">Tasks <span class="human-review-label">(human review)</span> <button class="edit-icon" onclick="event.stopPropagation(); startSectionEdit(' + pi + ', \'tasks\')" title="Edit">&#9998;</button></div><ul class="phase-task-list">' + phase.tasks.map((t, ti) => {
+                        const checked = prog.completedTasks.includes(ti);
+                        return '<li class="phase-task-item ' + (checked ? 'checked' : '') + '"><input type="checkbox" ' + (checked ? 'checked' : '') + ' onchange="toggleTask(\'' + escapeHtml(phase.id) + '\',' + ti + ',this.checked)" id="ptask-' + pi + '-' + ti + '"><label for="ptask-' + pi + '-' + ti + '">' + escapeHtml(t) + '</label></li>';
+                    }).join('') + '</ul></div>' : '')
+                    + (phase.doneCriteria.length > 0 ? '<div class="phase-section"><div class="phase-section-title">Done Criteria <button class="edit-icon" onclick="event.stopPropagation(); startSectionEdit(' + pi + ', \'done\')" title="Edit">&#9998;</button></div><ul class="done-criteria-list">' + phase.doneCriteria.map(c => '<li class="done-criteria-item">' + escapeHtml(c) + '</li>').join('') + '</ul></div>' : '')
+                    + '</div></div>';
+            }).join('');
+        }
+
+        function togglePhase(phaseId) {
+            const el = document.querySelector('[data-phase-id="' + phaseId + '"]');
+            if (!el) return;
+            const expanding = !el.classList.contains('expanded');
+            el.classList.toggle('expanded');
+            if (!phaseProgress[phaseId]) phaseProgress[phaseId] = { completedTasks: [], collapsed: true };
+            phaseProgress[phaseId].collapsed = !expanding;
+            saveProgressDebounced();
+        }
+
+        function toggleTask(phaseId, taskIdx, checked) {
+            if (!phaseProgress[phaseId]) phaseProgress[phaseId] = { completedTasks: [], collapsed: false };
+            const ct = phaseProgress[phaseId].completedTasks;
+            if (checked && !ct.includes(taskIdx)) { ct.push(taskIdx); ct.sort((a, b) => a - b); }
+            else if (!checked) { phaseProgress[phaseId].completedTasks = ct.filter(i => i !== taskIdx); }
+            renderProjectDetail();
+            saveProgressDebounced();
+        }
+
+        function saveProgressDebounced() {
+            if (detailSaveTimeout) clearTimeout(detailSaveTimeout);
+            const ind = document.getElementById('detailSaveIndicator');
+            ind.textContent = 'Unsaved...';
+            ind.className = 'save-indicator saving';
+            detailSaveTimeout = setTimeout(() => saveProgress(), 1000);
+        }
+
+        async function saveProgress() {
+            if (!currentProjectDetail) return;
+            const ind = document.getElementById('detailSaveIndicator');
+            ind.textContent = 'Saving...';
+            ind.className = 'save-indicator saving';
+            try {
+                const existing = currentProjectDetail.config || {};
+                const newCfg = Object.assign({}, existing, { phaseProgress: phaseProgress });
+                const res = await fetch(CONTROL_PLANE + '/projects/' + currentProjectDetail.projectId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ config: newCfg })
+                });
+                if (res.ok) {
+                    currentProjectDetail.config = newCfg;
+                    ind.textContent = 'Saved';
+                    ind.className = 'save-indicator saved';
+                    setTimeout(() => { ind.textContent = ''; }, 2000);
+                } else { throw new Error('Save failed'); }
+            } catch (e) {
+                ind.textContent = 'Save failed';
+                ind.className = 'save-indicator error';
+                console.error('Error saving progress:', e);
+            }
+        }
+
+        function startSectionEdit(phaseIdx, sectionType) {
+            const phase = parsedPhases[phaseIdx];
+            if (!phase) return;
+            let text = '';
+            if (sectionType === 'goal') text = phase.goal;
+            else if (sectionType === 'tasks') text = phase.tasks.map(t => '- ' + t).join('\n');
+            else if (sectionType === 'done') text = phase.doneCriteria.map(c => '- ' + c).join('\n');
+
+            const sectionEl = document.getElementById('section-goal-' + phaseIdx);
+            const container = sectionEl ? sectionEl.parentElement : event.target.closest('.phase-section');
+            if (!container) return;
+            const contentEl = container.querySelector('.phase-section-content, .phase-task-list, .done-criteria-list');
+            if (!contentEl) return;
+
+            const eid = 'edit-' + phaseIdx + '-' + sectionType;
+            contentEl.outerHTML = '<div id="' + eid + '"><textarea class="phase-edit-textarea" id="' + eid + '-ta">' + escapeHtml(text) + '</textarea><div class="phase-edit-actions"><button class="cancel-edit-btn" onclick="cancelSectionEdit()">Cancel</button><button class="save-edit-btn" onclick="saveSectionEdit(' + phaseIdx + ',\'' + sectionType + '\')">Save</button></div></div>';
+            const ta = document.getElementById(eid + '-ta');
+            if (ta) { ta.focus(); ta.style.height = Math.max(80, ta.scrollHeight) + 'px'; }
+        }
+
+        function cancelSectionEdit() { renderProjectDetail(); }
+
+        async function saveSectionEdit(phaseIdx, sectionType) {
+            const ta = document.getElementById('edit-' + phaseIdx + '-' + sectionType + '-ta');
+            if (!ta) return;
+            const newText = ta.value;
+            const phase = parsedPhases[phaseIdx];
+
+            if (sectionType === 'goal') { phase.goal = newText.trim(); }
+            else if (sectionType === 'tasks') {
+                phase.tasks = newText.split('\n').map(l => l.trim().replace(/^[-*]\s+(?:\[.\]\s+)?/, '')).filter(l => l);
+                const prog = phaseProgress[phase.id];
+                if (prog) prog.completedTasks = prog.completedTasks.filter(i => i < phase.tasks.length);
+            }
+            else if (sectionType === 'done') {
+                phase.doneCriteria = newText.split('\n').map(l => l.trim().replace(/^[-*]\s+(?:\[.\]\s+)?/, '')).filter(l => l);
+            }
+
+            const newMd = reconstructMarkdown(parsedPhases);
+            const ind = document.getElementById('detailSaveIndicator');
+            ind.textContent = 'Saving...'; ind.className = 'save-indicator saving';
+            try {
+                const res = await fetch(CONTROL_PLANE + '/projects/' + currentProjectDetail.projectId, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ specMarkdown: newMd })
+                });
+                if (res.ok) {
+                    currentProjectDetail.specMarkdown = newMd;
+                    ind.textContent = 'Saved'; ind.className = 'save-indicator saved';
+                    setTimeout(() => { ind.textContent = ''; }, 2000);
+                } else { throw new Error('Save failed'); }
+            } catch (e) { ind.textContent = 'Save failed'; ind.className = 'save-indicator error'; }
+            await saveProgress();
+            renderProjectDetail();
+        }
+
+        function reconstructMarkdown(phases) {
+            return phases.map(ph => {
+                let md = '# ' + ph.title + '\n\n';
+                if (ph.goal) md += '## Goal\n\n' + ph.goal + '\n\n';
+                if (ph.tasks.length > 0) { md += '## Tasks\n\n'; ph.tasks.forEach(t => { md += '- ' + t + '\n'; }); md += '\n'; }
+                if (ph.doneCriteria.length > 0) { md += '## Done Criteria\n\n'; ph.doneCriteria.forEach(c => { md += '- ' + c + '\n'; }); md += '\n'; }
+                return md;
+            }).join('---\n\n');
+        }
+
+        function openSpecEditor() {
+            const noSpec = document.getElementById('noSpecMessage');
+            noSpec.innerHTML = '<div style="text-align:left;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><span style="color:#888;font-size:13px;">Paste or type your spec markdown:</span><label style="padding:6px 14px;background:#16213e;border:1px solid #2a2a4a;border-radius:6px;cursor:pointer;font-size:12px;color:#00d4ff;">Upload .md<input type="file" accept=".md,.markdown,.txt" style="display:none;" onchange="loadSpecForDetail(this)"></label></div><textarea id="detailSpecTextarea" class="phase-edit-textarea" style="min-height:200px;font-family:Consolas,monospace;" placeholder="# Phase 0 \u2014 Project Initialization&#10;## Goal&#10;...&#10;## Tasks&#10;- Task 1&#10;- Task 2&#10;## Done Criteria&#10;- ..."></textarea><div class="phase-edit-actions" style="margin-top:10px;"><button class="cancel-edit-btn" onclick="renderProjectDetail()">Cancel</button><button class="save-edit-btn" onclick="saveNewSpec()">Save Spec</button></div></div>';
+        }
+
+        function loadSpecForDetail(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => { document.getElementById('detailSpecTextarea').value = e.target.result; };
+            reader.readAsText(file);
+        }
+
+        async function saveNewSpec() {
+            const ta = document.getElementById('detailSpecTextarea');
+            if (!ta) return;
+            const spec = ta.value.trim();
+            if (!spec) return;
+            try {
+                const res = await fetch(CONTROL_PLANE + '/projects/' + currentProjectDetail.projectId, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ specMarkdown: spec })
+                });
+                if (res.ok) {
+                    currentProjectDetail.specMarkdown = spec;
+                    parsedPhases = parseSpecMarkdown(spec);
+                    renderProjectDetail();
+                } else { alert('Failed to save spec markdown'); }
+            } catch (e) { alert('Error: Could not reach Control Plane'); }
         }
 
         async function fetchHealth() {
@@ -2194,6 +3085,7 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
                             <span class="task-status ${t.status}">${t.status}</span>
                             ${t.objective.substring(0, 80)}${t.objective.length > 80 ? '...' : ''}
                             ${(t.status === 'PENDING' || t.status === 'IN_PROGRESS') ? `<button class="cancel-btn" onclick="event.stopPropagation(); cancelTask('${t.taskId}')">Cancel</button>` : ''}
+                            ${(t.status === 'FAIL' || t.status === 'CANCELLED') ? `<button class="retry-btn" onclick="event.stopPropagation(); retryTask('${t.taskId}')">Retry</button>` : ''}
                         </div>
                         <div class="meta">
                             <span>Domain: ${t.domain}</span>
@@ -2372,7 +3264,7 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
                 } catch {}
                 responseBox.innerHTML = `<span style="color: #00ff88;">COMPLETED</span>\n\n${escapeHtml(output)}${audioHtml}`;
             } else if (task.status === 'FAIL' && task.result) {
-                responseBox.innerHTML = `<span style="color: #ff4444;">FAILED</span>\n\n${escapeHtml(task.result.error || JSON.stringify(task.result, null, 2))}`;
+                responseBox.innerHTML = `<span style="color: #ff4444;">FAILED</span>\n\n${escapeHtml(task.result.error || JSON.stringify(task.result, null, 2))}\n\n<button class="retry-btn" style="font-size:13px;padding:6px 16px;" onclick="retryTask('${task.taskId}')">Retry Task</button>`;
             } else if (task.status === 'IN_PROGRESS' || task.status === 'RUNNING' || task.status === 'ACKED' || task.status === 'LEASED') {
                 let progressInfo = '';
                 if (task.progress) {
@@ -2383,7 +3275,7 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
                 }
                 responseBox.innerHTML = `<span style="color: #00d4ff;">IN PROGRESS</span>\n\nWorker: ${task.assignedWorkerId || 'Assigning...'}\nStatus: ${task.status}${progressInfo}\n\nWaiting for response...`;
             } else if (task.status === 'CANCELLED') {
-                responseBox.innerHTML = `<span style="color: #888888;">CANCELLED</span>\n\nTask was cancelled.`;
+                responseBox.innerHTML = `<span style="color: #888888;">CANCELLED</span>\n\nTask was cancelled.\n\n<button class="retry-btn" style="font-size:13px;padding:6px 16px;" onclick="retryTask('${task.taskId}')">Retry Task</button>`;
             } else {
                 responseBox.innerHTML = `<span style="color: #ffaa00;">PENDING</span>\n\nWaiting for a worker to pick up this task...`;
             }
@@ -2451,6 +3343,68 @@ curl -X PUT http://10.0.1.147:5100/escalations/{id} \
                 } else {
                     const data = await res.json();
                     alert('Cancel failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error: Could not reach Control Plane');
+            }
+        }
+
+        async function retryTask(taskId) {
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/tasks/${taskId}/retry`, { method: 'POST' });
+                if (res.ok) {
+                    fetchTasks();
+                    fetchEvents();
+                    if (selectedTaskId === taskId) viewTask(taskId);
+                } else {
+                    const data = await res.json();
+                    alert('Retry failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error: Could not reach Control Plane');
+            }
+        }
+
+        async function terminateProject() {
+            if (!currentProjectDetail) return;
+            const pid = currentProjectDetail.projectId;
+            const name = currentProjectDetail.name;
+            if (!confirm(`Terminate project "${name}"? This will cancel ALL active tasks.`)) return;
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/projects/${pid}/terminate`, { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(`Project terminated. ${data.tasksCancelled} task(s) cancelled.`);
+                    fetchTasks();
+                    fetchProjects();
+                    openProjectDetail(pid);
+                } else {
+                    const data = await res.json();
+                    alert('Terminate failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error: Could not reach Control Plane');
+            }
+        }
+
+        async function deleteProject() {
+            if (!currentProjectDetail) return;
+            const pid = currentProjectDetail.projectId;
+            const name = currentProjectDetail.name;
+            if (!confirm(`DELETE project "${name}" and ALL its tasks? This cannot be undone.`)) return;
+            try {
+                const res = await fetch(`${CONTROL_PLANE}/projects/${pid}?force=true`, { method: 'DELETE' });
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(`Project deleted. ${data.tasksDeleted} task(s) removed.`);
+                    closeProjectDetail();
+                    selectedProjectId = null;
+                    document.getElementById('projectFilterBadge').innerHTML = '';
+                    fetchTasks();
+                    fetchProjects();
+                } else {
+                    const data = await res.json();
+                    alert('Delete failed: ' + (data.error || 'Unknown error'));
                 }
             } catch (e) {
                 alert('Error: Could not reach Control Plane');

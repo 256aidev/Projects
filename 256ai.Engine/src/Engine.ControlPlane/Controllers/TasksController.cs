@@ -50,7 +50,8 @@ public class TasksController : ControllerBase
             ParentTaskId = request.ParentTaskId,
             ExecutionMode = request.ExecutionMode,
             DependsOnJson = request.DependsOn != null ? JsonSerializer.Serialize(request.DependsOn) : null,
-            ProjectId = request.ProjectId
+            ProjectId = request.ProjectId,
+            FailedWorkersJson = request.ExcludeWorkers != null ? JsonSerializer.Serialize(request.ExcludeWorkers) : null
         };
 
         _db.Tasks.Add(taskEntity);
@@ -160,10 +161,18 @@ public class TasksController : ControllerBase
             .Where(t => t.Status == Status.PENDING && domainList.Contains(t.Domain))
             .ToListAsync();
 
-        // Filter out tasks whose dependencies aren't met
+        // Filter out tasks whose dependencies aren't met or where this worker already failed
         TaskEntity? task = null;
         foreach (var candidate in pendingTasks.OrderBy(t => t.CreatedAt))
         {
+            // Skip tasks this worker already failed
+            if (!string.IsNullOrEmpty(candidate.FailedWorkersJson))
+            {
+                var failedWorkers = JsonSerializer.Deserialize<List<string>>(candidate.FailedWorkersJson);
+                if (failedWorkers != null && failedWorkers.Contains(workerId))
+                    continue;
+            }
+
             if (!string.IsNullOrEmpty(candidate.DependsOnJson))
             {
                 var deps = JsonSerializer.Deserialize<List<string>>(candidate.DependsOnJson);
@@ -226,6 +235,73 @@ public class TasksController : ControllerBase
             status = "CANCELLED",
             cancelledAt = task.CompletedAt
         });
+    }
+
+    /// <summary>
+    /// POST /tasks/{id}/retry - Retry a failed or cancelled task
+    /// Resets status to PENDING, clears worker assignment and result
+    /// </summary>
+    [HttpPost("{id}/retry")]
+    public async Task<IActionResult> RetryTask(string id)
+    {
+        var task = await _db.Tasks.FirstOrDefaultAsync(t => t.TaskId == id);
+
+        if (task == null)
+            return NotFound(new { error = "Task not found", taskId = id });
+
+        if (task.Status != Status.FAIL && task.Status != Status.CANCELLED)
+            return BadRequest(new { error = $"Can only retry FAIL or CANCELLED tasks, current status: {task.Status}", taskId = id });
+
+        // Track the failed worker so polling skips it next time
+        if (!string.IsNullOrEmpty(task.AssignedWorkerId))
+        {
+            var failedWorkers = !string.IsNullOrEmpty(task.FailedWorkersJson)
+                ? JsonSerializer.Deserialize<List<string>>(task.FailedWorkersJson) ?? new List<string>()
+                : new List<string>();
+            if (!failedWorkers.Contains(task.AssignedWorkerId))
+                failedWorkers.Add(task.AssignedWorkerId);
+            task.FailedWorkersJson = JsonSerializer.Serialize(failedWorkers);
+        }
+
+        task.Status = Status.PENDING;
+        task.AssignedWorkerId = null;
+        task.ResultJson = null;
+        task.ProgressJson = null;
+        task.CompletedAt = null;
+        task.LastProgressAt = null;
+        task.RetryCount++;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            taskId = id,
+            status = "PENDING",
+            retryCount = task.RetryCount,
+            excludedWorkers = task.FailedWorkersJson,
+            retriedAt = DateTimeOffset.UtcNow
+        });
+    }
+
+    /// <summary>
+    /// DELETE /tasks/{id} - Delete a task (only completed, failed, or cancelled)
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteTask(string id)
+    {
+        var task = await _db.Tasks.FirstOrDefaultAsync(t => t.TaskId == id);
+
+        if (task == null)
+            return NotFound(new { error = "Task not found", taskId = id });
+
+        if (task.Status == Status.PENDING || task.Status == Status.LEASED ||
+            task.Status == Status.ACKED || task.Status == Status.IN_PROGRESS || task.Status == Status.RUNNING)
+            return BadRequest(new { error = $"Cannot delete active task in {task.Status} status. Cancel it first.", taskId = id });
+
+        _db.Tasks.Remove(task);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { taskId = id, deleted = true });
     }
 
     /// <summary>
@@ -350,30 +426,21 @@ public static class DomainAutoDetector
 {
     private static readonly string[] SoundDomains = { "sound", "audio", "sfx", "voice", "music", "tts" };
 
+    // Only trigger sound auto-detection on very explicit phrases (avoid false positives)
     private static readonly string[] SoundKeywords =
     {
-        // Voice/TTS
-        "voice", "speak", "say", "tts", "narrat", "speech", "announce",
-        // Music
-        "music", "song", "melody", "beat", "instrumental", "compose", "tune",
-        // Sound effects
-        "sound effect", "sfx", "audio",
-        // Nature sounds
-        "river", "ocean", "wave", "rain", "thunder", "wind", "bird", "cricket",
-        "forest", "waterfall", "stream", "campfire",
-        // City sounds
-        "traffic", "siren", "horn", "crowd",
-        // Animals
-        "bark", "howl", "roar", "meow",
-        // General audio
-        "generate.*sound", "create.*sound", "make.*sound",
-        "generate.*noise", "create.*noise", "make.*noise",
-        "generate.*audio", "create.*audio", "make.*audio",
+        "text to speech", "text-to-speech", "tts",
+        "generate voice", "voice synthesis", "voice generation",
+        "generate music", "create music", "music generation",
+        "sound effect", "sfx",
+        "generate audio", "create audio", "audio generation",
+        "generate sound", "create sound", "sound generation",
     };
 
     /// <summary>
     /// If the submitted domain is generic (general/code) but the objective
-    /// clearly describes a sound task, auto-route to "sound" domain.
+    /// explicitly describes a sound/audio generation task, auto-route to "sound" domain.
+    /// Uses tight keyword matching to avoid false positives on code tasks.
     /// </summary>
     public static string Detect(string submittedDomain, string objective)
     {
@@ -414,4 +481,7 @@ public record CreateTaskRequest
     public string? ParentTaskId { get; init; }
     public string ExecutionMode { get; init; } = "auto";
     public List<string>? DependsOn { get; init; }
+
+    // Worker routing
+    public List<string>? ExcludeWorkers { get; init; }
 }

@@ -1,0 +1,28 @@
+version: "3.8"
+
+# Development overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  api:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile.api
+      target: builder
+    command: ["npm", "run", "start:debug"]
+    environment:
+      NODE_ENV: development
+      CORS_ORIGIN: "*"
+    volumes:
+      - ../../apps/api/src:/app/src:ro
+    ports:
+      - "3000:3000"    # API direct access
+      - "9229:9229"    # Node.js debug port
+
+  postgres:
+    ports:
+      - "5432:5432"    # Expose DB for local tools
+
+  nginx:
+    ports:
+      - "8080:80"      # Dev HTTP on 8080 instead of 80

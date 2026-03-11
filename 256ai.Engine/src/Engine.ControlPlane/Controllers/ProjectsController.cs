@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Engine.Core.Enums;
 using Engine.Infrastructure.Data;
 using Engine.Infrastructure.Entities;
@@ -16,10 +17,12 @@ namespace Engine.ControlPlane.Controllers;
 public class ProjectsController : ControllerBase
 {
     private readonly EngineDbContext _db;
+    private readonly string? _projectsBasePath;
 
-    public ProjectsController(EngineDbContext db)
+    public ProjectsController(EngineDbContext db, IConfiguration configuration)
     {
         _db = db;
+        _projectsBasePath = configuration["Projects:BasePath"];
     }
 
     /// <summary>
@@ -31,6 +34,60 @@ public class ProjectsController : ControllerBase
         var projectId = Guid.NewGuid().ToString();
         var now = DateTimeOffset.UtcNow;
 
+        // Auto-generate working directory from project name if not provided
+        var workingDirectory = request.WorkingDirectory;
+        if (string.IsNullOrEmpty(workingDirectory) && !string.IsNullOrEmpty(_projectsBasePath))
+        {
+            // Sanitize project name for use as folder name
+            var folderName = Regex.Replace(request.Name, @"[^\w\-. ]", "").Trim();
+            folderName = Regex.Replace(folderName, @"\s+", "-"); // spaces to hyphens
+            workingDirectory = Path.Combine(_projectsBasePath, folderName);
+        }
+
+        // Create the project directory with standard scaffold
+        if (!string.IsNullOrEmpty(workingDirectory))
+        {
+            try
+            {
+                Directory.CreateDirectory(workingDirectory);
+                Directory.CreateDirectory(Path.Combine(workingDirectory, "docs"));
+                Directory.CreateDirectory(Path.Combine(workingDirectory, "src"));
+                Directory.CreateDirectory(Path.Combine(workingDirectory, "config"));
+                Directory.CreateDirectory(Path.Combine(workingDirectory, "assets"));
+            }
+            catch { /* log but don't fail project creation */ }
+
+            // Write spec/description to the project folder for worker reference
+            var spec = request.SpecMarkdown ?? request.Description;
+            if (!string.IsNullOrEmpty(spec))
+            {
+                try { System.IO.File.WriteAllText(Path.Combine(workingDirectory, "SPEC.md"), spec); }
+                catch { /* log but don't fail project creation */ }
+            }
+
+            // Write PROJECT.json — project metadata for worker reference
+            try
+            {
+                var projectMeta = new
+                {
+                    projectId,
+                    name = request.Name,
+                    description = request.Description,
+                    domain = request.Domain,
+                    createdAt = now,
+                    workingDirectory,
+                    templateId = request.TemplateId
+                };
+                System.IO.File.WriteAllText(
+                    Path.Combine(workingDirectory, "PROJECT.json"),
+                    JsonSerializer.Serialize(projectMeta, new JsonSerializerOptions { WriteIndented = true }));
+            }
+            catch { }
+
+            // Copy reference files from the inbound folder
+            ScaffoldReferenceFiles(workingDirectory);
+        }
+
         var project = new ProjectEntity
         {
             ProjectId = projectId,
@@ -40,7 +97,7 @@ public class ProjectsController : ControllerBase
             Status = Status.PENDING,
             TemplateId = request.TemplateId,
             ConfigJson = request.Config != null ? JsonSerializer.Serialize(request.Config) : null,
-            WorkingDirectory = request.WorkingDirectory,
+            WorkingDirectory = workingDirectory,
             SpecMarkdown = request.SpecMarkdown,
             CreatedAt = now
         };
@@ -54,8 +111,8 @@ public class ProjectsController : ControllerBase
         if (!string.IsNullOrEmpty(specContent))
         {
             var objective = $"Project: {request.Name}";
-            if (!string.IsNullOrEmpty(request.WorkingDirectory))
-                objective += $"\nWorking Directory: {request.WorkingDirectory}";
+            if (!string.IsNullOrEmpty(workingDirectory))
+                objective += $"\nWorking Directory: {workingDirectory}";
             objective += $"\n\n{specContent}";
 
             var leadTask = new TaskEntity
@@ -67,8 +124,8 @@ public class ProjectsController : ControllerBase
                 ExpectedOutputs = "Decomposed sub-tasks dispatched to appropriate workers",
                 Status = Status.PENDING,
                 CreatedAt = now,
-                InputsJson = !string.IsNullOrEmpty(request.WorkingDirectory)
-                    ? JsonSerializer.Serialize(new Dictionary<string, string> { ["workingDirectory"] = request.WorkingDirectory })
+                InputsJson = !string.IsNullOrEmpty(workingDirectory)
+                    ? JsonSerializer.Serialize(new Dictionary<string, string> { ["workingDirectory"] = workingDirectory })
                     : null
             };
             _db.Tasks.Add(leadTask);
@@ -82,6 +139,7 @@ public class ProjectsController : ControllerBase
             project.Name,
             project.Domain,
             Status = "PENDING",
+            WorkingDirectory = workingDirectory,
             CreatedAt = now,
             LeadTaskId = leadTaskId
         });
@@ -249,24 +307,146 @@ public class ProjectsController : ControllerBase
     }
 
     /// <summary>
+    /// POST /projects/{id}/terminate - Cancel all active tasks and mark project as CANCELLED
+    /// </summary>
+    [HttpPost("{id}/terminate")]
+    public async Task<IActionResult> TerminateProject(string id)
+    {
+        var project = await _db.Projects.FirstOrDefaultAsync(p => p.ProjectId == id);
+        if (project == null)
+            return NotFound(new { error = "Project not found", projectId = id });
+
+        // Cancel all non-terminal tasks
+        var activeTasks = await _db.Tasks
+            .Where(t => t.ProjectId == id &&
+                t.Status != Status.COMPLETED &&
+                t.Status != Status.FAIL &&
+                t.Status != Status.CANCELLED &&
+                t.Status != Status.CLOSED)
+            .ToListAsync();
+
+        foreach (var task in activeTasks)
+        {
+            task.Status = Status.CANCELLED;
+            task.CompletedAt = DateTimeOffset.UtcNow;
+        }
+
+        project.Status = Status.CANCELLED;
+        project.CompletedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            projectId = id,
+            status = "CANCELLED",
+            tasksCancelled = activeTasks.Count,
+            terminatedAt = project.CompletedAt
+        });
+    }
+
+    /// <summary>
     /// DELETE /projects/{id} - Delete a project (only if no tasks exist)
     /// </summary>
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteProject(string id)
+    public async Task<IActionResult> DeleteProject(string id, [FromQuery] bool force = false)
     {
         var project = await _db.Projects.FirstOrDefaultAsync(p => p.ProjectId == id);
 
         if (project == null)
             return NotFound(new { error = "Project not found", projectId = id });
 
-        var taskCount = await _db.Tasks.CountAsync(t => t.ProjectId == id);
-        if (taskCount > 0)
-            return BadRequest(new { error = $"Cannot delete project with {taskCount} tasks. Cancel or remove tasks first.", projectId = id });
+        var tasks = await _db.Tasks.Where(t => t.ProjectId == id).ToListAsync();
+        if (tasks.Count > 0)
+        {
+            if (!force)
+                return BadRequest(new { error = $"Cannot delete project with {tasks.Count} tasks. Use ?force=true to delete with tasks.", projectId = id });
+
+            _db.Tasks.RemoveRange(tasks);
+        }
 
         _db.Projects.Remove(project);
         await _db.SaveChangesAsync();
 
-        return Ok(new { projectId = id, deleted = true });
+        return Ok(new { projectId = id, deleted = true, tasksDeleted = tasks.Count });
+    }
+
+    /// <summary>
+    /// Copies reference files into a new project directory.
+    /// Sources:
+    /// 1. Inbound folder ({ProjectsBasePath}/_inbound/) — user-managed reference files
+    /// 2. Swarm info — auto-generated from the database (machines, workers)
+    /// </summary>
+    private void ScaffoldReferenceFiles(string workingDirectory)
+    {
+        try
+        {
+            // 1. Copy everything from _inbound folder if it exists
+            if (!string.IsNullOrEmpty(_projectsBasePath))
+            {
+                var inboundPath = Path.Combine(_projectsBasePath, "_inbound");
+                if (Directory.Exists(inboundPath))
+                {
+                    CopyDirectory(inboundPath, workingDirectory);
+                }
+            }
+
+            // 2. Write SWARM.md — available workers and capabilities
+            var workers = _db.WorkerHeartbeats.ToList();
+            var machines = _db.Machines.ToList();
+
+            var swarmInfo = new System.Text.StringBuilder();
+            swarmInfo.AppendLine("# Swarm Reference");
+            swarmInfo.AppendLine();
+            swarmInfo.AppendLine("Auto-generated at project creation. Lists available workers and machines.");
+            swarmInfo.AppendLine();
+            swarmInfo.AppendLine("## Workers");
+            swarmInfo.AppendLine();
+            swarmInfo.AppendLine("| Worker ID | Role | Provider | Status |");
+            swarmInfo.AppendLine("|-----------|------|----------|--------|");
+            foreach (var w in workers)
+            {
+                swarmInfo.AppendLine($"| {w.WorkerId} | {w.Role} | {w.Provider} | {w.Status} |");
+            }
+            swarmInfo.AppendLine();
+
+            if (machines.Count > 0)
+            {
+                swarmInfo.AppendLine("## Machines");
+                swarmInfo.AppendLine();
+                swarmInfo.AppendLine("| Machine | Hostname | IP | Role | OS |");
+                swarmInfo.AppendLine("|---------|----------|----|------|----|");
+                foreach (var m in machines)
+                {
+                    swarmInfo.AppendLine($"| {m.DisplayName} | {m.Hostname} | {m.IpAddress} | {m.Role} | {m.Os} |");
+                }
+            }
+
+            System.IO.File.WriteAllText(
+                Path.Combine(workingDirectory, "docs", "SWARM.md"),
+                swarmInfo.ToString());
+        }
+        catch { /* don't fail project creation */ }
+    }
+
+    /// <summary>
+    /// Recursively copy directory contents, skipping files that already exist.
+    /// </summary>
+    private static void CopyDirectory(string source, string destination)
+    {
+        foreach (var file in Directory.GetFiles(source))
+        {
+            var destFile = Path.Combine(destination, Path.GetFileName(file));
+            if (!System.IO.File.Exists(destFile))
+                System.IO.File.Copy(file, destFile);
+        }
+        foreach (var dir in Directory.GetDirectories(source))
+        {
+            var dirName = Path.GetFileName(dir);
+            if (dirName.StartsWith(".") || dirName.StartsWith("_")) continue; // skip hidden/system
+            var destDir = Path.Combine(destination, dirName);
+            Directory.CreateDirectory(destDir);
+            CopyDirectory(dir, destDir);
+        }
     }
 }
 

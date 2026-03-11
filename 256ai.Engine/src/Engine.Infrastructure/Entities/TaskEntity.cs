@@ -42,6 +42,9 @@ public class TaskEntity
     public int RetryCount { get; set; } = 0;
     public int MaxRetries { get; set; } = 3;
 
+    // JSON array of worker IDs that failed this task — excluded from future polling
+    public string? FailedWorkersJson { get; set; }
+
     // Progress tracking
     public string? ProgressJson { get; set; }
     public DateTimeOffset? LastProgressAt { get; set; }
