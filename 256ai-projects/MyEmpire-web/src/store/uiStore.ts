@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { sound } from '../engine/sound';
 
 type PanelName = 'buy' | 'market' | 'lawyer' | 'event' | 'settings' | null;
 export type ViewName = 'operation' | 'city' | 'warehouse' | 'legal';
@@ -46,6 +47,7 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
 
   addNotification: (message, type) => {
     const id = ++notifId;
+    sound.play(type === 'success' ? 'notify_success' : 'notify_warning');
     set((s) => ({ notifications: [...s.notifications, { id, message, type }] }));
     setTimeout(() => {
       set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) }));

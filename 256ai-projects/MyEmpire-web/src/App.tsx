@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { sound } from './engine/sound';
 import { useGameTick } from './hooks/useGameTick';
 import { useUIStore } from './store/uiStore';
 import { useAuthStore } from './store/authStore';
@@ -56,7 +57,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-950">
+    <div className="h-full flex flex-col bg-gray-950" onClick={() => sound.startMusic()} onTouchStart={() => sound.startMusic()}>
       {/* Top HUD — always visible */}
       <HUD />
 

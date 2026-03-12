@@ -2,6 +2,7 @@ import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, INITIAL_OPERATION } from '../../data/types';
 import { formatMoney, formatUnits } from '../../engine/economy';
+import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
 
 export default function OperationView() {
@@ -147,12 +148,12 @@ export default function OperationView() {
                             <div className="h-full rounded-full transition-all" style={{ width: `${progress * 100}%`, backgroundColor: ready ? '#22c55e' : '#65a30d' }} />
                           </div>
                           {ready ? (
-                            <button onClick={() => { const u = harvestGrowRoom(room.id, slotIndex); if (u > 0) addNotification(`Harvested ${formatUnits(u)} ${slot.strainName}!${op.seedStock > 0 ? ' Auto-replanting…' : ' Buy seeds.'}`, 'success'); }}
+                            <button onClick={() => { const u = harvestGrowRoom(room.id, slotIndex); if (u > 0) { sound.play('harvest'); addNotification(`Harvested ${formatUnits(u)} ${slot.strainName}!${op.seedStock > 0 ? ' Auto-replanting…' : ' Buy seeds.'}`, 'success'); } }}
                               className="w-full py-1 rounded bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold transition">
                               Harvest!
                             </button>
                           ) : idle ? (
-                            <button onClick={() => { if (plantSeeds(room.id, slotIndex)) addNotification(`${slot.strainName} planted!`, 'success'); else addNotification('No seeds', 'warning'); }}
+                            <button onClick={() => { if (plantSeeds(room.id, slotIndex)) { sound.play('plant'); addNotification(`${slot.strainName} planted!`, 'success'); } else addNotification('No seeds', 'warning'); }}
                               disabled={op.seedStock < 1}
                               className={`w-full py-1 rounded text-[10px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
                               🌱 Plant {op.seedStock < 1 ? '(no seeds)' : ''}
@@ -280,7 +281,7 @@ export default function OperationView() {
               <button
                 key={qty}
                 onClick={() => {
-                  if (buySeed(qty)) addNotification(`Bought ${qty} seeds`, 'success');
+                  if (buySeed(qty)) { sound.play('buy'); addNotification(`Bought ${qty} seeds`, 'success'); }
                   else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
                 }}
                 disabled={!canAfford}
@@ -318,7 +319,7 @@ export default function OperationView() {
               <button
                 key={qty}
                 onClick={() => {
-                  if (hireDealers(qty)) addNotification(`Hired ${qty} dealer${qty > 1 ? 's' : ''}`, 'success');
+                  if (hireDealers(qty)) { sound.play('dealer_hire'); addNotification(`Hired ${qty} dealer${qty > 1 ? 's' : ''}`, 'success'); }
                   else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
                 }}
                 disabled={!canAfford}

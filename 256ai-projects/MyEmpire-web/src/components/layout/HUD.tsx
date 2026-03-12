@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney, formatUnits } from '../../engine/economy';
+import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
 
 export default function HUD() {
+  const [muted, setMuted] = useState(sound.muted);
   const dirtyCash = useGameStore((s) => s.dirtyCash);
   const cleanCash = useGameStore((s) => s.cleanCash);
   const lastTickDirtyProfit = useGameStore((s) => s.lastTickDirtyProfit);
@@ -54,6 +57,19 @@ export default function HUD() {
         <span className="text-white font-semibold">{bizCount}</span>
         <span className="text-gray-500 text-xs">fronts</span>
       </div>
+
+      {/* Mute button */}
+      <button
+        onClick={() => {
+          sound.toggleMute();
+          sound.startMusic();
+          setMuted(sound.muted);
+        }}
+        className="text-gray-500 hover:text-gray-300 text-base transition"
+        title={muted ? 'Unmute' : 'Mute'}
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
 
       {/* Account / save indicator */}
       <div className="ml-auto flex items-center gap-2">
