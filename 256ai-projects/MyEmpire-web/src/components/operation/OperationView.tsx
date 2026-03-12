@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
-import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, ROOM_UPGRADE_DEFS, INITIAL_OPERATION } from '../../data/types';
+import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, ROOM_UPGRADE_DEFS, INITIAL_OPERATION, getStrainUnlockCost, getDealerHireCost } from '../../data/types';
 import { getRoomBonus, getRoomCycleCost } from '../../engine/economy';
 import { formatMoney, formatUnits } from '../../engine/economy';
 import { sound } from '../../engine/sound';
@@ -168,7 +168,8 @@ export default function OperationView() {
           <p className="text-gray-600 text-[9px] mb-1">Avg ${weightedAvgPrice.toFixed(0)}/oz · dealer cut ${currentDealerTier.cutPer8oz} flat per 8oz sold</p>
           <div className="flex gap-1.5 mb-1">
             {[1, 3, 5].map((qty) => {
-              const cost = currentDealerTier.hireCost * qty;
+              let cost = 0;
+              for (let i = 0; i < qty; i++) cost += getDealerHireCost(currentDealerTier, op.dealerCount + i);
               const canAfford = dirtyCash >= cost;
               return (
                 <button
@@ -238,7 +239,7 @@ export default function OperationView() {
                 >
                   ▲ {nextDealerTier.name} — {formatMoney(nextDealerTier.hireCost * 3)} 💵<br />
                   <span className="font-normal opacity-75">
-                    {nextDealerTier.salesRatePerTick} oz/tick · ${nextDealerTier.cutPer8oz} cut/8oz · hire ${nextDealerTier.hireCost}/ea
+                    {nextDealerTier.salesRatePerTick} oz/tick · ${nextDealerTier.cutPer8oz} cut/8oz · base ${formatMoney(nextDealerTier.hireCost)}/ea
                   </span>
                 </button>
               );
@@ -257,9 +258,11 @@ export default function OperationView() {
         <div className="flex flex-col gap-4">
           {op.growRooms.map((room) => {
             const def = GROW_ROOM_TYPE_DEFS.find((d) => d.id === room.typeId);
-            const nextUpgradeCost = def?.upgradeCosts[room.upgradeLevel];
-            const canUpgrade = !!nextUpgradeCost && dirtyCash >= nextUpgradeCost;
-            const isMaxLevel = !nextUpgradeCost;
+            const nextSlotIndex = room.upgradeLevel + 1;
+            const hasNextSlot = def && nextSlotIndex < def.strainSlots.length && def.strainUnlockBase > 0;
+            const nextUpgradeCost = hasNextSlot ? getStrainUnlockCost(def, nextSlotIndex) : 0;
+            const canUpgrade = hasNextSlot && dirtyCash >= nextUpgradeCost;
+            const isMaxLevel = !hasNextSlot;
 
             const totalYieldBonus = getRoomBonus(room, 'yield');
             const maintenancePerCycle = getRoomCycleCost(room);
@@ -282,7 +285,7 @@ export default function OperationView() {
                           const newSlotName = def?.strainSlots[room.upgradeLevel + 1]?.strainName;
                           addNotification(`Unlocked ${newSlotName} slot!`, 'success');
                         } else {
-                          addNotification(`Need ${formatMoney(nextUpgradeCost!)} dirty cash to upgrade`, 'warning');
+                          addNotification(`Need ${formatMoney(nextUpgradeCost)} dirty cash to upgrade`, 'warning');
                         }
                       }}
                       disabled={!canUpgrade}

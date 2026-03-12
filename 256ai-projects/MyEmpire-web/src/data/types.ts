@@ -14,10 +14,21 @@ export interface GrowRoomTypeDef {
   id: string;
   name: string;
   purchaseCost: number;      // dirty cash to buy
-  upgradeCosts: number[];    // [cost to unlock slot 2, slot 3, slot 4] — max 3 upgrades
+  strainUnlockBase: number;  // base cost for first strain unlock (doubles each slot)
   strainSlots: StrainSlotDef[];  // index = unlock order (max 4)
   autoHarvestCost: number;   // one-time cost to enable auto-harvest for this room
   upgradeCostMultiplier: number; // scales water/light/nutrient upgrade costs (2× per tier)
+}
+
+/** Cost to unlock strain slot N (0-indexed). Slot 0 is free, slot 1+ doubles each time. */
+export function getStrainUnlockCost(def: GrowRoomTypeDef, slotIndex: number): number {
+  if (slotIndex <= 0 || def.strainUnlockBase <= 0) return 0;
+  return def.strainUnlockBase * Math.pow(2, slotIndex - 1);
+}
+
+/** Escalating dealer hire cost: base × 1.5^ownedCount */
+export function getDealerHireCost(tier: DealerTier, ownedCount: number): number {
+  return Math.floor(tier.hireCost * Math.pow(1.5, ownedCount));
 }
 
 export interface StrainSlot extends StrainSlotDef {
@@ -446,7 +457,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     id: 'closet',
     name: 'Closet',
     purchaseCost: 0,
-    upgradeCosts: [],  // can't be upgraded — starter room only
+    strainUnlockBase: 0,  // can't be upgraded — starter room only
     autoHarvestCost: 500,
     upgradeCostMultiplier: 1,
     strainSlots: [
@@ -457,7 +468,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     id: 'shed',
     name: 'Shed',
     purchaseCost: 1500,
-    upgradeCosts: [2000, 4000, 8000],
+    strainUnlockBase: 2500,  // $2.5K, $5K, $10K (doubles each slot)
     autoHarvestCost: 1000,
     upgradeCostMultiplier: 2,
     strainSlots: [
@@ -471,7 +482,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     id: 'garage',
     name: 'Garage',
     purchaseCost: 16000,
-    upgradeCosts: [4000, 8000, 16000],
+    strainUnlockBase: 25000,  // $25K, $50K, $100K (doubles each slot)
     autoHarvestCost: 2000,
     upgradeCostMultiplier: 4,
     strainSlots: [
@@ -485,7 +496,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     id: 'small_grow',
     name: 'Small Grow Facility',
     purchaseCost: 100000,
-    upgradeCosts: [8000, 16000, 32000],
+    strainUnlockBase: 50000,  // $50K, $100K, $200K (doubles each slot)
     autoHarvestCost: 4000,
     upgradeCostMultiplier: 8,
     strainSlots: [
@@ -498,8 +509,8 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'grow_facility',
     name: 'Grow Facility',
-    purchaseCost: 80000,
-    upgradeCosts: [16000, 32000, 64000],
+    purchaseCost: 250000,
+    strainUnlockBase: 100000,  // $100K, $200K, $400K (doubles each slot)
     autoHarvestCost: 8000,
     upgradeCostMultiplier: 16,
     strainSlots: [

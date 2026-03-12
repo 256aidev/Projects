@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BusinessInstance, GameState, GeneratedBlock } from '../data/types';
-import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL } from '../data/types';
+import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL, getStrainUnlockCost, getDealerHireCost } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
 
@@ -268,9 +268,9 @@ export const useGameStore = create<GameStore>()(
         const def = GROW_ROOM_TYPE_MAP[room.typeId];
         if (!def) return false;
         const nextLevel = room.upgradeLevel + 1;
-        if (nextLevel > def.upgradeCosts.length) return false; // already max
-        const cost = def.upgradeCosts[nextLevel - 1];
-        if (state.dirtyCash < cost) return false;
+        if (nextLevel >= def.strainSlots.length) return false; // already max
+        const cost = getStrainUnlockCost(def, nextLevel);
+        if (cost <= 0 || state.dirtyCash < cost) return false;
         const newSlotDef = def.strainSlots[nextLevel];
         if (!newSlotDef) return false;
         const newSlot: import('../data/types').StrainSlot = {
@@ -323,11 +323,15 @@ export const useGameStore = create<GameStore>()(
       hireDealers: (count) => {
         const state = get();
         const tier = DEALER_TIERS[state.operation.dealerTierIndex];
-        const cost = tier.hireCost * count;
-        if (state.dirtyCash < cost) return false;
+        // Escalating cost: each successive dealer costs 1.5× more
+        let totalCost = 0;
+        for (let i = 0; i < count; i++) {
+          totalCost += getDealerHireCost(tier, state.operation.dealerCount + i);
+        }
+        if (state.dirtyCash < totalCost) return false;
         set({
-          dirtyCash: state.dirtyCash - cost,
-          totalSpent: state.totalSpent + cost,
+          dirtyCash: state.dirtyCash - totalCost,
+          totalSpent: state.totalSpent + totalCost,
           operation: { ...state.operation, dealerCount: state.operation.dealerCount + count },
         });
         return true;
