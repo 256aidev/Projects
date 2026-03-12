@@ -1,7 +1,38 @@
-import type { BusinessInstance, CriminalOperation } from '../data/types';
+import type { BusinessInstance, CriminalOperation, GrowRoom } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
-import { DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, NUTRIENT_DEFS } from '../data/types';
+import { DEALER_TIERS, ROOM_UPGRADE_DEFS } from '../data/types';
+
+// ─── ROOM UPGRADE HELPERS ────────────────────────
+
+export function getRoomBonus(room: GrowRoom, bonusType: 'speed' | 'yield' | 'double'): number {
+  let total = 0;
+  for (const def of ROOM_UPGRADE_DEFS) {
+    if (def.bonusType !== bonusType) continue;
+    const level = room.upgradeLevels?.[def.id] ?? 0;
+    if (level === 0) continue;
+    const lvl = def.levels[level - 1];
+    if (!lvl) continue;
+    if (bonusType === 'speed') total += lvl.speedBonus;
+    if (bonusType === 'yield') total += lvl.yieldBonus;
+    if (bonusType === 'double') total += lvl.doubleChance;
+  }
+  return total;
+}
+
+export function getRoomCycleCost(room: GrowRoom): number {
+  let total = 0;
+  for (const def of ROOM_UPGRADE_DEFS) {
+    const level = room.upgradeLevels?.[def.id] ?? 0;
+    if (level === 0) {
+      total += def.baseCostPerCycle;
+    } else {
+      const lvl = def.levels[level - 1];
+      total += lvl?.costPerCycle ?? def.baseCostPerCycle;
+    }
+  }
+  return total;
+}
 
 // ─── CRIMINAL OPERATION ───────────────────────────
 
@@ -20,7 +51,6 @@ export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0):
     const unitsSold = Math.min(totalOz, dealerTier.salesRatePerTick * op.dealerCount);
     const cutCost = unitsSold * (dealerTier.cutPer8oz / 8);
     let saleValue = 0;
-    // Sell proportionally from each strain at its actual price
     for (const strainName of Object.keys(newProductInventory)) {
       const entry = newProductInventory[strainName];
       const fraction = entry.oz / totalOz;
@@ -37,18 +67,11 @@ export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0):
   let newSeedStock = op.seedStock;
 
   const newGrowRooms = op.growRooms.map((room) => {
-    const waterBonus  = WATER_TIERS[room.waterTier ?? 0]?.yieldBonus ?? 0;
-    const lightBonus  = LIGHT_TIERS[room.lightTier ?? 0]?.yieldBonus ?? 0;
-    // FloraGro: speed; FloraMicro: yield; FloraBloom: double chance
-    const floraGroLevel   = (room.nutrientSpeed ?? 0);
-    const floraMicroLevel = (room.nutrientYield ?? 0);
-    const floraBloomLevel = (room.nutrientDouble ?? 0);
-    const speedBonus    = floraGroLevel   > 0 ? (NUTRIENT_DEFS[0].levels[floraGroLevel - 1]?.speedBonus   ?? 0) : 0;
-    const nutriYield    = floraMicroLevel > 0 ? (NUTRIENT_DEFS[1].levels[floraMicroLevel - 1]?.yieldBonus ?? 0) : 0;
-    const doubleChance  = floraBloomLevel > 0 ? (NUTRIENT_DEFS[2].levels[floraBloomLevel - 1]?.doubleChance ?? 0) : 0;
-    const nutriCycleCost = (floraGroLevel   > 0 ? (NUTRIENT_DEFS[0].levels[floraGroLevel - 1]?.costPerCycle   ?? 0) : 0)
-                         + (floraMicroLevel > 0 ? (NUTRIENT_DEFS[1].levels[floraMicroLevel - 1]?.costPerCycle ?? 0) : 0)
-                         + (floraBloomLevel > 0 ? (NUTRIENT_DEFS[2].levels[floraBloomLevel - 1]?.costPerCycle ?? 0) : 0);
+    const speedBonus = getRoomBonus(room, 'speed');
+    const yieldBonus = getRoomBonus(room, 'yield');
+    const doubleChance = getRoomBonus(room, 'double');
+    const isAutoHarvest = (room.upgradeLevels?.auto_harvest ?? 0) > 0;
+    const cycleCost = getRoomCycleCost(room);
 
     const newSlots = room.slots.map((slot) => {
       if (!slot.isHarvesting) return slot;
@@ -58,9 +81,8 @@ export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0):
 
       // ticksRemaining === 1: reaches 0 this tick
       if (slot.ticksRemaining === 1) {
-        if (room.autoHarvest && newSeedStock > 0) {
-          // Auto-harvest: collect yield, apply double chance, restart timer
-          const baseUnits = Math.floor(slot.harvestYield * (1 + waterBonus + lightBonus + nutriYield + prestigeBonus));
+        if (isAutoHarvest && newSeedStock > 0) {
+          const baseUnits = Math.floor(slot.harvestYield * (1 + yieldBonus + prestigeBonus));
           const doubled = doubleChance > 0 && Math.random() < doubleChance;
           const harvestedUnits = doubled ? baseUnits * 2 : baseUnits;
           if (!autoHarvestedByStrain[slot.strainName]) {
@@ -68,17 +90,13 @@ export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0):
           }
           autoHarvestedByStrain[slot.strainName].oz += harvestedUnits;
           newSeedStock -= 1;
-          autoHarvestCycleCost += (WATER_TIERS[room.waterTier ?? 0]?.costPerCycle ?? 0)
-            + (LIGHT_TIERS[room.lightTier ?? 0]?.costPerCycle ?? 0)
-            + nutriCycleCost;
+          autoHarvestCycleCost += cycleCost;
           const effectiveTimer = Math.max(1, Math.ceil(slot.growTimerTicks * (1 - speedBonus)));
           return { ...slot, ticksRemaining: effectiveTimer };
         }
-        // No auto-harvest: let it reach 0 for manual harvest
         return { ...slot, ticksRemaining: 0 };
       }
 
-      // ticksRemaining === 0: already ready, waiting for manual harvest
       if (slot.ticksRemaining <= 0) return slot;
 
       return { ...slot, ticksRemaining: slot.ticksRemaining - 1 };
@@ -116,23 +134,14 @@ export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: nu
   const slot = room.slots[slotIndex];
   if (!slot || !slot.isHarvesting || slot.ticksRemaining > 0) return { newOp: op, unitsHarvested: 0, cycleCost: 0, speedBonus: 0 };
 
-  // Apply all bonuses to yield
-  const waterBonus = WATER_TIERS[room.waterTier ?? 0]?.yieldBonus ?? 0;
-  const lightBonus = LIGHT_TIERS[room.lightTier ?? 0]?.yieldBonus ?? 0;
-  const floraGroLevel   = room.nutrientSpeed  ?? 0;
-  const floraMicroLevel = room.nutrientYield  ?? 0;
-  const floraBloomLevel = room.nutrientDouble ?? 0;
-  const nutriYield     = floraMicroLevel > 0 ? (NUTRIENT_DEFS[1].levels[floraMicroLevel - 1]?.yieldBonus  ?? 0) : 0;
-  const doubleChance   = floraBloomLevel > 0 ? (NUTRIENT_DEFS[2].levels[floraBloomLevel - 1]?.doubleChance ?? 0) : 0;
-  const speedBonus     = floraGroLevel   > 0 ? (NUTRIENT_DEFS[0].levels[floraGroLevel - 1]?.speedBonus    ?? 0) : 0;
-  const baseUnits = Math.floor(slot.harvestYield * (1 + waterBonus + lightBonus + nutriYield + prestigeBonus));
+  const speedBonus = getRoomBonus(room, 'speed');
+  const yieldBonus = getRoomBonus(room, 'yield');
+  const doubleChance = getRoomBonus(room, 'double');
+  const cycleCost = getRoomCycleCost(room);
+
+  const baseUnits = Math.floor(slot.harvestYield * (1 + yieldBonus + prestigeBonus));
   const doubled = doubleChance > 0 && Math.random() < doubleChance;
   const unitsHarvested = doubled ? baseUnits * 2 : baseUnits;
-  const cycleCost = (WATER_TIERS[room.waterTier ?? 0]?.costPerCycle ?? 0)
-    + (LIGHT_TIERS[room.lightTier ?? 0]?.costPerCycle ?? 0)
-    + (floraGroLevel   > 0 ? (NUTRIENT_DEFS[0].levels[floraGroLevel - 1]?.costPerCycle   ?? 0) : 0)
-    + (floraMicroLevel > 0 ? (NUTRIENT_DEFS[1].levels[floraMicroLevel - 1]?.costPerCycle ?? 0) : 0)
-    + (floraBloomLevel > 0 ? (NUTRIENT_DEFS[2].levels[floraBloomLevel - 1]?.costPerCycle ?? 0) : 0);
 
   // Add harvested units to per-strain inventory
   const newInventory = { ...op.productInventory };

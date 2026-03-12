@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
-import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, NUTRIENT_DEFS, INITIAL_OPERATION } from '../../data/types';
+import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, ROOM_UPGRADE_DEFS, INITIAL_OPERATION } from '../../data/types';
+import { getRoomBonus, getRoomCycleCost } from '../../engine/economy';
 import { formatMoney, formatUnits } from '../../engine/economy';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
@@ -18,12 +19,7 @@ export default function OperationView() {
   const harvestGrowRoom = useGameStore((s) => s.harvestGrowRoom);
   const buyGrowRoom = useGameStore((s) => s.buyGrowRoom);
   const upgradeRoom = useGameStore((s) => s.upgradeRoom);
-  const upgradeWater = useGameStore((s) => s.upgradeWater);
-  const upgradeLighting = useGameStore((s) => s.upgradeLighting);
-  const upgradeFloraGro = useGameStore((s) => s.upgradeFloraGro);
-  const upgradefloraMicro = useGameStore((s) => s.upgradefloraMicro);
-  const upgradeFloraBloom = useGameStore((s) => s.upgradeFloraBloom);
-  const buyAutoHarvest = useGameStore((s) => s.buyAutoHarvest);
+  const buyRoomUpgrade = useGameStore((s) => s.buyRoomUpgrade);
   const hireDealers = useGameStore((s) => s.hireDealers);
   const fireDealers = useGameStore((s) => s.fireDealers);
   const upgradeDealerTier = useGameStore((s) => s.upgradeDealerTier);
@@ -265,14 +261,8 @@ export default function OperationView() {
             const canUpgrade = !!nextUpgradeCost && dirtyCash >= nextUpgradeCost;
             const isMaxLevel = !nextUpgradeCost;
 
-            const waterTier = room.waterTier ?? 0;
-            const lightTier = room.lightTier ?? 0;
-            const waterData = WATER_TIERS[waterTier];
-            const lightData = LIGHT_TIERS[lightTier];
-            const nextWater = WATER_TIERS[waterTier + 1];
-            const nextLight = LIGHT_TIERS[lightTier + 1];
-            const totalYieldBonus = waterData.yieldBonus + lightData.yieldBonus;
-            const maintenancePerCycle = waterData.costPerCycle + lightData.costPerCycle;
+            const totalYieldBonus = getRoomBonus(room, 'yield');
+            const maintenancePerCycle = getRoomCycleCost(room);
             const upgMult = def?.upgradeCostMultiplier ?? 1;
 
             return (
@@ -347,115 +337,63 @@ export default function OperationView() {
                     })}
                   </div>
 
-                  {/* RIGHT — Maintenance: 3×2 grid (row1: nutrients, row2: systems) */}
-                  <div className="grid grid-cols-3 gap-1.5 p-3">
+                  {/* RIGHT — Maintenance: data-driven 3×2 grid */}
+                  <div className="grid grid-cols-3 gap-2 p-3">
+                    {ROOM_UPGRADE_DEFS.map((upgDef) => {
+                      const level = room.upgradeLevels?.[upgDef.id] ?? 0;
+                      const currentLvl = level > 0 ? upgDef.levels[level - 1] : null;
+                      const nextLvl = upgDef.levels[level];
+                      const scaledCost = nextLvl ? nextLvl.cost * upgMult : 0;
+                      const canAfford = nextLvl && dirtyCash >= scaledCost;
+                      const isToggle = upgDef.bonusType === 'toggle';
+                      const isActive = isToggle && level > 0;
 
-                    {/* ROW 1 — Nutrients (FloraGro | FloraMicro | FloraBloom) */}
-                    {[
-                      { def: NUTRIENT_DEFS[0], level: room.nutrientSpeed  ?? 0, upgrade: () => upgradeFloraGro(room.id) },
-                      { def: NUTRIENT_DEFS[1], level: room.nutrientYield  ?? 0, upgrade: () => upgradefloraMicro(room.id) },
-                      { def: NUTRIENT_DEFS[2], level: room.nutrientDouble ?? 0, upgrade: () => upgradeFloraBloom(room.id) },
-                    ].map(({ def, level, upgrade }) => {
-                      const nextLevel = def.levels[level];
-                      const currentLevel = level > 0 ? def.levels[level - 1] : null;
-                      const scaledCost = nextLevel ? nextLevel.cost * upgMult : 0;
-                      const canAfford = nextLevel && dirtyCash >= scaledCost;
+                      // Format current bonus label
+                      const bonusLabel = currentLvl
+                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(currentLvl.speedBonus * 100)}% time`
+                          : upgDef.bonusType === 'yield' ? `+${Math.round(currentLvl.yieldBonus * 100)}% yield`
+                          : upgDef.bonusType === 'double' ? `${Math.round(currentLvl.doubleChance * 100)}% chance`
+                          : null)
+                        : null;
+
+                      // Format next upgrade bonus label
+                      const nextBonusLabel = nextLvl
+                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(nextLvl.speedBonus * 100)}% time`
+                          : upgDef.bonusType === 'yield' ? `+${Math.round(nextLvl.yieldBonus * 100)}% yield`
+                          : upgDef.bonusType === 'double' ? `${Math.round(nextLvl.doubleChance * 100)}% 2×`
+                          : 'Enable')
+                        : null;
+
                       return (
-                        <div key={def.id} className={`flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border ${level > 0 ? `border-opacity-40 ${def.bgColor}` : 'border-gray-700/40'}`}>
-                          <span className={`text-[9px] font-semibold ${def.color}`}>{def.icon} {def.name}</span>
-                          <p className={`text-[9px] font-semibold leading-tight ${def.color}`}>
-                            {currentLevel
-                              ? (def.id === 'speed'  ? `-${Math.round(currentLevel.speedBonus * 100)}% time`
-                                : def.id === 'yield' ? `+${Math.round(currentLevel.yieldBonus * 100)}% yield`
-                                : `${Math.round(currentLevel.doubleChance * 100)}% chance`)
-                              : <span className="text-gray-600">None</span>}
+                        <div key={upgDef.id} className={`flex flex-col justify-between gap-1 p-2 rounded-lg border ${level > 0 ? `border-opacity-40 ${upgDef.bgColor}` : upgDef.borderColor}`}>
+                          <span className={`text-[11px] font-semibold ${upgDef.color}`}>{upgDef.icon} {upgDef.name}</span>
+                          <p className={`text-[11px] font-semibold leading-tight ${upgDef.color}`}>
+                            {isToggle
+                              ? (isActive ? null : <span className="text-gray-600">Auto-replants</span>)
+                              : (bonusLabel ?? <span className="text-gray-600">None</span>)}
                           </p>
-                          {nextLevel ? (
+                          {isActive ? (
+                            <span className="text-[11px] text-green-400 text-center font-bold">ACTIVE ✓</span>
+                          ) : nextLvl ? (
                             <button
                               onClick={() => {
-                                if (upgrade()) addNotification(`${nextLevel.name} applied!`, 'success');
+                                if (buyRoomUpgrade(room.id, upgDef.id)) addNotification(`${nextLvl.name} applied!`, 'success');
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
-                              className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${def.bgColor} hover:opacity-80 ${def.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                              className={`w-full py-1.5 rounded border border-white/30 text-[11px] font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                             >
-                              {def.id === 'speed'  && `-${Math.round(nextLevel.speedBonus * 100)}% time`}
-                              {def.id === 'yield'  && `+${Math.round(nextLevel.yieldBonus * 100)}% yield`}
-                              {def.id === 'double' && `${Math.round(nextLevel.doubleChance * 100)}% 2×`}
-                              <br/>{nextLevel.name}
+                              {nextBonusLabel}
+                              {!isToggle && <><br/>{nextLvl.name}</>}
                               <br/>{formatMoney(scaledCost)}
-                              <br/><span className="text-red-300">${nextLevel.costPerCycle}/cyc</span>
+                              {nextLvl.costPerCycle > 0 && <><br/><span className="text-red-300">${nextLvl.costPerCycle}/cyc</span></>}
                             </button>
                           ) : (
-                            <span className={`text-[9px] ${def.color} text-center mt-0.5`}>MAX ✓</span>
+                            <span className={`text-[11px] ${upgDef.color} text-center mt-0.5`}>MAX ✓</span>
                           )}
                         </div>
                       );
                     })}
-
-                    {/* ROW 2 — Water | Light | Auto-Harvest */}
-
-                    {/* Water */}
-                    <div className="flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border border-blue-900/40">
-                      <span className="text-[9px] text-gray-400">💧 Water</span>
-                      <span className="text-[9px] text-blue-400">{waterData.yieldBonus > 0 ? `+${Math.round(waterData.yieldBonus * 100)}% yield` : 'No bonus'}</span>
-                      {nextWater ? (
-                        <button
-                          onClick={() => { if (upgradeWater(room.id)) addNotification(`${nextWater.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextWater.cost * upgMult)}`, 'warning'); }}
-                          disabled={dirtyCash < nextWater.cost * upgMult}
-                          className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${dirtyCash >= nextWater.cost * upgMult ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
-                        >
-                          +{Math.round(nextWater.yieldBonus * 100)}% yield
-                          <br/>{nextWater.icon} {nextWater.name}
-                          <br/>{formatMoney(nextWater.cost * upgMult)}
-                          <br/><span className="text-red-300">${nextWater.costPerCycle}/cyc</span>
-                        </button>
-                      ) : (
-                        <span className="text-[9px] text-blue-500 text-center">MAX ✓</span>
-                      )}
-                    </div>
-
-                    {/* Light */}
-                    <div className="flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border border-yellow-900/40">
-                      <span className="text-[9px] text-gray-400">💡 Light</span>
-                      <span className="text-[9px] text-yellow-400">{lightData.yieldBonus > 0 ? `+${Math.round(lightData.yieldBonus * 100)}% yield` : 'No bonus'}</span>
-                      {nextLight ? (
-                        <button
-                          onClick={() => { if (upgradeLighting(room.id)) addNotification(`${nextLight.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextLight.cost * upgMult)}`, 'warning'); }}
-                          disabled={dirtyCash < nextLight.cost * upgMult}
-                          className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${dirtyCash >= nextLight.cost * upgMult ? 'bg-yellow-800 hover:bg-yellow-700 text-yellow-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
-                        >
-                          +{Math.round(nextLight.yieldBonus * 100)}% yield
-                          <br/>{nextLight.icon} {nextLight.name}
-                          <br/>{formatMoney(nextLight.cost * upgMult)}
-                          <br/><span className="text-red-300">${nextLight.costPerCycle}/cyc</span>
-                        </button>
-                      ) : (
-                        <span className="text-[9px] text-yellow-500 text-center">MAX ✓</span>
-                      )}
-                    </div>
-
-                    {/* Auto-Harvest */}
-                    <div className="flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border border-orange-900/40">
-                      <span className="text-[9px] text-gray-400">⚙️ Auto</span>
-                      <span className="text-[9px] text-gray-600 leading-tight">Auto-replants</span>
-                      {room.autoHarvest ? (
-                        <span className="text-[9px] text-green-400 text-center font-bold">ACTIVE ✓</span>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            if (buyAutoHarvest(room.id)) addNotification(`Auto-harvest enabled for ${room.name}!`, 'success');
-                            else addNotification(`Need ${formatMoney(def?.autoHarvestCost ?? 0)}`, 'warning');
-                          }}
-                          disabled={dirtyCash < (def?.autoHarvestCost ?? Infinity)}
-                          className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${dirtyCash >= (def?.autoHarvestCost ?? Infinity) ? 'bg-orange-800 hover:bg-orange-700 text-orange-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
-                        >
-                          Enable
-                          <br/>{formatMoney(def?.autoHarvestCost ?? 0)}
-                        </button>
-                      )}
-                    </div>
-
                   </div>
                 </div>
               </div>

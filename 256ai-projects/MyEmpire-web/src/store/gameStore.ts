@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BusinessInstance, GameState, GeneratedBlock } from '../data/types';
-import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, NUTRIENT_DEFS, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL } from '../data/types';
+import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
 
@@ -60,12 +60,7 @@ interface GameActions {
   buySeed: (quantity: number) => boolean;
   plantSeeds: (roomId: string, slotIndex: number) => boolean;
   sellProduct: (units: number) => number;
-  upgradeWater: (roomId: string) => boolean;
-  upgradeLighting: (roomId: string) => boolean;
-  upgradeFloraGro: (roomId: string) => boolean;
-  upgradefloraMicro: (roomId: string) => boolean;
-  upgradeFloraBloom: (roomId: string) => boolean;
-  buyAutoHarvest: (roomId: string) => boolean;
+  buyRoomUpgrade: (roomId: string, upgradeId: string) => boolean;
   purchaseBusiness: (businessDefId: string, districtId: string, slotIndex: number) => boolean;
   unlockLot: (districtId: string) => boolean;
   unlockGeneratedBlock: (blockId: string) => boolean;
@@ -253,12 +248,7 @@ export const useGameStore = create<GameStore>()(
           typeId: def.id,
           name: def.name,
           upgradeLevel: 0,
-          waterTier: 0,
-          lightTier: 0,
-          autoHarvest: false,
-          nutrientSpeed: 0,
-          nutrientYield: 0,
-          nutrientDouble: 0,
+          upgradeLevels: {},
           slots: [
             { ...firstSlot, isHarvesting: true, ticksRemaining: firstSlot.growTimerTicks },
           ],
@@ -303,14 +293,17 @@ export const useGameStore = create<GameStore>()(
         return true;
       },
 
-      upgradeWater: (roomId) => {
+      buyRoomUpgrade: (roomId, upgradeId) => {
         const state = get();
         const room = state.operation.growRooms.find((r) => r.id === roomId);
         if (!room) return false;
-        const nextTier = (room.waterTier ?? 0) + 1;
-        if (nextTier >= WATER_TIERS.length) return false;
+        const upgDef = ROOM_UPGRADE_MAP[upgradeId];
+        if (!upgDef) return false;
+        const currentLevel = room.upgradeLevels?.[upgradeId] ?? 0;
+        const nextLvl = upgDef.levels[currentLevel];
+        if (!nextLvl) return false; // already maxed
         const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
-        const cost = WATER_TIERS[nextTier].cost * mult;
+        const cost = nextLvl.cost * mult;
         if (state.dirtyCash < cost) return false;
         set({
           dirtyCash: state.dirtyCash - cost,
@@ -318,92 +311,9 @@ export const useGameStore = create<GameStore>()(
           operation: {
             ...state.operation,
             growRooms: state.operation.growRooms.map((r) =>
-              r.id === roomId ? { ...r, waterTier: nextTier } : r
-            ),
-          },
-        });
-        return true;
-      },
-
-      upgradeLighting: (roomId) => {
-        const state = get();
-        const room = state.operation.growRooms.find((r) => r.id === roomId);
-        if (!room) return false;
-        const nextTier = (room.lightTier ?? 0) + 1;
-        if (nextTier >= LIGHT_TIERS.length) return false;
-        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
-        const cost = LIGHT_TIERS[nextTier].cost * mult;
-        if (state.dirtyCash < cost) return false;
-        set({
-          dirtyCash: state.dirtyCash - cost,
-          totalSpent: state.totalSpent + cost,
-          operation: {
-            ...state.operation,
-            growRooms: state.operation.growRooms.map((r) =>
-              r.id === roomId ? { ...r, lightTier: nextTier } : r
-            ),
-          },
-        });
-        return true;
-      },
-
-      upgradeFloraGro: (roomId) => {
-        const state = get();
-        const room = state.operation.growRooms.find((r) => r.id === roomId);
-        if (!room) return false;
-        const next = (room.nutrientSpeed ?? 0) + 1;
-        if (next > NUTRIENT_DEFS[0].levels.length) return false;
-        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
-        const cost = NUTRIENT_DEFS[0].levels[next - 1].cost * mult;
-        if (state.dirtyCash < cost) return false;
-        set({ dirtyCash: state.dirtyCash - cost, totalSpent: state.totalSpent + cost,
-          operation: { ...state.operation, growRooms: state.operation.growRooms.map((r) => r.id === roomId ? { ...r, nutrientSpeed: next } : r) } });
-        return true;
-      },
-
-      upgradefloraMicro: (roomId) => {
-        const state = get();
-        const room = state.operation.growRooms.find((r) => r.id === roomId);
-        if (!room) return false;
-        const next = (room.nutrientYield ?? 0) + 1;
-        if (next > NUTRIENT_DEFS[1].levels.length) return false;
-        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
-        const cost = NUTRIENT_DEFS[1].levels[next - 1].cost * mult;
-        if (state.dirtyCash < cost) return false;
-        set({ dirtyCash: state.dirtyCash - cost, totalSpent: state.totalSpent + cost,
-          operation: { ...state.operation, growRooms: state.operation.growRooms.map((r) => r.id === roomId ? { ...r, nutrientYield: next } : r) } });
-        return true;
-      },
-
-      upgradeFloraBloom: (roomId) => {
-        const state = get();
-        const room = state.operation.growRooms.find((r) => r.id === roomId);
-        if (!room) return false;
-        const next = (room.nutrientDouble ?? 0) + 1;
-        if (next > NUTRIENT_DEFS[2].levels.length) return false;
-        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
-        const cost = NUTRIENT_DEFS[2].levels[next - 1].cost * mult;
-        if (state.dirtyCash < cost) return false;
-        set({ dirtyCash: state.dirtyCash - cost, totalSpent: state.totalSpent + cost,
-          operation: { ...state.operation, growRooms: state.operation.growRooms.map((r) => r.id === roomId ? { ...r, nutrientDouble: next } : r) } });
-        return true;
-      },
-
-      buyAutoHarvest: (roomId) => {
-        const state = get();
-        const room = state.operation.growRooms.find((r) => r.id === roomId);
-        if (!room || room.autoHarvest) return false;
-        const def = GROW_ROOM_TYPE_MAP[room.typeId];
-        if (!def) return false;
-        const cost = def.autoHarvestCost;
-        if (state.dirtyCash < cost) return false;
-        set({
-          dirtyCash: state.dirtyCash - cost,
-          totalSpent: state.totalSpent + cost,
-          operation: {
-            ...state.operation,
-            growRooms: state.operation.growRooms.map((r) =>
-              r.id === roomId ? { ...r, autoHarvest: true } : r
+              r.id === roomId
+                ? { ...r, upgradeLevels: { ...r.upgradeLevels, [upgradeId]: currentLevel + 1 } }
+                : r
             ),
           },
         });
@@ -700,7 +610,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 10,
+      version: 11,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -717,15 +627,20 @@ export const useGameStore = create<GameStore>()(
             growRooms: merged.operation.growRooms.map((room) => {
               const def = GROW_ROOM_TYPE_MAP[room.typeId];
               if (!def) return room;
+              // Migrate legacy fields → upgradeLevels
+              const upgradeLevels: Record<string, number> = { ...(room.upgradeLevels ?? {}) };
+              if (!upgradeLevels.water && (room as any).waterTier > 0) upgradeLevels.water = (room as any).waterTier;
+              if (!upgradeLevels.light && (room as any).lightTier > 0) upgradeLevels.light = (room as any).lightTier;
+              if (!upgradeLevels.flora_gro && (room as any).nutrientSpeed > 0) upgradeLevels.flora_gro = (room as any).nutrientSpeed;
+              if (!upgradeLevels.flora_micro && (room as any).nutrientYield > 0) upgradeLevels.flora_micro = (room as any).nutrientYield;
+              if (!upgradeLevels.flora_bloom && (room as any).nutrientDouble > 0) upgradeLevels.flora_bloom = (room as any).nutrientDouble;
+              if (!upgradeLevels.auto_harvest && (room as any).autoHarvest) upgradeLevels.auto_harvest = 1;
               return {
                 ...room,
-                nutrientSpeed: room.nutrientSpeed ?? 0,
-                nutrientYield: room.nutrientYield ?? 0,
-                nutrientDouble: room.nutrientDouble ?? 0,
+                upgradeLevels,
                 slots: room.slots.map((slot, i) => {
                   const defSlot = def.strainSlots[i];
                   if (!defSlot) return slot;
-                  // Update grow timer AND cap in-progress ticksRemaining to the new max
                   return {
                     ...slot,
                     growTimerTicks: defSlot.growTimerTicks,

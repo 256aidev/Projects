@@ -1,6 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
-import { formatMoney, formatUnits, calculateLaunderCapacity, calculateBusinessRevenue, calculateBusinessExpenses } from '../../engine/economy';
-import { DEALER_TIERS, WATER_TIERS, LIGHT_TIERS } from '../../data/types';
+import { formatMoney, formatUnits, calculateLaunderCapacity, calculateBusinessRevenue, calculateBusinessExpenses, getRoomCycleCost } from '../../engine/economy';
+import { DEALER_TIERS, ROOM_UPGRADE_DEFS } from '../../data/types';
 
 function Row({ label, value, color = 'text-white', sub, indent }: { label: string; value: string; color?: string; sub?: string; indent?: boolean }) {
   return (
@@ -72,22 +72,20 @@ export default function FinanceView() {
   const netWorth = dirtyCash + cleanCash;
   const timePlayed = `${Math.floor(tickCount / 60)}m ${tickCount % 60}s`;
 
-  // Per-room overhead breakdown
+  // Per-room overhead breakdown (data-driven from ROOM_UPGRADE_DEFS)
   const roomOverheads = operation.growRooms.map((room) => {
-    const water = WATER_TIERS[room.waterTier ?? 0];
-    const light = LIGHT_TIERS[room.lightTier ?? 0];
-    return {
-      name: room.name,
-      waterName: water?.name ?? 'Tap Water',
-      waterIcon: water?.icon ?? '🚰',
-      waterCost: water?.costPerCycle ?? 0,
-      waterBonus: water?.yieldBonus ?? 0,
-      lightName: light?.name ?? 'Single Bulb',
-      lightIcon: light?.icon ?? '💡',
-      lightCost: light?.costPerCycle ?? 0,
-      lightBonus: light?.yieldBonus ?? 0,
-      total: (water?.costPerCycle ?? 0) + (light?.costPerCycle ?? 0),
-    };
+    const total = getRoomCycleCost(room);
+    // Build per-upgrade breakdown
+    const upgrades = ROOM_UPGRADE_DEFS.filter(d => d.bonusType !== 'toggle').map((upgDef) => {
+      const level = room.upgradeLevels?.[upgDef.id] ?? 0;
+      const lvl = level > 0 ? upgDef.levels[level - 1] : null;
+      return {
+        icon: upgDef.icon,
+        name: lvl?.name ?? `${upgDef.name} (base)`,
+        cost: level > 0 ? (lvl?.costPerCycle ?? 0) : upgDef.baseCostPerCycle,
+      };
+    }).filter(u => u.cost > 0);
+    return { name: room.name, total, upgrades };
   });
   const totalCycleOverhead = roomOverheads.reduce((s, r) => s + r.total, 0);
 
@@ -146,14 +144,12 @@ export default function FinanceView() {
         {roomOverheads.map((r) => (
           <div key={r.name} className="pl-3 pt-1 pb-1 border-b border-gray-800/60 last:border-0">
             <p className="text-gray-500 text-[10px] mb-1">{r.name}</p>
-            <div className="flex justify-between text-[10px]">
-              <span className="text-gray-500">{r.waterIcon} {r.waterName}</span>
-              <span className="text-red-400 tabular-nums">-${r.waterCost}/cycle</span>
-            </div>
-            <div className="flex justify-between text-[10px]">
-              <span className="text-gray-500">{r.lightIcon} {r.lightName}</span>
-              <span className="text-red-400 tabular-nums">-${r.lightCost}/cycle</span>
-            </div>
+            {r.upgrades.map((u) => (
+              <div key={u.name} className="flex justify-between text-[10px]">
+                <span className="text-gray-500">{u.icon} {u.name}</span>
+                <span className="text-red-400 tabular-nums">-${u.cost}/cycle</span>
+              </div>
+            ))}
             <div className="flex justify-between text-[10px] mt-0.5 pt-0.5 border-t border-gray-800">
               <span className="text-gray-600">Room total</span>
               <span className="text-red-300 tabular-nums font-semibold">-${r.total}/cycle</span>
@@ -200,29 +196,21 @@ export default function FinanceView() {
       </Section>
 
       {/* ── REFERENCE CHARTS ── */}
-      <Section title="💧 Water System Tiers">
-        <ChartTable
-          headers={['Tier', 'Upgrade Cost', '+Yield', 'Cost/Cycle']}
-          rows={WATER_TIERS.map((t) => [
-            `${t.icon} ${t.name}`,
-            t.cost === 0 ? 'Free (starter)' : `$${t.cost.toLocaleString()}`,
-            t.yieldBonus === 0 ? '—' : `+${Math.round(t.yieldBonus * 100)}%`,
-            `$${t.costPerCycle}`,
-          ])}
-        />
-      </Section>
-
-      <Section title="💡 Lighting Tiers">
-        <ChartTable
-          headers={['Tier', 'Upgrade Cost', '+Yield', 'Cost/Cycle']}
-          rows={LIGHT_TIERS.map((t) => [
-            `${t.icon} ${t.name}`,
-            t.cost === 0 ? 'Free (starter)' : `$${t.cost.toLocaleString()}`,
-            t.yieldBonus === 0 ? '—' : `+${Math.round(t.yieldBonus * 100)}%`,
-            `$${t.costPerCycle}`,
-          ])}
-        />
-      </Section>
+      {ROOM_UPGRADE_DEFS.filter(d => d.bonusType !== 'toggle').map((upgDef) => (
+        <Section key={upgDef.id} title={`${upgDef.icon} ${upgDef.name} Tiers`}>
+          <ChartTable
+            headers={['Tier', 'Upgrade Cost', 'Bonus', 'Cost/Cycle']}
+            rows={upgDef.levels.map((lvl) => [
+              `${upgDef.icon} ${lvl.name}`,
+              `$${lvl.cost.toLocaleString()}`,
+              upgDef.bonusType === 'speed' ? `-${Math.round(lvl.speedBonus * 100)}% time`
+                : upgDef.bonusType === 'yield' ? `+${Math.round(lvl.yieldBonus * 100)}% yield`
+                : `${Math.round(lvl.doubleChance * 100)}% 2×`,
+              `$${lvl.costPerCycle}`,
+            ])}
+          />
+        </Section>
+      ))}
 
       <Section title="🤝 Dealer Tiers">
         <ChartTable

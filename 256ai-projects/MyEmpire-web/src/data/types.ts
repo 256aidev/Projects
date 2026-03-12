@@ -113,18 +113,105 @@ export const NUTRIENT_DEFS: NutrientDef[] = [
 // Keep a flat NUTRIENT_TIERS alias for economy.ts speed lookups (speed nutrient only)
 export const NUTRIENT_TIERS = NUTRIENT_DEFS[0].levels; // legacy alias
 
+// ── UNIFIED ROOM UPGRADE SYSTEM ─────────────────────────────────────────
+export interface RoomUpgradeDef {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  bonusType: 'speed' | 'yield' | 'double' | 'toggle';
+  baseCostPerCycle: number;   // cost/cycle when level=0 (e.g. water base = $1)
+  levels: RoomUpgradeLevel[];
+}
+
+export interface RoomUpgradeLevel {
+  name: string;
+  cost: number;
+  costPerCycle: number;
+  speedBonus: number;
+  yieldBonus: number;
+  doubleChance: number;
+}
+
+export const ROOM_UPGRADE_DEFS: RoomUpgradeDef[] = [
+  {
+    id: 'flora_gro', name: 'FloraGro', icon: '🟢',
+    color: 'text-green-400', bgColor: 'bg-green-900/40', borderColor: 'border-green-900/40',
+    bonusType: 'speed', baseCostPerCycle: 0,
+    levels: [
+      { name: 'FloraGro I',   cost: 600,   costPerCycle: 1, speedBonus: 0.05, yieldBonus: 0, doubleChance: 0 },
+      { name: 'FloraGro II',  cost: 3000,  costPerCycle: 3, speedBonus: 0.10, yieldBonus: 0, doubleChance: 0 },
+      { name: 'FloraGro III', cost: 12000, costPerCycle: 6, speedBonus: 0.15, yieldBonus: 0, doubleChance: 0 },
+    ],
+  },
+  {
+    id: 'flora_micro', name: 'FloraMicro', icon: '🟣',
+    color: 'text-purple-400', bgColor: 'bg-purple-900/40', borderColor: 'border-purple-900/40',
+    bonusType: 'yield', baseCostPerCycle: 0,
+    levels: [
+      { name: 'FloraMicro I',   cost: 800,   costPerCycle: 1, speedBonus: 0, yieldBonus: 0.05, doubleChance: 0 },
+      { name: 'FloraMicro II',  cost: 4000,  costPerCycle: 3, speedBonus: 0, yieldBonus: 0.10, doubleChance: 0 },
+      { name: 'FloraMicro III', cost: 15000, costPerCycle: 6, speedBonus: 0, yieldBonus: 0.15, doubleChance: 0 },
+    ],
+  },
+  {
+    id: 'flora_bloom', name: 'FloraBloom', icon: '🩷',
+    color: 'text-pink-400', bgColor: 'bg-pink-900/40', borderColor: 'border-pink-900/40',
+    bonusType: 'double', baseCostPerCycle: 0,
+    levels: [
+      { name: 'FloraBloom I',   cost: 1200,  costPerCycle: 2, speedBonus: 0, yieldBonus: 0, doubleChance: 0.02 },
+      { name: 'FloraBloom II',  cost: 6000,  costPerCycle: 4, speedBonus: 0, yieldBonus: 0, doubleChance: 0.04 },
+      { name: 'FloraBloom III', cost: 20000, costPerCycle: 8, speedBonus: 0, yieldBonus: 0, doubleChance: 0.06 },
+    ],
+  },
+  {
+    id: 'water', name: 'Water', icon: '💧',
+    color: 'text-blue-400', bgColor: 'bg-blue-900/40', borderColor: 'border-blue-900/40',
+    bonusType: 'speed', baseCostPerCycle: 1,
+    levels: [
+      { name: 'Drip System', cost: 500,   costPerCycle: 2,  speedBonus: 0.01, yieldBonus: 0, doubleChance: 0 },
+      { name: 'Hydro Setup', cost: 2500,  costPerCycle: 5,  speedBonus: 0.02, yieldBonus: 0, doubleChance: 0 },
+      { name: 'Aeroponics',  cost: 10000, costPerCycle: 12, speedBonus: 0.03, yieldBonus: 0, doubleChance: 0 },
+    ],
+  },
+  {
+    id: 'light', name: 'Light', icon: '💡',
+    color: 'text-yellow-400', bgColor: 'bg-yellow-900/40', borderColor: 'border-yellow-900/40',
+    bonusType: 'yield', baseCostPerCycle: 2,
+    levels: [
+      { name: 'LED Strip',     cost: 800,   costPerCycle: 3,  speedBonus: 0, yieldBonus: 0.05, doubleChance: 0 },
+      { name: 'Full Spec LED', cost: 4000,  costPerCycle: 8,  speedBonus: 0, yieldBonus: 0.10, doubleChance: 0 },
+      { name: 'HPS + CO2',     cost: 15000, costPerCycle: 18, speedBonus: 0, yieldBonus: 0.15, doubleChance: 0 },
+    ],
+  },
+  {
+    id: 'auto_harvest', name: 'Auto', icon: '⚙️',
+    color: 'text-orange-400', bgColor: 'bg-orange-900/40', borderColor: 'border-orange-900/40',
+    bonusType: 'toggle', baseCostPerCycle: 0,
+    levels: [
+      { name: 'Auto-Harvest', cost: 500, costPerCycle: 0, speedBonus: 0, yieldBonus: 0, doubleChance: 0 },
+    ],
+  },
+];
+
+export const ROOM_UPGRADE_MAP = Object.fromEntries(ROOM_UPGRADE_DEFS.map((d) => [d.id, d]));
+
 export interface GrowRoom {
   id: string;
   typeId: string;          // references GrowRoomTypeDef.id
   name: string;
   upgradeLevel: number;    // 0 = 1 slot active, 1 = 2 slots, 2 = 3 slots, 3 = 4 slots
   slots: StrainSlot[];     // length = upgradeLevel + 1
-  waterTier: number;       // index into WATER_TIERS (0–3)
-  lightTier: number;       // index into LIGHT_TIERS (0–3)
-  nutrientSpeed: number;   // level into NUTRIENT_DEFS[0].levels (0 = none, 1–3)
-  nutrientYield: number;   // level into NUTRIENT_DEFS[1].levels (0 = none, 1–3)
-  nutrientDouble: number;  // level into NUTRIENT_DEFS[2].levels (0 = none, 1–3)
-  autoHarvest: boolean;    // auto-harvests and replants on tick
+  upgradeLevels: Record<string, number>;  // { water: 2, light: 1, flora_gro: 1, auto_harvest: 1 }
+  // Legacy fields (kept for save migration)
+  waterTier?: number;
+  lightTier?: number;
+  nutrientSpeed?: number;
+  nutrientYield?: number;
+  nutrientDouble?: number;
+  autoHarvest?: boolean;
 }
 
 export interface DealerTier {
@@ -443,12 +530,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
       typeId: 'closet',
       name: 'Closet',
       upgradeLevel: 0,
-      waterTier: 0,
-      lightTier: 0,
-      nutrientSpeed: 0,
-      nutrientYield: 0,
-      nutrientDouble: 0,
-      autoHarvest: false,
+      upgradeLevels: {},
       slots: [
         { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 8, isHarvesting: true, ticksRemaining: 30 },
       ],
