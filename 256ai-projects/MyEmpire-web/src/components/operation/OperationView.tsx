@@ -1,6 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
-import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS } from '../../data/types';
+import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, INITIAL_OPERATION } from '../../data/types';
 import { formatMoney, formatUnits } from '../../engine/economy';
 import CannabisLeaf from '../ui/CannabisLeaf';
 
@@ -268,13 +268,13 @@ export default function OperationView() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-white font-semibold text-sm">Seeds</h3>
-            <p className="text-gray-400 text-xs">{op.seedStock} in stock · {formatMoney(op.seedCostPerUnit)}/seed</p>
+            <p className="text-gray-400 text-xs">{op.seedStock} in stock · {formatMoney(INITIAL_OPERATION.seedCostPerUnit)}/seed</p>
           </div>
           <span className="text-2xl">🌱</span>
         </div>
         <div className="flex gap-2">
           {[10, 25, 50].map((qty) => {
-            const cost = op.seedCostPerUnit * qty;
+            const cost = INITIAL_OPERATION.seedCostPerUnit * qty;
             const canAfford = dirtyCash >= cost;
             return (
               <button
