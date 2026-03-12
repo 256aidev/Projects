@@ -1,9 +1,16 @@
+import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, NUTRIENT_DEFS, INITIAL_OPERATION } from '../../data/types';
 import { formatMoney, formatUnits } from '../../engine/economy';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
+
+function seedPrice(qty: number): number {
+  const base = INITIAL_OPERATION.seedCostPerUnit;
+  const discount = qty >= 30000 ? 3 : qty >= 20000 ? 2 : qty >= 10000 ? 1 : 0;
+  return base - discount;
+}
 
 export default function OperationView() {
   const op = useGameStore((s) => s.operation);
@@ -130,7 +137,7 @@ export default function OperationView() {
           ].map((row, rowIdx) => (
             <div key={rowIdx} className={`flex gap-1.5 ${rowIdx > 0 ? 'mt-1' : ''}`}>
               {row.map((qty) => {
-                const cost = INITIAL_OPERATION.seedCostPerUnit * qty;
+                const cost = seedPrice(qty) * qty;
                 const canAfford = dirtyCash >= cost;
                 return (
                   <button
@@ -150,6 +157,8 @@ export default function OperationView() {
               })}
             </div>
           ))}
+          {/* Bulk seed buttons with volume discount */}
+          <BulkSeedRow buySeed={buySeed} dirtyCash={dirtyCash} addNotification={addNotification} />
         </div>
 
         <div className="w-px bg-gray-700 self-stretch" />
@@ -484,6 +493,96 @@ export default function OperationView() {
       </section>
 
       </div>{/* end scrollable body */}
+    </div>
+  );
+}
+
+function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
+  buySeed: (qty: number) => boolean;
+  dirtyCash: number;
+  addNotification: (msg: string, type: string) => void;
+}) {
+  const [customQty, setCustomQty] = useState('');
+  const [showCustom, setShowCustom] = useState(false);
+
+  const bulkButtons = [
+    { qty: 1000, label: '1k' },
+    { qty: 10000, label: '10k' },
+  ];
+
+  const handleBuy = (qty: number) => {
+    const price = seedPrice(qty);
+    const cost = price * qty;
+    if (buySeed(qty)) {
+      sound.play('buy');
+      const saved = (INITIAL_OPERATION.seedCostPerUnit - price) * qty;
+      addNotification(`Bought ${qty >= 1000 ? `${qty / 1000}k` : qty} seeds at $${price}/ea${saved > 0 ? ` (saved ${formatMoney(saved)})` : ''}`, 'success');
+    } else {
+      addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
+    }
+  };
+
+  return (
+    <div className="mt-1">
+      <div className="flex gap-1.5">
+        {bulkButtons.map(({ qty, label }) => {
+          const price = seedPrice(qty);
+          const cost = price * qty;
+          const discount = INITIAL_OPERATION.seedCostPerUnit - price;
+          const canAfford = dirtyCash >= cost;
+          return (
+            <button
+              key={qty}
+              onClick={() => handleBuy(qty)}
+              disabled={!canAfford}
+              className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
+                canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {label} ({formatMoney(cost)})
+              {discount > 0 && <span className="text-yellow-400"> -${discount}</span>}
+            </button>
+          );
+        })}
+        <button
+          onClick={() => setShowCustom(!showCustom)}
+          className="flex-1 py-1.5 rounded text-[10px] font-semibold transition bg-emerald-800 hover:bg-emerald-700 text-emerald-200"
+        >
+          Custom
+        </button>
+      </div>
+      {showCustom && (
+        <div className="flex gap-1.5 mt-1">
+          <input
+            type="number"
+            min={1}
+            value={customQty}
+            onChange={(e) => setCustomQty(e.target.value)}
+            placeholder="# seeds"
+            className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-[10px] text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+          />
+          {(() => {
+            const qty = Math.max(0, Math.floor(Number(customQty) || 0));
+            const price = qty > 0 ? seedPrice(qty) : INITIAL_OPERATION.seedCostPerUnit;
+            const cost = price * qty;
+            const discount = INITIAL_OPERATION.seedCostPerUnit - price;
+            const canAfford = qty > 0 && dirtyCash >= cost;
+            return (
+              <button
+                onClick={() => { if (qty > 0) handleBuy(qty); setCustomQty(''); setShowCustom(false); }}
+                disabled={!canAfford}
+                className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
+                  canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Buy {qty > 0 ? `${qty >= 1000 ? `${(qty/1000).toFixed(qty%1000?1:0)}k` : qty}` : '...'} · {formatMoney(cost)}
+                {discount > 0 && <span className="text-yellow-400"> (${price}/ea)</span>}
+              </button>
+            );
+          })()}
+        </div>
+      )}
+      <p className="text-gray-600 text-[9px] mt-0.5">Bulk: 10k+ $4/seed · 20k+ $3/seed · 30k+ $2/seed</p>
     </div>
   );
 }

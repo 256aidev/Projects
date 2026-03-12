@@ -439,7 +439,10 @@ export const useGameStore = create<GameStore>()(
 
       buySeed: (quantity) => {
         const state = get();
-        const cost = INITIAL_GAME_STATE.operation.seedCostPerUnit * quantity;
+        const base = INITIAL_GAME_STATE.operation.seedCostPerUnit; // $5
+        const discount = quantity >= 30000 ? 3 : quantity >= 20000 ? 2 : quantity >= 10000 ? 1 : 0;
+        const pricePerSeed = base - discount;
+        const cost = pricePerSeed * quantity;
         if (state.dirtyCash < cost) return false;
         set({
           dirtyCash: state.dirtyCash - cost,
