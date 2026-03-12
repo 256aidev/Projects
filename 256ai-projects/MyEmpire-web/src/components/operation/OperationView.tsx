@@ -25,7 +25,6 @@ export default function OperationView() {
   const plantSeeds = useGameStore((s) => s.plantSeeds);
   const sellProduct = useGameStore((s) => s.sellProduct);
   const streetSellQuotaOz = useGameStore((s) => s.streetSellQuotaOz ?? 160);
-  const streetSellCooldownTicks = useGameStore((s) => s.streetSellCooldownTicks ?? 0);
   const addNotification = useUIStore((s) => s.addNotification);
 
   const currentDealerTier = DEALER_TIERS[op.dealerTierIndex];
@@ -69,22 +68,20 @@ export default function OperationView() {
         )}
 
         {/* Street sell quota bar */}
-        {streetSellCooldownTicks > 0 ? (
-          <div className="mb-2 bg-gray-800/60 rounded-lg px-3 py-1.5 flex items-center justify-between">
-            <span className="text-orange-400 text-xs font-semibold">⏳ Street demand cooling down</span>
-            <span className="text-orange-300 text-xs font-bold">{Math.ceil(streetSellCooldownTicks / 60)}m {streetSellCooldownTicks % 60}s</span>
+        <div className="mb-2">
+          <div className="flex items-center justify-between mb-0.5">
+            <span className="text-gray-500 text-[10px]">Street demand</span>
+            <span className="text-gray-400 text-[10px] font-semibold">
+              {formatUnits(streetSellQuotaOz)} / 10lb · +1lb/min
+            </span>
           </div>
-        ) : (
-          <div className="mb-2">
-            <div className="flex items-center justify-between mb-0.5">
-              <span className="text-gray-500 text-[10px]">Street demand</span>
-              <span className="text-gray-400 text-[10px] font-semibold">{formatUnits(streetSellQuotaOz)} remaining · resets in 10 min</span>
-            </div>
-            <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
-              <div className="h-full bg-green-600 rounded-full transition-all" style={{ width: `${(streetSellQuotaOz / 160) * 100}%` }} />
-            </div>
+          <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${streetSellQuotaOz < 32 ? 'bg-orange-500' : 'bg-green-600'}`}
+              style={{ width: `${(streetSellQuotaOz / 160) * 100}%` }}
+            />
           </div>
-        )}
+        </div>
 
         {totalInventoryOz > 0 && streetSellQuotaOz > 0 ? (
           <div className="flex gap-2">

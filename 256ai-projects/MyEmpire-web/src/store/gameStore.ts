@@ -149,13 +149,8 @@ export const useGameStore = create<GameStore>()(
           const totalEarned = state.totalDirtyEarned + dirtyEarned;
           const shouldShowNotice = !state.heatNoticeShown && totalEarned >= 100_000;
 
-          // Street sell quota cooldown
-          let streetSellQuotaOz = state.streetSellQuotaOz ?? 160;
-          let streetSellCooldownTicks = state.streetSellCooldownTicks ?? 0;
-          if (streetSellCooldownTicks > 0) {
-            streetSellCooldownTicks -= 1;
-            if (streetSellCooldownTicks === 0) streetSellQuotaOz = 160;
-          }
+          // Street sell quota: drip refill at 1 lb (16 oz) per minute = 16/60 oz per tick
+          const streetSellQuotaOz = Math.min(160, (state.streetSellQuotaOz ?? 160) + 16 / 60);
 
           return {
             dirtyCash,
@@ -168,7 +163,6 @@ export const useGameStore = create<GameStore>()(
             tickCount: state.tickCount + 1,
             heatNoticeShown: state.heatNoticeShown || shouldShowNotice,
             streetSellQuotaOz,
-            streetSellCooldownTicks,
           };
         });
       },
@@ -230,7 +224,6 @@ export const useGameStore = create<GameStore>()(
           totalDirtyEarned: state.totalDirtyEarned + dirtyEarned,
           operation: { ...state.operation, productInventory: newInventory },
           streetSellQuotaOz: newQuota,
-          streetSellCooldownTicks: newQuota <= 0 ? 600 : (state.streetSellCooldownTicks ?? 0),
         });
         return dirtyEarned;
       },
