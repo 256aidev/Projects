@@ -50,8 +50,9 @@ export const useGameStore = create<GameStore>()(
         set((state) => {
           let { dirtyCash, cleanCash } = state;
 
-          const { newOp, dirtyEarned } = tickCriminalOperation(state.operation, state.prestigeBonus);
+          const { newOp, dirtyEarned, maintenanceCost } = tickCriminalOperation(state.operation, state.prestigeBonus);
           dirtyCash += dirtyEarned;
+          dirtyCash = Math.max(0, dirtyCash - maintenanceCost);
 
           let totalDirtyConsumed = 0;
           let totalCleanProduced = 0;
@@ -81,7 +82,7 @@ export const useGameStore = create<GameStore>()(
             operation: newOp,
             totalDirtyEarned: totalEarned,
             totalCleanEarned: state.totalCleanEarned + Math.max(0, totalCleanProduced + legitProfit),
-            lastTickDirtyProfit: dirtyEarned,
+            lastTickDirtyProfit: dirtyEarned - maintenanceCost,
             lastTickCleanProfit: totalCleanProduced + legitProfit,
             tickCount: state.tickCount + 1,
             heatNoticeShown: state.heatNoticeShown || shouldShowNotice,

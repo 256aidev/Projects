@@ -26,23 +26,24 @@ export interface StrainSlot extends StrainSlotDef {
 
 export interface MaintenanceTier {
   name: string;
-  cost: number;       // dirty cash one-time upgrade cost
-  yieldBonus: number; // fraction added to harvest yield (0.2 = +20%)
+  cost: number;         // dirty cash one-time upgrade cost
+  yieldBonus: number;   // fraction added to harvest yield (0.2 = +20%)
+  costPerTick: number;  // dirty cash drained per game tick (ongoing overhead)
   icon: string;
 }
 
 export const WATER_TIERS: MaintenanceTier[] = [
-  { name: 'Tap Water',    cost: 0,     yieldBonus: 0,    icon: '🚰' },
-  { name: 'Drip System', cost: 500,   yieldBonus: 0.15, icon: '💧' },
-  { name: 'Hydro Setup', cost: 2500,  yieldBonus: 0.35, icon: '🌊' },
-  { name: 'Aeroponics',  cost: 10000, yieldBonus: 0.60, icon: '⚗️' },
+  { name: 'Tap Water',    cost: 0,     yieldBonus: 0,    costPerTick: 1,  icon: '🚰' },
+  { name: 'Drip System',  cost: 500,   yieldBonus: 0.15, costPerTick: 4,  icon: '💧' },
+  { name: 'Hydro Setup',  cost: 2500,  yieldBonus: 0.35, costPerTick: 12, icon: '🌊' },
+  { name: 'Aeroponics',   cost: 10000, yieldBonus: 0.60, costPerTick: 30, icon: '⚗️' },
 ];
 
 export const LIGHT_TIERS: MaintenanceTier[] = [
-  { name: 'Single Bulb',    cost: 0,     yieldBonus: 0,    icon: '💡' },
-  { name: 'LED Strip',      cost: 800,   yieldBonus: 0.15, icon: '🔆' },
-  { name: 'Full Spec LED',  cost: 4000,  yieldBonus: 0.35, icon: '☀️' },
-  { name: 'HPS + CO2',      cost: 15000, yieldBonus: 0.60, icon: '🌡️' },
+  { name: 'Single Bulb',   cost: 0,     yieldBonus: 0,    costPerTick: 2,  icon: '💡' },
+  { name: 'LED Strip',     cost: 800,   yieldBonus: 0.15, costPerTick: 6,  icon: '🔆' },
+  { name: 'Full Spec LED', cost: 4000,  yieldBonus: 0.35, costPerTick: 18, icon: '☀️' },
+  { name: 'HPS + CO2',     cost: 15000, yieldBonus: 0.60, costPerTick: 45, icon: '🌡️' },
 ];
 
 export interface GrowRoom {
@@ -290,7 +291,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'garage',
     name: 'Garage',
-    purchaseCost: 6000,
+    purchaseCost: 16000,
     upgradeCosts: [8000, 15000, 25000],
     autoHarvestCost: 8000,
     strainSlots: [
@@ -303,7 +304,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'small_grow',
     name: 'Small Grow Facility',
-    purchaseCost: 20000,
+    purchaseCost: 100000,
     upgradeCosts: [25000, 45000, 80000],
     autoHarvestCost: 25000,
     strainSlots: [

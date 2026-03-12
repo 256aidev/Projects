@@ -94,6 +94,7 @@ export default function OperationView() {
             const nextWater = WATER_TIERS[waterTier + 1];
             const nextLight = LIGHT_TIERS[lightTier + 1];
             const totalYieldBonus = waterData.yieldBonus + lightData.yieldBonus;
+            const maintenancePerTick = waterData.costPerTick + lightData.costPerTick;
 
             return (
               <div key={room.id} className="bg-gray-800/60 border border-gray-700 rounded-xl overflow-hidden">
@@ -101,7 +102,7 @@ export default function OperationView() {
                 <div className="flex items-center justify-between px-3 py-2 bg-gray-900/50 border-b border-gray-700">
                   <div>
                     <p className="text-white font-bold text-sm">{room.name}</p>
-                    <p className="text-gray-500 text-xs">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield</p>
+                    <p className="text-gray-500 text-xs">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield · <span className="text-red-400">{formatMoney(maintenancePerTick)}/s overhead</span></p>
                   </div>
                   {isMaxLevel ? (
                     <span className="text-yellow-500 text-xs font-bold px-2 py-0.5 bg-yellow-900/30 rounded-full">MAX</span>
@@ -184,7 +185,7 @@ export default function OperationView() {
                           disabled={dirtyCash < nextWater.cost}
                           className={`w-full py-1 rounded text-[10px] font-semibold transition ${dirtyCash >= nextWater.cost ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                         >
-                          {nextWater.icon} {nextWater.name}<br/>{formatMoney(nextWater.cost)}
+                          {nextWater.icon} {nextWater.name}<br/>{formatMoney(nextWater.cost)} · <span className="text-red-300">{formatMoney(nextWater.costPerTick)}/s</span>
                         </button>
                       ) : (
                         <span className="text-[10px] text-blue-500 text-center">MAX ✓</span>
@@ -204,7 +205,7 @@ export default function OperationView() {
                           disabled={dirtyCash < nextLight.cost}
                           className={`w-full py-1 rounded text-[10px] font-semibold transition ${dirtyCash >= nextLight.cost ? 'bg-yellow-800 hover:bg-yellow-700 text-yellow-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                         >
-                          {nextLight.icon} {nextLight.name}<br/>{formatMoney(nextLight.cost)}
+                          {nextLight.icon} {nextLight.name}<br/>{formatMoney(nextLight.cost)} · <span className="text-red-300">{formatMoney(nextLight.costPerTick)}/s</span>
                         </button>
                       ) : (
                         <span className="text-[10px] text-yellow-500 text-center">MAX ✓</span>

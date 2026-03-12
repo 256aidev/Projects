@@ -8,6 +8,7 @@ import { DEALER_TIERS, WATER_TIERS, LIGHT_TIERS } from '../data/types';
 export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0): {
   newOp: CriminalOperation;
   dirtyEarned: number;
+  maintenanceCost: number;
 } {
   const dealerTier = DEALER_TIERS[op.dealerTierIndex];
   let dirtyEarned = 0;
@@ -64,9 +65,17 @@ export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0):
 
   newProductInventory += autoHarvestedUnits;
 
+  // Sum ongoing water + light overhead across all active rooms
+  const maintenanceCost = op.growRooms.reduce((sum, room) => {
+    const water = WATER_TIERS[room.waterTier ?? 0]?.costPerTick ?? 0;
+    const light = LIGHT_TIERS[room.lightTier ?? 0]?.costPerTick ?? 0;
+    return sum + water + light;
+  }, 0);
+
   return {
     newOp: { ...op, growRooms: newGrowRooms, productInventory: Math.max(0, newProductInventory), seedStock: newSeedStock },
     dirtyEarned,
+    maintenanceCost,
   };
 }
 
