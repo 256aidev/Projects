@@ -147,8 +147,8 @@ export default function OperationView() {
                       else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
                     }}
                     disabled={!canAfford}
-                    className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
-                      canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
+                      canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-green-600/50' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600/50'
                     }`}
                   >
                     x{qty >= 1000 ? `${qty / 1000}k` : qty} ({formatMoney(cost)})
@@ -535,8 +535,8 @@ function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
               key={qty}
               onClick={() => handleBuy(qty)}
               disabled={!canAfford}
-              className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
-                canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+              className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
+                canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200 border-emerald-600/50' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600/50'
               }`}
             >
               {label} ({formatMoney(cost)})
@@ -546,7 +546,7 @@ function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
         })}
         <button
           onClick={() => setShowCustom(!showCustom)}
-          className="flex-1 py-1.5 rounded text-[10px] font-semibold transition bg-emerald-800 hover:bg-emerald-700 text-emerald-200"
+          className="flex-1 py-1.5 rounded border border-emerald-600/50 text-[10px] font-semibold transition bg-emerald-800 hover:bg-emerald-700 text-emerald-200"
         >
           Custom
         </button>
@@ -572,7 +572,7 @@ function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
                 onClick={() => { if (qty > 0) handleBuy(qty); setCustomQty(''); setShowCustom(false); }}
                 disabled={!canAfford}
                 className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
-                  canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200 border-emerald-600/50' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600/50'
                 }`}
               >
                 Buy {qty > 0 ? `${qty >= 1000 ? `${(qty/1000).toFixed(qty%1000?1:0)}k` : qty}` : '...'} · {formatMoney(cost)}
