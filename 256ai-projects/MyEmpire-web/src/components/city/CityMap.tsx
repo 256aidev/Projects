@@ -5,6 +5,7 @@ import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
 import BuildingLot from './BuildingLot';
+import OperationsBlock from './OperationsBlock';
 
 const BLOCK_W = 164;
 const BLOCK_H = 258;
@@ -312,6 +313,10 @@ export default function CityMap() {
                 return <div key={item.key} style={{ width: BLOCK_W, height: BLOCK_H }} />;
               }
               if (cell.kind === 'district-unlocked') {
+                // Special rendering for operations block
+                if (cell.id === 'operations') {
+                  return <OperationsBlock key={cell.id} />;
+                }
                 return (
                   <UnlockedBlock
                     key={cell.id}

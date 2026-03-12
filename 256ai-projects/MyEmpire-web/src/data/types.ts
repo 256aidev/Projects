@@ -553,7 +553,7 @@ export const INITIAL_GAME_STATE: GameState = {
   heatNoticeShown: false,
   operation: INITIAL_OPERATION,
   businesses: [],
-  unlockedDistricts: ['starter'],
+  unlockedDistricts: ['starter', 'operations'],
   unlockedSlots: { starter: 2 },
   inventory: {},
   storageCapacity: 500,

@@ -676,6 +676,11 @@ export const useGameStore = create<GameStore>()(
           }
         }
 
+        // Ensure operations district is always unlocked
+        if (!merged.unlockedDistricts.includes('operations')) {
+          merged.unlockedDistricts = [...merged.unlockedDistricts, 'operations'];
+        }
+
         // Backfill cleanToDirtyPerTick for old saves
         for (const biz of merged.businesses) {
           if (biz.cleanToDirtyPerTick === undefined) (biz as any).cleanToDirtyPerTick = 0;
