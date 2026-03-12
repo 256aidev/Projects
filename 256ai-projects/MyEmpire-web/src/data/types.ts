@@ -28,23 +28,24 @@ export interface StrainSlot extends StrainSlotDef {
 export interface MaintenanceTier {
   name: string;
   cost: number;           // dirty cash one-time upgrade cost
-  yieldBonus: number;     // fraction added to harvest yield (0.2 = +20%)
+  yieldBonus: number;     // fraction added to harvest yield (0.05 = +5%)
+  speedBonus: number;     // fraction reduction to grow timer (0.01 = 1% faster)
   costPerCycle: number;   // dirty cash charged once per completed grow cycle (per seed harvested)
   icon: string;
 }
 
 export const WATER_TIERS: MaintenanceTier[] = [
-  { name: 'Tap Water',    cost: 0,     yieldBonus: 0,    costPerCycle: 1,  icon: '🚰' },
-  { name: 'Drip System',  cost: 500,   yieldBonus: 0.15, costPerCycle: 2,  icon: '💧' },
-  { name: 'Hydro Setup',  cost: 2500,  yieldBonus: 0.35, costPerCycle: 5,  icon: '🌊' },
-  { name: 'Aeroponics',   cost: 10000, yieldBonus: 0.60, costPerCycle: 12, icon: '⚗️' },
+  { name: 'Tap Water',    cost: 0,     yieldBonus: 0, speedBonus: 0,    costPerCycle: 1,  icon: '🚰' },
+  { name: 'Drip System',  cost: 500,   yieldBonus: 0, speedBonus: 0.01, costPerCycle: 2,  icon: '💧' },
+  { name: 'Hydro Setup',  cost: 2500,  yieldBonus: 0, speedBonus: 0.02, costPerCycle: 5,  icon: '🌊' },
+  { name: 'Aeroponics',   cost: 10000, yieldBonus: 0, speedBonus: 0.03, costPerCycle: 12, icon: '⚗️' },
 ];
 
 export const LIGHT_TIERS: MaintenanceTier[] = [
-  { name: 'Single Bulb',   cost: 0,     yieldBonus: 0,    costPerCycle: 2,  icon: '💡' },
-  { name: 'LED Strip',     cost: 800,   yieldBonus: 0.15, costPerCycle: 3,  icon: '🔆' },
-  { name: 'Full Spec LED', cost: 4000,  yieldBonus: 0.35, costPerCycle: 8,  icon: '☀️' },
-  { name: 'HPS + CO2',     cost: 15000, yieldBonus: 0.60, costPerCycle: 18, icon: '🌡️' },
+  { name: 'Single Bulb',   cost: 0,     yieldBonus: 0,    speedBonus: 0, costPerCycle: 2,  icon: '💡' },
+  { name: 'LED Strip',     cost: 800,   yieldBonus: 0.05, speedBonus: 0, costPerCycle: 3,  icon: '🔆' },
+  { name: 'Full Spec LED', cost: 4000,  yieldBonus: 0.10, speedBonus: 0, costPerCycle: 8,  icon: '☀️' },
+  { name: 'HPS + CO2',     cost: 15000, yieldBonus: 0.15, speedBonus: 0, costPerCycle: 18, icon: '🌡️' },
 ];
 
 // ── NUTRIENTS (3 independent types per room, each purchasable separately) ──────
@@ -217,6 +218,7 @@ export interface BusinessInstance {
   isOperating: boolean;
   supplyModifier: number;
   dirtyQueuedPerTick: number;       // how much dirty cash to launder per tick (0 = off)
+  cleanToDirtyPerTick: number;      // reverse: clean cash → dirty cash per tick (0 = off)
   productQueuedPerTick?: number;    // dispensary only: oz of product to sell per tick
 }
 
@@ -461,7 +463,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
 
 export const INITIAL_GAME_STATE: GameState = {
   dirtyCash: 500,
-  cleanCash: 1500,  // grandma's savings — enough to buy first front business
+  cleanCash: 0,
   totalDirtyEarned: 0,
   totalCleanEarned: 0,
   totalSpent: 0,
