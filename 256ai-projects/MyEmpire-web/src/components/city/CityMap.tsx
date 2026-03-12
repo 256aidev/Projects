@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import type { BusinessInstance } from '../../data/types';
 import { DISTRICTS, DISTRICT_MAP } from '../../data/districts';
 import { useGameStore } from '../../store/gameStore';
@@ -7,10 +8,7 @@ import BuildingLot from './BuildingLot';
 
 const BLOCK_W = 164;
 const BLOCK_H = 258;
-const COLS = 2;
-const ROWS = 3;
 
-// Deterministic block name from grid coords
 function blockName(col: number, row: number): string {
   const dirs = ['East', 'West', 'North', 'South', 'Old', 'New', 'Upper', 'Lower', 'Central'];
   const types = ['Side', 'End', 'Quarter', 'Block', 'Row', 'Way', 'District', 'Heights'];
@@ -33,7 +31,7 @@ function LockedBlock({ name, cost, color, canAfford, onUnlock }: {
       onClick={onUnlock}
       style={{ width: BLOCK_W, height: BLOCK_H, borderColor: canAfford ? color + '80' : '#374151' }}
       className={`rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1.5 transition-colors ${
-        canAfford ? 'bg-gray-800/40 hover:bg-gray-800/70' : 'bg-gray-900/30 opacity-50'
+        canAfford ? 'bg-gray-800/40 active:bg-gray-800/70' : 'bg-gray-900/30 opacity-50'
       }`}
     >
       <span className="text-2xl">🔒</span>
@@ -59,29 +57,22 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
   for (const biz of businesses) {
     if (biz.districtId === districtId) slotMap.set(biz.slotIndex, biz);
   }
-  const totalSlots = COLS * ROWS; // 6
 
   return (
     <div
       style={{ width: BLOCK_W, borderColor: color + '50', backgroundColor: color + '12' }}
       className="rounded-lg border p-2"
     >
-      <p
-        className="text-[9px] font-bold text-center mb-1.5 truncate"
-        style={{ color }}
-      >
-        {name}
-      </p>
+      <p className="text-[9px] font-bold text-center mb-1.5 truncate" style={{ color }}>{name}</p>
       <div className="grid grid-cols-2 gap-1">
-        {Array.from({ length: totalSlots }, (_, i) => {
+        {Array.from({ length: 6 }, (_, i) => {
           const business = slotMap.get(i) ?? null;
           const isUnlocked = i < districtUnlocked;
-          const isBuyable = i === districtUnlocked && i < totalSlots && !business;
+          const isBuyable = i === districtUnlocked && i < 6 && !business;
 
           if (!isUnlocked && !business && !isBuyable) {
             return <div key={i} className="w-[72px] h-[72px] rounded bg-black/15" />;
           }
-
           return (
             <BuildingLot
               key={i}
@@ -118,10 +109,38 @@ export default function CityMap() {
   const unlockLot = useGameStore((s) => s.unlockLot);
   const addNotification = useUIStore((s) => s.addNotification);
 
-  // Build a position → cell map
+  // Pan / zoom state
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(0.78);
+  const dragging = useRef(false);
+  const hasMoved = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if ((e.target as HTMLElement).closest('button')) return;
+    dragging.current = true;
+    hasMoved.current = false;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+  }
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragging.current) return;
+    const dx = e.clientX - lastPos.current.x;
+    const dy = e.clientY - lastPos.current.y;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) hasMoved.current = true;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    setOffset(o => ({ x: o.x + dx, y: o.y + dy }));
+  }
+  function onPointerUp() { dragging.current = false; }
+
+  function onWheel(e: React.WheelEvent) {
+    e.preventDefault();
+    setZoom(z => Math.max(0.3, Math.min(2.2, z * (e.deltaY < 0 ? 1.12 : 0.9))));
+  }
+
+  // Build position map
   const positionMap = new Map<string, Cell>();
 
-  // All 6 defined districts (always visible)
   for (const d of DISTRICTS) {
     const key = `${d.gridPosition.col},${d.gridPosition.row}`;
     const unlocked = unlockedDistricts.includes(d.id);
@@ -131,7 +150,6 @@ export default function CityMap() {
     );
   }
 
-  // Generated blocks stored in state
   for (const block of Object.values(generatedBlocks)) {
     const key = `${block.col},${block.row}`;
     const unlocked = unlockedDistricts.includes(block.id);
@@ -143,24 +161,22 @@ export default function CityMap() {
     }
   }
 
-  // Dynamically compute virtual neighbor blocks not yet in state
+  // Dynamically compute virtual neighbor blocks
   const covered = new Set(positionMap.keys());
   for (const districtId of unlockedDistricts) {
     let pos: { col: number; row: number } | undefined;
     const d = DISTRICT_MAP[districtId];
-    if (d) {
-      pos = d.gridPosition;
-    } else if (districtId.startsWith('gen_')) {
-      const parts = districtId.split('_');
-      pos = { col: parseInt(parts[1]), row: parseInt(parts[2]) };
+    if (d) pos = d.gridPosition;
+    else if (districtId.startsWith('gen_')) {
+      const p = districtId.split('_');
+      pos = { col: parseInt(p[1]), row: parseInt(p[2]) };
     }
     if (!pos) continue;
-    for (const [dc, dr] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as [number, number][]) {
+    for (const [dc, dr] of [[0,-1],[0,1],[-1,0],[1,0]] as [number,number][]) {
       const nc = pos.col + dc, nr = pos.row + dr;
       const nkey = `${nc},${nr}`;
       if (covered.has(nkey)) continue;
-      const id = `gen_${nc}_${nr}`;
-      positionMap.set(nkey, { kind: 'gen-locked', id, name: blockName(nc, nr), cost: nextBlockCost });
+      positionMap.set(nkey, { kind: 'gen-locked', id: `gen_${nc}_${nr}`, name: blockName(nc, nr), cost: nextBlockCost });
       covered.add(nkey);
     }
   }
@@ -172,7 +188,6 @@ export default function CityMap() {
     minCol = Math.min(minCol, c); maxCol = Math.max(maxCol, c);
     minRow = Math.min(minRow, r); maxRow = Math.max(maxRow, r);
   }
-
   const gridCols = maxCol - minCol + 1;
   const gridRows = maxRow - minRow + 1;
 
@@ -184,78 +199,112 @@ export default function CityMap() {
   }
 
   return (
-    <div className="flex-1 overflow-auto city-scroll">
+    <div
+      className="flex-1 relative overflow-hidden bg-gray-950 select-none"
+      style={{ cursor: dragging.current ? 'grabbing' : 'grab', touchAction: 'none' }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onWheel={onWheel}
+    >
+      {/* Map canvas — pan + zoom wrapper */}
       <div
-        className="flex items-center justify-center"
-        style={{ minWidth: '100%', minHeight: '100%', padding: '80px 48px 160px' }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+        }}
       >
-        {/* Isometric wrapper */}
-        <div style={{ transform: 'perspective(900px) rotateX(52deg) rotateZ(-8deg)', transformOrigin: 'center center' }}>
-          <div
-            className="grid gap-3"
-            style={{ gridTemplateColumns: `repeat(${gridCols}, ${BLOCK_W}px)` }}
-          >
-            {cells.map((cell, i) => {
-              if (!cell) {
-                return <div key={i} style={{ width: BLOCK_W, height: BLOCK_H }} />;
-              }
+        <div
+          style={{
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+            transformOrigin: 'center center',
+            pointerEvents: 'auto',
+          }}
+        >
+          {/* Isometric tilt */}
+          <div style={{ transform: 'perspective(900px) rotateX(52deg) rotateZ(-8deg)', transformOrigin: 'center center' }}>
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: `repeat(${gridCols}, ${BLOCK_W}px)` }}
+            >
+              {cells.map((cell, i) => {
+                if (!cell) {
+                  return <div key={i} style={{ width: BLOCK_W, height: BLOCK_H }} />;
+                }
 
-              if (cell.kind === 'district-unlocked') {
-                return (
-                  <UnlockedBlock
-                    key={cell.id}
-                    districtId={cell.id}
-                    name={cell.name}
-                    color={cell.color}
-                    businesses={businesses}
-                    unlockedSlots={unlockedSlots}
-                    cleanCash={cleanCash}
-                    onUnlockLot={() => unlockLot(cell.id)}
-                  />
-                );
-              }
+                if (cell.kind === 'district-unlocked') {
+                  return (
+                    <UnlockedBlock
+                      key={cell.id}
+                      districtId={cell.id}
+                      name={cell.name}
+                      color={cell.color}
+                      businesses={businesses}
+                      unlockedSlots={unlockedSlots}
+                      cleanCash={cleanCash}
+                      onUnlockLot={() => unlockLot(cell.id)}
+                    />
+                  );
+                }
 
-              if (cell.kind === 'district-locked') {
+                if (cell.kind === 'district-locked') {
+                  return (
+                    <LockedBlock
+                      key={cell.id}
+                      name={cell.name}
+                      cost={cell.cost}
+                      color={cell.color}
+                      canAfford={cleanCash >= cell.cost}
+                      onUnlock={() => {
+                        if (unlockDistrict(cell.id)) addNotification(`Unlocked ${cell.name}!`, 'success');
+                        else addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
+                      }}
+                    />
+                  );
+                }
+
                 return (
                   <LockedBlock
                     key={cell.id}
                     name={cell.name}
                     cost={cell.cost}
-                    color={cell.color}
+                    color="#4B5563"
                     canAfford={cleanCash >= cell.cost}
                     onUnlock={() => {
-                      if (unlockDistrict(cell.id)) {
-                        addNotification(`Unlocked ${cell.name}!`, 'success');
-                      } else {
-                        addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
-                      }
+                      if (unlockGeneratedBlock(cell.id)) addNotification(`Expanded into ${cell.name}!`, 'success');
+                      else addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
                     }}
                   />
                 );
-              }
-
-              // gen-locked
-              return (
-                <LockedBlock
-                  key={cell.id}
-                  name={cell.name}
-                  cost={cell.cost}
-                  color="#4B5563"
-                  canAfford={cleanCash >= cell.cost}
-                  onUnlock={() => {
-                    if (unlockGeneratedBlock(cell.id)) {
-                      addNotification(`Expanded into ${cell.name}!`, 'success');
-                    } else {
-                      addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
-                    }
-                  }}
-                />
-              );
-            })}
+              })}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Zoom controls */}
+      <div className="absolute bottom-4 right-3 flex flex-col gap-1 z-10">
+        <button
+          onClick={() => setZoom(z => Math.min(z * 1.25, 2.2))}
+          className="w-8 h-8 rounded-lg bg-gray-800/90 border border-gray-700 text-white text-lg font-bold flex items-center justify-center active:bg-gray-700"
+        >+</button>
+        <button
+          onClick={() => setZoom(z => Math.max(z / 1.25, 0.3))}
+          className="w-8 h-8 rounded-lg bg-gray-800/90 border border-gray-700 text-white text-lg font-bold flex items-center justify-center active:bg-gray-700"
+        >−</button>
+        <button
+          onClick={() => { setOffset({ x: 0, y: 0 }); setZoom(0.78); }}
+          className="w-8 h-8 rounded-lg bg-gray-800/90 border border-gray-700 text-gray-400 text-xs flex items-center justify-center active:bg-gray-700"
+        >⌂</button>
+      </div>
+
+      {/* Hint */}
+      <p className="absolute bottom-4 left-3 text-[9px] text-gray-700 pointer-events-none">drag to pan · pinch/scroll to zoom</p>
     </div>
   );
 }
