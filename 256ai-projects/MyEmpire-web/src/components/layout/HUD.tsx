@@ -7,7 +7,8 @@ import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
 
 export default function HUD() {
-  const [muted, setMuted] = useState(sound.muted);
+  const [sfxOn, setSfxOn] = useState(!sound.sfxMuted);
+  const [musicOn, setMusicOn] = useState(!sound.musicMuted);
   const dirtyCash = useGameStore((s) => s.dirtyCash);
   const cleanCash = useGameStore((s) => s.cleanCash);
   const lastTickDirtyProfit = useGameStore((s) => s.lastTickDirtyProfit);
@@ -58,18 +59,24 @@ export default function HUD() {
         <span className="text-gray-500 text-xs">fronts</span>
       </div>
 
-      {/* Mute button */}
-      <button
-        onClick={() => {
-          sound.toggleMute();
-          sound.startMusic();
-          setMuted(sound.muted);
-        }}
-        className="text-gray-500 hover:text-gray-300 text-base transition"
-        title={muted ? 'Unmute' : 'Mute'}
-      >
-        {muted ? '🔇' : '🔊'}
-      </button>
+      {/* Sound controls — SFX and Music independently */}
+      <div className="flex items-center gap-0.5 bg-gray-800 rounded-lg px-1.5 py-0.5">
+        <button
+          onClick={() => { const next = !sfxOn; sound.setSfxMuted(!next); setSfxOn(next); }}
+          className={`text-[10px] font-bold px-1 py-0.5 rounded transition ${sfxOn ? 'text-green-400' : 'text-gray-600 line-through'}`}
+          title={sfxOn ? 'Mute SFX' : 'Unmute SFX'}
+        >
+          SFX
+        </button>
+        <span className="text-gray-700 text-[10px]">|</span>
+        <button
+          onClick={() => { const next = !musicOn; sound.setMusicMuted(!next); sound.startMusic(); setMusicOn(next); }}
+          className={`text-[10px] font-bold px-1 py-0.5 rounded transition ${musicOn ? 'text-purple-400' : 'text-gray-600 line-through'}`}
+          title={musicOn ? 'Mute Music' : 'Unmute Music'}
+        >
+          MUS
+        </button>
+      </div>
 
       {/* Account / save indicator */}
       <div className="ml-auto flex items-center gap-2">
