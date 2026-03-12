@@ -106,7 +106,7 @@ export default function OperationView() {
                     else addNotification('Street demand exhausted — use dealers!', 'warning');
                   }}
                   disabled={!canSell}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${canSell ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}`}
+                  className={`flex-1 py-2 rounded-lg border border-white/30 text-xs font-semibold transition ${canSell ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}`}
                 >
                   Sell {label}<br />
                   <span className={canSell ? 'text-green-400' : 'text-gray-600'}>{formatMoney(earned)}</span>
@@ -148,7 +148,7 @@ export default function OperationView() {
                     }}
                     disabled={!canAfford}
                     className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
-                      canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-green-600/50' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600/50'
+                      canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
                     }`}
                   >
                     x{qty >= 1000 ? `${qty / 1000}k` : qty} ({formatMoney(cost)})
@@ -182,7 +182,7 @@ export default function OperationView() {
                     else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
                   }}
                   disabled={!canAfford}
-                  className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
+                  className={`flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition ${
                     canAfford ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
                 >
@@ -197,7 +197,7 @@ export default function OperationView() {
                   key={`fire-${qty}`}
                   onClick={() => { fireDealers(qty); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
                   disabled={!canFire}
-                  className={`flex-1 py-1.5 rounded text-[9px] font-semibold transition ${
+                  className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
                     canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-gray-600 cursor-not-allowed'
                   }`}
                 >
@@ -217,7 +217,7 @@ export default function OperationView() {
                   onClick={() => {
                     if (downgradeDealerTier()) addNotification(`Downgraded to ${prevTier.name} (+${formatMoney(refund)} refund)`, 'warning');
                   }}
-                  className="flex-1 py-1.5 rounded text-[9px] font-semibold transition bg-red-900/60 hover:bg-red-800/70 text-red-300"
+                  className="flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition bg-red-900/60 hover:bg-red-800/70 text-red-300"
                 >
                   ▼ {prevTier.name}<br />
                   <span className="font-normal opacity-75">
@@ -236,7 +236,7 @@ export default function OperationView() {
                     else addNotification(`Need ${formatMoney(nextDealerTier.hireCost * 3)} dirty cash`, 'warning');
                   }}
                   disabled={!canUpgrade}
-                  className={`flex-1 py-1.5 rounded text-[9px] font-semibold transition ${
+                  className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
                     canUpgrade ? 'bg-purple-800 hover:bg-purple-700 text-purple-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
                 >
@@ -296,7 +296,7 @@ export default function OperationView() {
                         }
                       }}
                       disabled={!canUpgrade}
-                      className={`text-xs px-2 py-1 rounded-lg font-semibold transition ${
+                      className={`text-xs px-2 py-1 rounded-lg border border-white/30 font-semibold transition ${
                         canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       }`}
                     >
@@ -330,13 +330,13 @@ export default function OperationView() {
                           </div>
                           {ready ? (
                             <button onClick={() => { const u = harvestGrowRoom(room.id, slotIndex); if (u > 0) { sound.play('harvest'); addNotification(`Harvested ${formatUnits(u)} ${slot.strainName}!${op.seedStock > 0 ? ' Auto-replanting…' : ' Buy seeds.'}`, 'success'); } }}
-                              className="w-full py-1 rounded bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold transition">
+                              className="w-full py-1 rounded border border-white/30 bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold transition">
                               Harvest!
                             </button>
                           ) : idle ? (
                             <button onClick={() => { if (plantSeeds(room.id, slotIndex)) { sound.play('plant'); addNotification(`${slot.strainName} planted!`, 'success'); } else addNotification('No seeds', 'warning'); }}
                               disabled={op.seedStock < 1}
-                              className={`w-full py-1 rounded text-[10px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
+                              className={`w-full py-1 rounded border border-white/30 text-[10px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
                               🌱 Plant {op.seedStock < 1 ? '(no seeds)' : ''}
                             </button>
                           ) : (
@@ -377,7 +377,7 @@ export default function OperationView() {
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
-                              className={`w-full py-1 rounded text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${def.bgColor} hover:opacity-80 ${def.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                              className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${def.bgColor} hover:opacity-80 ${def.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                             >
                               {def.id === 'speed'  && `-${Math.round(nextLevel.speedBonus * 100)}% time`}
                               {def.id === 'yield'  && `+${Math.round(nextLevel.yieldBonus * 100)}% yield`}
@@ -403,7 +403,7 @@ export default function OperationView() {
                         <button
                           onClick={() => { if (upgradeWater(room.id)) addNotification(`${nextWater.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextWater.cost * upgMult)}`, 'warning'); }}
                           disabled={dirtyCash < nextWater.cost * upgMult}
-                          className={`w-full py-1 rounded text-[9px] font-semibold transition ${dirtyCash >= nextWater.cost * upgMult ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                          className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${dirtyCash >= nextWater.cost * upgMult ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                         >
                           +{Math.round(nextWater.yieldBonus * 100)}% yield
                           <br/>{nextWater.icon} {nextWater.name}
@@ -423,7 +423,7 @@ export default function OperationView() {
                         <button
                           onClick={() => { if (upgradeLighting(room.id)) addNotification(`${nextLight.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextLight.cost * upgMult)}`, 'warning'); }}
                           disabled={dirtyCash < nextLight.cost * upgMult}
-                          className={`w-full py-1 rounded text-[9px] font-semibold transition ${dirtyCash >= nextLight.cost * upgMult ? 'bg-yellow-800 hover:bg-yellow-700 text-yellow-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                          className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${dirtyCash >= nextLight.cost * upgMult ? 'bg-yellow-800 hover:bg-yellow-700 text-yellow-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                         >
                           +{Math.round(nextLight.yieldBonus * 100)}% yield
                           <br/>{nextLight.icon} {nextLight.name}
@@ -448,7 +448,7 @@ export default function OperationView() {
                             else addNotification(`Need ${formatMoney(def?.autoHarvestCost ?? 0)}`, 'warning');
                           }}
                           disabled={dirtyCash < (def?.autoHarvestCost ?? Infinity)}
-                          className={`w-full py-1 rounded text-[9px] font-semibold transition ${dirtyCash >= (def?.autoHarvestCost ?? Infinity) ? 'bg-orange-800 hover:bg-orange-700 text-orange-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                          className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${dirtyCash >= (def?.autoHarvestCost ?? Infinity) ? 'bg-orange-800 hover:bg-orange-700 text-orange-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                         >
                           Enable
                           <br/>{formatMoney(def?.autoHarvestCost ?? 0)}
@@ -536,7 +536,7 @@ function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
               onClick={() => handleBuy(qty)}
               disabled={!canAfford}
               className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
-                canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200 border-emerald-600/50' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600/50'
+                canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
               }`}
             >
               {label} ({formatMoney(cost)})
@@ -546,7 +546,7 @@ function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
         })}
         <button
           onClick={() => setShowCustom(!showCustom)}
-          className="flex-1 py-1.5 rounded border border-emerald-600/50 text-[10px] font-semibold transition bg-emerald-800 hover:bg-emerald-700 text-emerald-200"
+          className="flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition bg-emerald-800 hover:bg-emerald-700 text-emerald-200"
         >
           Custom
         </button>
@@ -572,7 +572,7 @@ function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
                 onClick={() => { if (qty > 0) handleBuy(qty); setCustomQty(''); setShowCustom(false); }}
                 disabled={!canAfford}
                 className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
-                  canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200 border-emerald-600/50' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600/50'
+                  canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
                 }`}
               >
                 Buy {qty > 0 ? `${qty >= 1000 ? `${(qty/1000).toFixed(qty%1000?1:0)}k` : qty}` : '...'} · {formatMoney(cost)}
