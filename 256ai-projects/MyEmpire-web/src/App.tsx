@@ -11,6 +11,7 @@ import CityMap from './components/city/CityMap';
 import OperationView from './components/operation/OperationView';
 import LegalView from './components/legal/LegalView';
 import WarehouseView from './components/warehouse/WarehouseView';
+import FinanceView from './components/finance/FinanceView';
 import BuyBusinessPanel from './components/panels/BuyBusinessPanel';
 import BuildingMenu from './components/panels/BuildingMenu';
 import ResourceMarketPanel from './components/panels/ResourceMarketPanel';
@@ -57,7 +58,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-950" onClick={() => sound.startMusic()} onTouchStart={() => sound.startMusic()}>
+    <div className="h-full flex flex-col bg-gray-950 relative" onClick={() => sound.startMusic()} onTouchStart={() => sound.startMusic()}>
       {/* Top HUD — always visible */}
       <HUD />
 
@@ -80,8 +81,8 @@ export default function App() {
           </>
         )}
 
-        {activeView === 'warehouse' && <WarehouseView />}
         {activeView === 'legal' && <LegalView />}
+        {activeView === 'finance' && <FinanceView />}
       </div>
 
       {/* Bottom nav tabs */}
@@ -91,6 +92,21 @@ export default function App() {
       {selectedSlot && <BuyBusinessPanel />}
       {selectedBusinessId && <BuildingMenu />}
       {activePanel === 'market' && <ResourceMarketPanel />}
+      {activePanel === 'warehouse' && (
+        <div className="absolute inset-0 z-40 flex flex-col justify-end" onClick={() => setPanel(null)}>
+          <div className="flex-1" />
+          <div
+            className="bg-gray-900 border-t border-gray-700 rounded-t-2xl max-h-[75vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-1 border-b border-gray-800">
+              <p className="text-white font-bold text-sm">Stash</p>
+              <button onClick={() => setPanel(null)} className="text-gray-500 hover:text-white text-lg leading-none">✕</button>
+            </div>
+            <WarehouseView />
+          </div>
+        </div>
+      )}
 
       <Notifications />
       {showAccountScreen && <AccountScreen />}

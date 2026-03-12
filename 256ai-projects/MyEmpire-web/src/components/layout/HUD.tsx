@@ -18,6 +18,8 @@ export default function HUD() {
 
   const { user, syncing } = useAuthStore();
   const setShowAccountScreen = useUIStore((s) => s.setShowAccountScreen);
+  const setPanel = useUIStore((s) => s.setPanel);
+  const activePanel = useUIStore((s) => s.activePanel);
   const isGuest = !user || (user as { uid: string }).uid === 'guest';
 
   return (
@@ -48,10 +50,14 @@ export default function HUD() {
 
       <div className="h-6 w-px bg-gray-700 mx-1" />
 
-      <div className="flex items-center gap-1">
+      <button
+        onClick={() => setPanel(activePanel === 'warehouse' ? null : 'warehouse')}
+        className="flex items-center gap-1 hover:opacity-80 transition"
+        title="View stash"
+      >
         <CannabisLeaf size={18} />
-        <span className="text-green-400 font-semibold text-xs">{formatUnits(productInventory)}</span>
-      </div>
+        <span className="text-green-400 font-semibold text-xs">{formatUnits(Object.values(productInventory).reduce((s, e) => s + e.oz, 0))}</span>
+      </button>
 
       <div className="flex items-center gap-1">
         <span>🏢</span>

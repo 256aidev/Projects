@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BusinessInstance, GameState } from '../data/types';
-import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL } from '../data/types';
+import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, NUTRIENT_DEFS, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
 import { RESOURCE_MAP } from '../data/resources';
@@ -11,6 +11,7 @@ import {
   calculateBusinessRevenue,
   calculateBusinessExpenses,
   calculateLaunderTick,
+  calculateDispensaryTick,
 } from '../engine/economy';
 
 interface GameActions {
@@ -20,16 +21,22 @@ interface GameActions {
   upgradeRoom: (roomId: string) => boolean;
   hireDealers: (count: number) => boolean;
   upgradeDealerTier: () => boolean;
+  downgradeDealerTier: () => boolean;
   buySeed: (quantity: number) => boolean;
   plantSeeds: (roomId: string, slotIndex: number) => boolean;
   sellProduct: (units: number) => number;
   upgradeWater: (roomId: string) => boolean;
   upgradeLighting: (roomId: string) => boolean;
+  upgradeFloraGro: (roomId: string) => boolean;
+  upgradefloraMicro: (roomId: string) => boolean;
+  upgradeFloraBloom: (roomId: string) => boolean;
   buyAutoHarvest: (roomId: string) => boolean;
   purchaseBusiness: (businessDefId: string, districtId: string, slotIndex: number) => boolean;
+  unlockLot: (districtId: string) => boolean;
   sellBusiness: (instanceId: string) => void;
   upgradeBusiness: (instanceId: string) => boolean;
   setLaunderRate: (instanceId: string, dirtyPerTick: number) => void;
+  setDispensaryRate: (instanceId: string, ozPerTick: number) => void;
   purchaseResource: (resourceId: string, quantity: number) => boolean;
   unlockDistrict: (districtId: string) => boolean;
   fireDealers: (count: number) => void;
@@ -59,13 +66,41 @@ export const useGameStore = create<GameStore>()(
           let totalRevenue = 0;
           let totalExpenses = 0;
 
+          // Compute total oz and weighted avg price from per-strain inventory
+          const invEntries = Object.entries(newOp.productInventory);
+          const totalInventoryOz = invEntries.reduce((sum, [, e]) => sum + e.oz, 0);
+          const weightedAvgPrice = totalInventoryOz > 0
+            ? invEntries.reduce((sum, [, e]) => sum + e.oz * e.pricePerUnit, 0) / totalInventoryOz
+            : 10;
+          let totalProductConsumed = 0;
+
           for (const biz of state.businesses) {
             if (!biz.isOperating) continue;
+            const bizDef = BUSINESS_MAP[biz.businessDefId];
             totalRevenue += calculateBusinessRevenue(biz);
             totalExpenses += calculateBusinessExpenses(biz);
-            const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed);
-            totalDirtyConsumed += dirtyConsumed;
-            totalCleanProduced += cleanProduced;
+            if (bizDef?.isDispensary) {
+              const { productConsumed, cleanProduced } = calculateDispensaryTick(biz, totalInventoryOz - totalProductConsumed, weightedAvgPrice);
+              totalProductConsumed += productConsumed;
+              totalCleanProduced += cleanProduced;
+            } else {
+              const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed);
+              totalDirtyConsumed += dirtyConsumed;
+              totalCleanProduced += cleanProduced;
+            }
+          }
+
+          // Consume dispensary product proportionally from per-strain inventory
+          let finalOp = newOp;
+          if (totalProductConsumed > 0 && totalInventoryOz > 0) {
+            const newInventory = { ...newOp.productInventory };
+            for (const strainName of Object.keys(newInventory)) {
+              const entry = newInventory[strainName];
+              const fraction = entry.oz / totalInventoryOz;
+              const strainConsumed = Math.min(entry.oz, totalProductConsumed * fraction);
+              newInventory[strainName] = { ...entry, oz: entry.oz - strainConsumed };
+            }
+            finalOp = { ...newOp, productInventory: newInventory };
           }
 
           const legitProfit = totalRevenue - totalExpenses;
@@ -76,29 +111,41 @@ export const useGameStore = create<GameStore>()(
           const totalEarned = state.totalDirtyEarned + dirtyEarned;
           const shouldShowNotice = !state.heatNoticeShown && totalEarned >= 100_000;
 
+          // Street sell quota cooldown
+          let streetSellQuotaOz = state.streetSellQuotaOz ?? 160;
+          let streetSellCooldownTicks = state.streetSellCooldownTicks ?? 0;
+          if (streetSellCooldownTicks > 0) {
+            streetSellCooldownTicks -= 1;
+            if (streetSellCooldownTicks === 0) streetSellQuotaOz = 160;
+          }
+
           return {
             dirtyCash,
             cleanCash,
-            operation: newOp,
+            operation: finalOp,
             totalDirtyEarned: totalEarned,
             totalCleanEarned: state.totalCleanEarned + Math.max(0, totalCleanProduced + legitProfit),
             lastTickDirtyProfit: dirtyEarned - maintenanceCost,
             lastTickCleanProfit: totalCleanProduced + legitProfit,
             tickCount: state.tickCount + 1,
             heatNoticeShown: state.heatNoticeShown || shouldShowNotice,
+            streetSellQuotaOz,
+            streetSellCooldownTicks,
           };
         });
       },
 
       harvestGrowRoom: (roomId, slotIndex) => {
         const state = get();
-        const { newOp, unitsHarvested } = harvestSlot(state.operation, roomId, slotIndex, state.prestigeBonus);
+        const { newOp, unitsHarvested, cycleCost, speedBonus } = harvestSlot(state.operation, roomId, slotIndex, state.prestigeBonus);
         if (unitsHarvested > 0) {
+          const updates: Partial<typeof state> = { dirtyCash: Math.max(0, state.dirtyCash - cycleCost) };
           if (newOp.seedStock > 0) {
             const room = newOp.growRooms.find((r) => r.id === roomId);
             const canonicalTimer = room
               ? (GROW_ROOM_TYPE_MAP[room.typeId]?.strainSlots[slotIndex]?.growTimerTicks ?? room.slots[slotIndex]?.growTimerTicks ?? 30)
               : 30;
+            const effectiveTimer = Math.max(1, Math.ceil(canonicalTimer * (1 - speedBonus)));
             const replanted = {
               ...newOp,
               seedStock: newOp.seedStock - 1,
@@ -107,15 +154,15 @@ export const useGameStore = create<GameStore>()(
                   ? {
                       ...r,
                       slots: r.slots.map((s, i) =>
-                        i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: canonicalTimer, growTimerTicks: canonicalTimer } : s
+                        i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: effectiveTimer, growTimerTicks: canonicalTimer } : s
                       ),
                     }
                   : r
               ),
             };
-            set({ operation: replanted });
+            set({ ...updates, operation: replanted });
           } else {
-            set({ operation: newOp });
+            set({ ...updates, operation: newOp });
           }
         }
         return unitsHarvested;
@@ -123,17 +170,29 @@ export const useGameStore = create<GameStore>()(
 
       sellProduct: (units) => {
         const state = get();
-        const toSell = Math.min(units, state.operation.productInventory);
+        const quotaOz = state.streetSellQuotaOz ?? 160;
+        if (quotaOz <= 0) return 0;
+        const inventoryEntries = Object.entries(state.operation.productInventory);
+        const totalOz = inventoryEntries.reduce((sum, [, e]) => sum + e.oz, 0);
+        const toSell = Math.min(units, totalOz, quotaOz);
         if (toSell <= 0) return 0;
-        const allSlots = state.operation.growRooms.flatMap((r) => r.slots);
-        const avgPrice = allSlots.length > 0
-          ? allSlots.reduce((sum, s) => sum + s.pricePerUnit, 0) / allSlots.length
-          : 10;
-        const dirtyEarned = Math.floor(toSell * avgPrice * 0.7);
+        // Sell proportionally from each strain at its actual price
+        let dirtyEarned = 0;
+        const newInventory = { ...state.operation.productInventory };
+        for (const [strainName, entry] of inventoryEntries) {
+          const fraction = totalOz > 0 ? entry.oz / totalOz : 0;
+          const strainSold = Math.min(entry.oz, toSell * fraction);
+          dirtyEarned += strainSold * entry.pricePerUnit * 0.7;
+          newInventory[strainName] = { ...entry, oz: entry.oz - strainSold };
+        }
+        dirtyEarned = Math.floor(dirtyEarned);
+        const newQuota = quotaOz - toSell;
         set({
           dirtyCash: state.dirtyCash + dirtyEarned,
           totalDirtyEarned: state.totalDirtyEarned + dirtyEarned,
-          operation: { ...state.operation, productInventory: state.operation.productInventory - toSell },
+          operation: { ...state.operation, productInventory: newInventory },
+          streetSellQuotaOz: newQuota,
+          streetSellCooldownTicks: newQuota <= 0 ? 600 : (state.streetSellCooldownTicks ?? 0),
         });
         return dirtyEarned;
       },
@@ -151,6 +210,9 @@ export const useGameStore = create<GameStore>()(
           waterTier: 0,
           lightTier: 0,
           autoHarvest: false,
+          nutrientSpeed: 0,
+          nutrientYield: 0,
+          nutrientDouble: 0,
           slots: [
             { ...firstSlot, isHarvesting: true, ticksRemaining: firstSlot.growTimerTicks },
           ],
@@ -201,7 +263,8 @@ export const useGameStore = create<GameStore>()(
         if (!room) return false;
         const nextTier = (room.waterTier ?? 0) + 1;
         if (nextTier >= WATER_TIERS.length) return false;
-        const cost = WATER_TIERS[nextTier].cost;
+        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
+        const cost = WATER_TIERS[nextTier].cost * mult;
         if (state.dirtyCash < cost) return false;
         set({
           dirtyCash: state.dirtyCash - cost,
@@ -222,7 +285,8 @@ export const useGameStore = create<GameStore>()(
         if (!room) return false;
         const nextTier = (room.lightTier ?? 0) + 1;
         if (nextTier >= LIGHT_TIERS.length) return false;
-        const cost = LIGHT_TIERS[nextTier].cost;
+        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
+        const cost = LIGHT_TIERS[nextTier].cost * mult;
         if (state.dirtyCash < cost) return false;
         set({
           dirtyCash: state.dirtyCash - cost,
@@ -234,6 +298,48 @@ export const useGameStore = create<GameStore>()(
             ),
           },
         });
+        return true;
+      },
+
+      upgradeFloraGro: (roomId) => {
+        const state = get();
+        const room = state.operation.growRooms.find((r) => r.id === roomId);
+        if (!room) return false;
+        const next = (room.nutrientSpeed ?? 0) + 1;
+        if (next > NUTRIENT_DEFS[0].levels.length) return false;
+        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
+        const cost = NUTRIENT_DEFS[0].levels[next - 1].cost * mult;
+        if (state.dirtyCash < cost) return false;
+        set({ dirtyCash: state.dirtyCash - cost, totalSpent: state.totalSpent + cost,
+          operation: { ...state.operation, growRooms: state.operation.growRooms.map((r) => r.id === roomId ? { ...r, nutrientSpeed: next } : r) } });
+        return true;
+      },
+
+      upgradefloraMicro: (roomId) => {
+        const state = get();
+        const room = state.operation.growRooms.find((r) => r.id === roomId);
+        if (!room) return false;
+        const next = (room.nutrientYield ?? 0) + 1;
+        if (next > NUTRIENT_DEFS[1].levels.length) return false;
+        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
+        const cost = NUTRIENT_DEFS[1].levels[next - 1].cost * mult;
+        if (state.dirtyCash < cost) return false;
+        set({ dirtyCash: state.dirtyCash - cost, totalSpent: state.totalSpent + cost,
+          operation: { ...state.operation, growRooms: state.operation.growRooms.map((r) => r.id === roomId ? { ...r, nutrientYield: next } : r) } });
+        return true;
+      },
+
+      upgradeFloraBloom: (roomId) => {
+        const state = get();
+        const room = state.operation.growRooms.find((r) => r.id === roomId);
+        if (!room) return false;
+        const next = (room.nutrientDouble ?? 0) + 1;
+        if (next > NUTRIENT_DEFS[2].levels.length) return false;
+        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
+        const cost = NUTRIENT_DEFS[2].levels[next - 1].cost * mult;
+        if (state.dirtyCash < cost) return false;
+        set({ dirtyCash: state.dirtyCash - cost, totalSpent: state.totalSpent + cost,
+          operation: { ...state.operation, growRooms: state.operation.growRooms.map((r) => r.id === roomId ? { ...r, nutrientDouble: next } : r) } });
         return true;
       },
 
@@ -282,6 +388,20 @@ export const useGameStore = create<GameStore>()(
           dirtyCash: state.dirtyCash - upgradeCost,
           totalSpent: state.totalSpent + upgradeCost,
           operation: { ...state.operation, dealerTierIndex: nextIndex },
+        });
+        return true;
+      },
+
+      downgradeDealerTier: () => {
+        const state = get();
+        const prevIndex = state.operation.dealerTierIndex - 1;
+        if (prevIndex < 0) return false;
+        // Refund 50% of the tier's upgrade cost
+        const currentTier = DEALER_TIERS[state.operation.dealerTierIndex];
+        const refund = Math.floor(currentTier.hireCost * 3 * 0.5);
+        set({
+          dirtyCash: state.dirtyCash + refund,
+          operation: { ...state.operation, dealerTierIndex: prevIndex },
         });
         return true;
       },
@@ -345,12 +465,30 @@ export const useGameStore = create<GameStore>()(
           upgradeLevel: 0,
           isOperating: true,
           supplyModifier: 1,
-          dirtyQueuedPerTick: 5,
+          dirtyQueuedPerTick: def.isDispensary ? 0 : 5,
+          ...(def.isDispensary ? { productQueuedPerTick: 2 } : {}),
         };
         set({
           cleanCash: state.cleanCash - def.purchaseCost,
           totalSpent: state.totalSpent + def.purchaseCost,
           businesses: [...state.businesses, instance],
+        });
+        return true;
+      },
+
+      unlockLot: (districtId) => {
+        const state = get();
+        const district = DISTRICT_MAP[districtId];
+        if (!district) return false;
+        const currentUnlocked = state.unlockedSlots?.[districtId] ?? 2;
+        if (currentUnlocked >= district.maxBusinessSlots) return false;
+        // Cost doubles each lot: lot 3 = $1k, lot 4 = $2k, lot 5 = $4k...
+        const cost = 1000 * Math.pow(2, currentUnlocked - 2);
+        if (state.cleanCash < cost) return false;
+        set({
+          cleanCash: state.cleanCash - cost,
+          totalSpent: state.totalSpent + cost,
+          unlockedSlots: { ...(state.unlockedSlots ?? {}), [districtId]: currentUnlocked + 1 },
         });
         return true;
       },
@@ -393,6 +531,14 @@ export const useGameStore = create<GameStore>()(
         set((state) => ({
           businesses: state.businesses.map((b) =>
             b.instanceId === instanceId ? { ...b, dirtyQueuedPerTick: Math.max(0, dirtyPerTick) } : b
+          ),
+        }));
+      },
+
+      setDispensaryRate: (instanceId, ozPerTick) => {
+        set((state) => ({
+          businesses: state.businesses.map((b) =>
+            b.instanceId === instanceId ? { ...b, productQueuedPerTick: Math.max(0, ozPerTick) } : b
           ),
         }));
       },
@@ -459,10 +605,11 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 8,
+      version: 9,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
+        try {
         const saved = (persisted ?? {}) as Partial<GameState>;
         const merged = { ...INITIAL_GAME_STATE, ...saved } as GameState;
 
@@ -477,6 +624,9 @@ export const useGameStore = create<GameStore>()(
               if (!def) return room;
               return {
                 ...room,
+                nutrientSpeed: room.nutrientSpeed ?? 0,
+                nutrientYield: room.nutrientYield ?? 0,
+                nutrientDouble: room.nutrientDouble ?? 0,
                 slots: room.slots.map((slot, i) => {
                   const defSlot = def.strainSlots[i];
                   if (!defSlot) return slot;
@@ -492,11 +642,34 @@ export const useGameStore = create<GameStore>()(
           };
         }
 
+        // Migrate flat productInventory number → per-strain Record
+        if (merged.operation && typeof (merged.operation.productInventory as unknown) !== 'object') {
+          merged.operation = { ...merged.operation, productInventory: {} };
+        }
+        if (merged.operation && merged.operation.productInventory === null) {
+          merged.operation = { ...merged.operation, productInventory: {} };
+        }
+
         // Preserve prestige across migrations
         if (!merged.prestigeCount) merged.prestigeCount = 0;
         if (!merged.prestigeBonus) merged.prestigeBonus = 0;
 
+        // Bootstrap unlocked slots for existing saves
+        if (!merged.unlockedSlots) {
+          const slots: Record<string, number> = { starter: 2 };
+          // Unlock slots based on businesses already placed
+          for (const biz of merged.businesses) {
+            const prev = slots[biz.districtId] ?? 2;
+            const bizCount = merged.businesses.filter((b) => b.districtId === biz.districtId).length;
+            slots[biz.districtId] = Math.max(prev, bizCount + 1);
+          }
+          merged.unlockedSlots = slots;
+        }
+
         return merged;
+        } catch {
+          return { ...INITIAL_GAME_STATE };
+        }
       },
     }
   )

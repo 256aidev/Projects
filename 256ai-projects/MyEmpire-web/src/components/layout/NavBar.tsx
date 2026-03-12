@@ -5,8 +5,8 @@ import CannabisLeaf from '../ui/CannabisLeaf';
 const TABS: { id: ViewName; label: string; icon: string | null }[] = [
   { id: 'operation', label: 'Operation', icon: null },  // null = use CannabisLeaf
   { id: 'city',      label: 'City',      icon: '🏙️' },
-  { id: 'warehouse', label: 'Warehouse', icon: '🏬' },
   { id: 'legal',     label: 'Legal',     icon: '⚖️' },
+  { id: 'finance',   label: 'Finance',   icon: '📊' },
 ];
 
 export default function NavBar() {

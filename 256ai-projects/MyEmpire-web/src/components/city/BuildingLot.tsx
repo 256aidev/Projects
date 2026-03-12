@@ -9,6 +9,7 @@ interface BuildingLotProps {
   business: BusinessInstance | null;
   isAvailable: boolean;
   isLocked: boolean;
+  buyLot?: { cost: number; canAfford: boolean; onBuy: () => void };
 }
 
 export default function BuildingLot({
@@ -17,6 +18,7 @@ export default function BuildingLot({
   business,
   isAvailable,
   isLocked,
+  buyLot,
 }: BuildingLotProps) {
   const selectSlot = useUIStore((s) => s.selectSlot);
   const selectBusiness = useUIStore((s) => s.selectBusiness);
@@ -26,6 +28,25 @@ export default function BuildingLot({
   const isSelected =
     (selectedSlot?.districtId === districtId && selectedSlot?.slotIndex === slotIndex) ||
     (business && selectedBusinessId === business.instanceId);
+
+  if (buyLot) {
+    return (
+      <button
+        onClick={buyLot.onBuy}
+        disabled={!buyLot.canAfford}
+        className={`w-28 h-28 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 transition ${
+          buyLot.canAfford
+            ? 'border-amber-600 hover:border-amber-400 bg-amber-900/20 hover:bg-amber-900/30'
+            : 'border-gray-700 bg-gray-800/20 opacity-50 cursor-not-allowed'
+        }`}
+      >
+        <span className="text-lg">🔒</span>
+        <span className="text-[10px] font-semibold text-amber-400 text-center leading-tight">Buy Lot</span>
+        <span className="text-[10px] text-amber-300 font-bold">${(buyLot.cost / 1000).toFixed(0)}k</span>
+        <span className="text-[9px] text-gray-500">clean cash</span>
+      </button>
+    );
+  }
 
   if (isLocked) {
     return (

@@ -38,5 +38,10 @@ export async function loadCloudSave(uid: string): Promise<GameState | null> {
   const savedState = data.state as Partial<GameState>;
 
   // Merge with INITIAL_GAME_STATE to fill in any new fields added since the save
-  return { ...INITIAL_GAME_STATE, ...savedState } as GameState;
+  const merged = { ...INITIAL_GAME_STATE, ...savedState } as GameState;
+  // Migrate flat productInventory number → per-strain Record
+  if (merged.operation && typeof (merged.operation.productInventory as unknown) !== 'object') {
+    merged.operation = { ...merged.operation, productInventory: {} };
+  }
+  return merged;
 }

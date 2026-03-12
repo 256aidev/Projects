@@ -30,7 +30,7 @@ export default function WarehouseView() {
         <div className="grid grid-cols-2 gap-3 text-center">
           <div className="bg-gray-900/60 rounded-lg p-3">
             <p className="text-gray-500 text-xs">In Stock</p>
-            <p className="text-green-400 font-bold text-lg">{formatUnits(operation.productInventory)}</p>
+            <p className="text-green-400 font-bold text-lg">{formatUnits(Object.values(operation.productInventory).reduce((s, e) => s + e.oz, 0))}</p>
           </div>
           <div className="bg-gray-900/60 rounded-lg p-3">
             <p className="text-gray-500 text-xs">Seeds</p>

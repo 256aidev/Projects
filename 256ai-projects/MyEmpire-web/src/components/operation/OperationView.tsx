@@ -1,6 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
-import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, INITIAL_OPERATION } from '../../data/types';
+import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, NUTRIENT_DEFS, INITIAL_OPERATION } from '../../data/types';
 import { formatMoney, formatUnits } from '../../engine/economy';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
@@ -13,69 +13,241 @@ export default function OperationView() {
   const upgradeRoom = useGameStore((s) => s.upgradeRoom);
   const upgradeWater = useGameStore((s) => s.upgradeWater);
   const upgradeLighting = useGameStore((s) => s.upgradeLighting);
+  const upgradeFloraGro = useGameStore((s) => s.upgradeFloraGro);
+  const upgradefloraMicro = useGameStore((s) => s.upgradefloraMicro);
+  const upgradeFloraBloom = useGameStore((s) => s.upgradeFloraBloom);
   const buyAutoHarvest = useGameStore((s) => s.buyAutoHarvest);
   const hireDealers = useGameStore((s) => s.hireDealers);
   const fireDealers = useGameStore((s) => s.fireDealers);
   const upgradeDealerTier = useGameStore((s) => s.upgradeDealerTier);
+  const downgradeDealerTier = useGameStore((s) => s.downgradeDealerTier);
   const buySeed = useGameStore((s) => s.buySeed);
   const plantSeeds = useGameStore((s) => s.plantSeeds);
   const sellProduct = useGameStore((s) => s.sellProduct);
+  const streetSellQuotaOz = useGameStore((s) => s.streetSellQuotaOz ?? 160);
+  const streetSellCooldownTicks = useGameStore((s) => s.streetSellCooldownTicks ?? 0);
   const addNotification = useUIStore((s) => s.addNotification);
 
   const currentDealerTier = DEALER_TIERS[op.dealerTierIndex];
   const nextDealerTier = DEALER_TIERS[op.dealerTierIndex + 1];
-  const allSlots = op.growRooms.flatMap((r) => r.slots);
-  const avgPrice = allSlots.length > 0
-    ? allSlots.reduce((sum, s) => sum + s.pricePerUnit, 0) / allSlots.length
+  // Per-strain inventory helpers
+  const invEntries = Object.entries(op.productInventory);
+  const totalInventoryOz = invEntries.reduce((sum, [, e]) => sum + e.oz, 0);
+  const weightedAvgPrice = totalInventoryOz > 0
+    ? invEntries.reduce((sum, [, e]) => sum + e.oz * e.pricePerUnit, 0) / totalInventoryOz
     : 10;
-  const dealerIncome = currentDealerTier.salesRatePerTick * op.dealerCount * avgPrice * (1 - currentDealerTier.cutPercent / 100);
+  const dealerSalesRate = currentDealerTier.salesRatePerTick * op.dealerCount;
+  const dealerCutPerTick = dealerSalesRate * (currentDealerTier.cutPer8oz / 8);
+  const dealerIncome = Math.max(0, dealerSalesRate * weightedAvgPrice - dealerCutPerTick);
 
   // Which room types are already owned
   const ownedTypeIds = new Set(op.growRooms.map((r) => r.typeId));
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {/* Location header */}
-      <div className="text-center py-2">
-        <p className="text-gray-500 text-xs uppercase tracking-widest">Current Location</p>
-        <h2 className="text-white font-bold text-xl">{op.locationName}</h2>
-      </div>
+    <div className="flex-1 flex flex-col overflow-hidden">
 
-      {/* Product inventory + sell */}
-      <section className="bg-green-900/20 border border-green-800/40 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
+      {/* ── STICKY TOP — Product Inventory ── */}
+      <div className="flex-shrink-0 bg-gray-950 border-b border-green-900/40 px-4 pt-3 pb-3">
+        <div className="flex items-center justify-between mb-2">
           <div>
             <h3 className="text-green-400 font-semibold text-sm">Product Inventory</h3>
-            <p className="text-gray-400 text-xs">{formatUnits(op.productInventory)} · avg ${avgPrice.toFixed(0)}/oz</p>
+            <p className="text-gray-400 text-xs">{formatUnits(totalInventoryOz)} total · avg ${weightedAvgPrice.toFixed(0)}/oz</p>
           </div>
-          <CannabisLeaf size={32} />
+          <CannabisLeaf size={28} />
         </div>
-        {op.productInventory > 0 ? (
+        {/* Per-strain stash breakdown */}
+        {invEntries.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {invEntries.filter(([, e]) => e.oz > 0).map(([strainName, entry]) => (
+              <div key={strainName} className="bg-gray-800/70 rounded-lg px-2 py-1 flex items-center gap-1.5">
+                <span className="text-green-400 text-[10px] font-semibold">{strainName}</span>
+                <span className="text-gray-400 text-[10px]">{formatUnits(entry.oz)}</span>
+                <span className="text-yellow-500 text-[10px]">${entry.pricePerUnit}/oz</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Street sell quota bar */}
+        {streetSellCooldownTicks > 0 ? (
+          <div className="mb-2 bg-gray-800/60 rounded-lg px-3 py-1.5 flex items-center justify-between">
+            <span className="text-orange-400 text-xs font-semibold">⏳ Street demand cooling down</span>
+            <span className="text-orange-300 text-xs font-bold">{Math.ceil(streetSellCooldownTicks / 60)}m {streetSellCooldownTicks % 60}s</span>
+          </div>
+        ) : (
+          <div className="mb-2">
+            <div className="flex items-center justify-between mb-0.5">
+              <span className="text-gray-500 text-[10px]">Street demand</span>
+              <span className="text-gray-400 text-[10px] font-semibold">{formatUnits(streetSellQuotaOz)} remaining · resets in 10 min</span>
+            </div>
+            <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-full bg-green-600 rounded-full transition-all" style={{ width: `${(streetSellQuotaOz / 160) * 100}%` }} />
+            </div>
+          </div>
+        )}
+
+        {totalInventoryOz > 0 && streetSellQuotaOz > 0 ? (
           <div className="flex gap-2">
-            {([16, 160, 'All'] as const).map((qty) => {
-              const units = qty === 'All' ? Math.floor(op.productInventory) : Math.min(qty as number, Math.floor(op.productInventory));
-              const earned = Math.floor(units * avgPrice * 0.7);
-              const label = qty === 'All' ? 'All' : qty === 16 ? '1lb' : '10lb';
+            {([16, 160] as const).map((qty) => {
+              const units = Math.min(qty, Math.floor(totalInventoryOz), Math.floor(streetSellQuotaOz));
+              const earned = Math.floor(units * weightedAvgPrice * 0.7);
+              const label = qty === 16 ? '1lb' : '10lb';
+              const canSell = units > 0;
               return (
                 <button
                   key={qty}
                   onClick={() => {
                     const cash = sellProduct(units);
                     if (cash > 0) addNotification(`Sold ${formatUnits(units)} for ${formatMoney(cash)} 💵`, 'success');
+                    else addNotification('Street demand exhausted — use dealers!', 'warning');
                   }}
-                  className="flex-1 py-2 rounded-lg text-xs font-semibold bg-green-800 hover:bg-green-700 text-green-200 transition"
+                  disabled={!canSell}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${canSell ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}`}
                 >
                   Sell {label}<br />
-                  <span className="text-green-400">{formatMoney(earned)}</span>
+                  <span className={canSell ? 'text-green-400' : 'text-gray-600'}>{formatMoney(earned)}</span>
                 </button>
               );
             })}
           </div>
+        ) : totalInventoryOz > 0 ? (
+          <p className="text-orange-500 text-xs text-center py-1 font-semibold">Street demand exhausted — use dealers or wait</p>
         ) : (
           <p className="text-gray-600 text-xs text-center py-1">No product — grow some weed first</p>
         )}
-        <p className="text-gray-600 text-[10px] mt-2 text-center">Street sell = 70% of avg price · 16oz = 1lb · 100lb = 1 crate</p>
-      </section>
+        <p className="text-gray-600 text-[10px] mt-1.5 text-center">Street sell = 70% avg price · max 10 lbs per window · dealer network has no limit</p>
+      </div>
+
+      {/* ── STICKY SECOND — Seeds + Dealer Network ── */}
+      <div className="flex-shrink-0 bg-gray-950 border-b border-gray-800 px-4 py-2 flex gap-3">
+
+        {/* Seeds */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-white font-semibold text-xs">Seeds <span className="text-gray-400 font-normal">{op.seedStock} in stock · {formatMoney(INITIAL_OPERATION.seedCostPerUnit)}/seed</span></p>
+            <span className="text-lg">🌱</span>
+          </div>
+          {[
+            [10, 25, 50],
+            [1000, 10000, 100000],
+          ].map((row, rowIdx) => (
+            <div key={rowIdx} className={`flex gap-1.5 ${rowIdx > 0 ? 'mt-1' : ''}`}>
+              {row.map((qty) => {
+                const cost = INITIAL_OPERATION.seedCostPerUnit * qty;
+                const canAfford = dirtyCash >= cost;
+                return (
+                  <button
+                    key={qty}
+                    onClick={() => {
+                      if (buySeed(qty)) { sound.play('buy'); addNotification(`Bought ${qty} seeds`, 'success'); }
+                      else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
+                    }}
+                    disabled={!canAfford}
+                    className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
+                      canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    x{qty >= 1000 ? `${qty / 1000}k` : qty} ({formatMoney(cost)})
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        <div className="w-px bg-gray-700 self-stretch" />
+
+        {/* Dealer Network */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-white font-semibold text-xs">Dealer Network <span className="text-gray-400 font-normal">{currentDealerTier.name} · {op.dealerCount} dealers{op.dealerCount > 0 && <span className="text-green-400"> · {formatMoney(dealerIncome)} net/tick</span>}</span></p>
+            <span className="text-lg">🤝</span>
+          </div>
+          <p className="text-gray-600 text-[9px] mb-1">Avg ${weightedAvgPrice.toFixed(0)}/oz · dealer cut ${currentDealerTier.cutPer8oz} flat per 8oz sold</p>
+          <div className="flex gap-1.5 mb-1">
+            {[1, 3, 5].map((qty) => {
+              const cost = currentDealerTier.hireCost * qty;
+              const canAfford = dirtyCash >= cost;
+              return (
+                <button
+                  key={qty}
+                  onClick={() => {
+                    if (hireDealers(qty)) { sound.play('dealer_hire'); addNotification(`Hired ${qty} dealer${qty > 1 ? 's' : ''}`, 'success'); }
+                    else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
+                  }}
+                  disabled={!canAfford}
+                  className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
+                    canAfford ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  +{qty} ({formatMoney(cost)})
+                </button>
+              );
+            })}
+            {op.dealerCount > 0 && [1, 3, 5].map((qty) => {
+              const canFire = op.dealerCount >= qty;
+              return (
+                <button
+                  key={`fire-${qty}`}
+                  onClick={() => { fireDealers(qty); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
+                  disabled={!canFire}
+                  className={`flex-1 py-1.5 rounded text-[9px] font-semibold transition ${
+                    canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-gray-600 cursor-not-allowed'
+                  }`}
+                >
+                  −{qty} Fire
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-1.5">
+            {/* Downgrade */}
+            {(() => {
+              const prevTier = DEALER_TIERS[op.dealerTierIndex - 1];
+              const currentTier = DEALER_TIERS[op.dealerTierIndex];
+              const refund = prevTier ? Math.floor(currentTier.hireCost * 3 * 0.5) : 0;
+              return prevTier ? (
+                <button
+                  onClick={() => {
+                    if (downgradeDealerTier()) addNotification(`Downgraded to ${prevTier.name} (+${formatMoney(refund)} refund)`, 'warning');
+                  }}
+                  className="flex-1 py-1.5 rounded text-[9px] font-semibold transition bg-red-900/60 hover:bg-red-800/70 text-red-300"
+                >
+                  ▼ {prevTier.name}<br />
+                  <span className="font-normal opacity-75">
+                    {prevTier.salesRatePerTick} oz/tick · ${prevTier.cutPer8oz} cut/8oz<br />+{formatMoney(refund)} refund
+                  </span>
+                </button>
+              ) : null;
+            })()}
+            {/* Upgrade */}
+            {nextDealerTier && (() => {
+              const canUpgrade = dirtyCash >= nextDealerTier.hireCost * 3;
+              return (
+                <button
+                  onClick={() => {
+                    if (upgradeDealerTier()) addNotification(`Upgraded to ${nextDealerTier.name}!`, 'success');
+                    else addNotification(`Need ${formatMoney(nextDealerTier.hireCost * 3)} dirty cash`, 'warning');
+                  }}
+                  disabled={!canUpgrade}
+                  className={`flex-1 py-1.5 rounded text-[9px] font-semibold transition ${
+                    canUpgrade ? 'bg-purple-800 hover:bg-purple-700 text-purple-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  ▲ {nextDealerTier.name} — {formatMoney(nextDealerTier.hireCost * 3)} 💵<br />
+                  <span className="font-normal opacity-75">
+                    {nextDealerTier.salesRatePerTick} oz/tick · ${nextDealerTier.cutPer8oz} cut/8oz · hire ${nextDealerTier.hireCost}/ea
+                  </span>
+                </button>
+              );
+            })()}
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── SCROLLABLE BODY ── */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
       {/* Grow Rooms */}
       <section>
@@ -94,7 +266,8 @@ export default function OperationView() {
             const nextWater = WATER_TIERS[waterTier + 1];
             const nextLight = LIGHT_TIERS[lightTier + 1];
             const totalYieldBonus = waterData.yieldBonus + lightData.yieldBonus;
-            const maintenancePerTick = waterData.costPerTick + lightData.costPerTick;
+            const maintenancePerCycle = waterData.costPerCycle + lightData.costPerCycle;
+            const upgMult = def?.upgradeCostMultiplier ?? 1;
 
             return (
               <div key={room.id} className="bg-gray-800/60 border border-gray-700 rounded-xl overflow-hidden">
@@ -102,7 +275,7 @@ export default function OperationView() {
                 <div className="flex items-center justify-between px-3 py-2 bg-gray-900/50 border-b border-gray-700">
                   <div>
                     <p className="text-white font-bold text-sm">{room.name}</p>
-                    <p className="text-gray-500 text-xs">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield · <span className="text-red-400">{formatMoney(maintenancePerTick)}/s overhead</span></p>
+                    <p className="text-gray-500 text-xs">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield · <span className="text-red-400">{formatMoney(maintenancePerCycle)}/cycle overhead</span></p>
                   </div>
                   {isMaxLevel ? (
                     <span className="text-yellow-500 text-xs font-bold px-2 py-0.5 bg-yellow-900/30 rounded-full">MAX</span>
@@ -168,68 +341,115 @@ export default function OperationView() {
                     })}
                   </div>
 
-                  {/* RIGHT — Maintenance */}
-                  <div className="w-32 p-3 flex flex-col gap-3">
-                    <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center">Maintenance</p>
+                  {/* RIGHT — Maintenance: 3×2 grid (row1: nutrients, row2: systems) */}
+                  <div className="grid grid-cols-3 gap-1.5 p-3">
+
+                    {/* ROW 1 — Nutrients (FloraGro | FloraMicro | FloraBloom) */}
+                    {[
+                      { def: NUTRIENT_DEFS[0], level: room.nutrientSpeed  ?? 0, upgrade: () => upgradeFloraGro(room.id) },
+                      { def: NUTRIENT_DEFS[1], level: room.nutrientYield  ?? 0, upgrade: () => upgradefloraMicro(room.id) },
+                      { def: NUTRIENT_DEFS[2], level: room.nutrientDouble ?? 0, upgrade: () => upgradeFloraBloom(room.id) },
+                    ].map(({ def, level, upgrade }) => {
+                      const nextLevel = def.levels[level];
+                      const currentLevel = level > 0 ? def.levels[level - 1] : null;
+                      const scaledCost = nextLevel ? nextLevel.cost * upgMult : 0;
+                      const canAfford = nextLevel && dirtyCash >= scaledCost;
+                      return (
+                        <div key={def.id} className={`flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border ${level > 0 ? `border-opacity-40 ${def.bgColor}` : 'border-gray-700/40'}`}>
+                          <span className={`text-[9px] font-semibold ${def.color}`}>{def.icon} {def.name}</span>
+                          <p className={`text-[9px] font-semibold leading-tight ${def.color}`}>
+                            {currentLevel
+                              ? (def.id === 'speed'  ? `-${Math.round(currentLevel.speedBonus * 100)}% time`
+                                : def.id === 'yield' ? `+${Math.round(currentLevel.yieldBonus * 100)}% yield`
+                                : `${Math.round(currentLevel.doubleChance * 100)}% chance`)
+                              : <span className="text-gray-600">None</span>}
+                          </p>
+                          {nextLevel ? (
+                            <button
+                              onClick={() => {
+                                if (upgrade()) addNotification(`${nextLevel.name} applied!`, 'success');
+                                else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
+                              }}
+                              disabled={!canAfford}
+                              className={`w-full py-1 rounded text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${def.bgColor} hover:opacity-80 ${def.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                            >
+                              {def.id === 'speed'  && `-${Math.round(nextLevel.speedBonus * 100)}% time`}
+                              {def.id === 'yield'  && `+${Math.round(nextLevel.yieldBonus * 100)}% yield`}
+                              {def.id === 'double' && `${Math.round(nextLevel.doubleChance * 100)}% 2×`}
+                              <br/>{nextLevel.name}
+                              <br/>{formatMoney(scaledCost)}
+                              <br/><span className="text-red-300">${nextLevel.costPerCycle}/cyc</span>
+                            </button>
+                          ) : (
+                            <span className={`text-[9px] ${def.color} text-center mt-0.5`}>MAX ✓</span>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* ROW 2 — Water | Light | Auto-Harvest */}
 
                     {/* Water */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-gray-400">💧 Water</span>
-                        <span className="text-[10px] text-blue-400">+{Math.round(waterData.yieldBonus * 100)}%</span>
-                      </div>
-                      <p className="text-[10px] text-gray-500">{waterData.name}</p>
+                    <div className="flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border border-blue-900/40">
+                      <span className="text-[9px] text-gray-400">💧 Water</span>
+                      <span className="text-[9px] text-blue-400">{waterData.yieldBonus > 0 ? `+${Math.round(waterData.yieldBonus * 100)}% yield` : 'No bonus'}</span>
                       {nextWater ? (
                         <button
-                          onClick={() => { if (upgradeWater(room.id)) addNotification(`${nextWater.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextWater.cost)} dirty cash`, 'warning'); }}
-                          disabled={dirtyCash < nextWater.cost}
-                          className={`w-full py-1 rounded text-[10px] font-semibold transition ${dirtyCash >= nextWater.cost ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                          onClick={() => { if (upgradeWater(room.id)) addNotification(`${nextWater.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextWater.cost * upgMult)}`, 'warning'); }}
+                          disabled={dirtyCash < nextWater.cost * upgMult}
+                          className={`w-full py-1 rounded text-[9px] font-semibold transition ${dirtyCash >= nextWater.cost * upgMult ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                         >
-                          {nextWater.icon} {nextWater.name}<br/>{formatMoney(nextWater.cost)} · <span className="text-red-300">{formatMoney(nextWater.costPerTick)}/s</span>
+                          +{Math.round(nextWater.yieldBonus * 100)}% yield
+                          <br/>{nextWater.icon} {nextWater.name}
+                          <br/>{formatMoney(nextWater.cost * upgMult)}
+                          <br/><span className="text-red-300">${nextWater.costPerCycle}/cyc</span>
                         </button>
                       ) : (
-                        <span className="text-[10px] text-blue-500 text-center">MAX ✓</span>
+                        <span className="text-[9px] text-blue-500 text-center">MAX ✓</span>
                       )}
                     </div>
 
-                    {/* Lighting */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-gray-400">💡 Light</span>
-                        <span className="text-[10px] text-yellow-400">+{Math.round(lightData.yieldBonus * 100)}%</span>
-                      </div>
-                      <p className="text-[10px] text-gray-500">{lightData.name}</p>
+                    {/* Light */}
+                    <div className="flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border border-yellow-900/40">
+                      <span className="text-[9px] text-gray-400">💡 Light</span>
+                      <span className="text-[9px] text-yellow-400">{lightData.yieldBonus > 0 ? `+${Math.round(lightData.yieldBonus * 100)}% yield` : 'No bonus'}</span>
                       {nextLight ? (
                         <button
-                          onClick={() => { if (upgradeLighting(room.id)) addNotification(`${nextLight.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextLight.cost)} dirty cash`, 'warning'); }}
-                          disabled={dirtyCash < nextLight.cost}
-                          className={`w-full py-1 rounded text-[10px] font-semibold transition ${dirtyCash >= nextLight.cost ? 'bg-yellow-800 hover:bg-yellow-700 text-yellow-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                          onClick={() => { if (upgradeLighting(room.id)) addNotification(`${nextLight.name} installed!`, 'success'); else addNotification(`Need ${formatMoney(nextLight.cost * upgMult)}`, 'warning'); }}
+                          disabled={dirtyCash < nextLight.cost * upgMult}
+                          className={`w-full py-1 rounded text-[9px] font-semibold transition ${dirtyCash >= nextLight.cost * upgMult ? 'bg-yellow-800 hover:bg-yellow-700 text-yellow-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                         >
-                          {nextLight.icon} {nextLight.name}<br/>{formatMoney(nextLight.cost)} · <span className="text-red-300">{formatMoney(nextLight.costPerTick)}/s</span>
+                          +{Math.round(nextLight.yieldBonus * 100)}% yield
+                          <br/>{nextLight.icon} {nextLight.name}
+                          <br/>{formatMoney(nextLight.cost * upgMult)}
+                          <br/><span className="text-red-300">${nextLight.costPerCycle}/cyc</span>
                         </button>
                       ) : (
-                        <span className="text-[10px] text-yellow-500 text-center">MAX ✓</span>
+                        <span className="text-[9px] text-yellow-500 text-center">MAX ✓</span>
                       )}
                     </div>
 
                     {/* Auto-Harvest */}
-                    <div className="flex flex-col gap-1 pt-1 border-t border-gray-700">
-                      <span className="text-[10px] text-gray-400 text-center">⚙️ Auto-Harvest</span>
+                    <div className="flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border border-orange-900/40">
+                      <span className="text-[9px] text-gray-400">⚙️ Auto</span>
+                      <span className="text-[9px] text-gray-600 leading-tight">Auto-replants</span>
                       {room.autoHarvest ? (
-                        <span className="text-[10px] text-green-400 text-center font-bold">ACTIVE ✓</span>
+                        <span className="text-[9px] text-green-400 text-center font-bold">ACTIVE ✓</span>
                       ) : (
                         <button
                           onClick={() => {
                             if (buyAutoHarvest(room.id)) addNotification(`Auto-harvest enabled for ${room.name}!`, 'success');
-                            else addNotification(`Need ${formatMoney(def?.autoHarvestCost ?? 0)} dirty cash`, 'warning');
+                            else addNotification(`Need ${formatMoney(def?.autoHarvestCost ?? 0)}`, 'warning');
                           }}
                           disabled={dirtyCash < (def?.autoHarvestCost ?? Infinity)}
-                          className={`w-full py-1 rounded text-[10px] font-semibold transition ${dirtyCash >= (def?.autoHarvestCost ?? Infinity) ? 'bg-orange-800 hover:bg-orange-700 text-orange-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                          className={`w-full py-1 rounded text-[9px] font-semibold transition ${dirtyCash >= (def?.autoHarvestCost ?? Infinity) ? 'bg-orange-800 hover:bg-orange-700 text-orange-200' : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                         >
-                          Enable<br/>{formatMoney(def?.autoHarvestCost ?? 0)}
+                          Enable
+                          <br/>{formatMoney(def?.autoHarvestCost ?? 0)}
                         </button>
                       )}
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -266,110 +486,7 @@ export default function OperationView() {
         </div>
       </section>
 
-      {/* Seeds */}
-      <section className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-white font-semibold text-sm">Seeds</h3>
-            <p className="text-gray-400 text-xs">{op.seedStock} in stock · {formatMoney(INITIAL_OPERATION.seedCostPerUnit)}/seed</p>
-          </div>
-          <span className="text-2xl">🌱</span>
-        </div>
-        <div className="flex gap-2">
-          {[10, 25, 50].map((qty) => {
-            const cost = INITIAL_OPERATION.seedCostPerUnit * qty;
-            const canAfford = dirtyCash >= cost;
-            return (
-              <button
-                key={qty}
-                onClick={() => {
-                  if (buySeed(qty)) { sound.play('buy'); addNotification(`Bought ${qty} seeds`, 'success'); }
-                  else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
-                }}
-                disabled={!canAfford}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${
-                  canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                x{qty} ({formatMoney(cost)})
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Dealer Network */}
-      <section className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h3 className="text-white font-semibold text-sm">Dealer Network</h3>
-            <p className="text-gray-400 text-xs">
-              {currentDealerTier.name} · {op.dealerCount} dealers
-              {op.dealerCount > 0 && ` · ${formatMoney(dealerIncome)}/s`}
-            </p>
-          </div>
-          <span className="text-2xl">🤝</span>
-        </div>
-        <p className="text-gray-600 text-[10px] mb-3">
-          Sell passively at avg ${avgPrice.toFixed(0)}/oz ({currentDealerTier.cutPercent}% cut)
-        </p>
-        <div className="flex gap-2 mb-2">
-          {[1, 3, 5].map((qty) => {
-            const cost = currentDealerTier.hireCost * qty;
-            const canAfford = dirtyCash >= cost;
-            return (
-              <button
-                key={qty}
-                onClick={() => {
-                  if (hireDealers(qty)) { sound.play('dealer_hire'); addNotification(`Hired ${qty} dealer${qty > 1 ? 's' : ''}`, 'success'); }
-                  else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
-                }}
-                disabled={!canAfford}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${
-                  canAfford ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                +{qty} ({formatMoney(cost)})
-              </button>
-            );
-          })}
-        </div>
-        {op.dealerCount > 0 && (
-          <div className="flex gap-2 mb-3">
-            {[1, 3, 5].map((qty) => {
-              const canFire = op.dealerCount >= qty;
-              return (
-                <button
-                  key={qty}
-                  onClick={() => { fireDealers(qty); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
-                  disabled={!canFire}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition ${
-                    canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-gray-600 cursor-not-allowed'
-                  }`}
-                >
-                  −{qty} Fire
-                </button>
-              );
-            })}
-          </div>
-        )}
-        {nextDealerTier && (
-          <button
-            onClick={() => {
-              if (upgradeDealerTier()) addNotification(`Upgraded to ${nextDealerTier.name}!`, 'success');
-              else addNotification(`Need ${formatMoney(nextDealerTier.hireCost * 3)} dirty cash`, 'warning');
-            }}
-            disabled={dirtyCash < nextDealerTier.hireCost * 3}
-            className={`w-full py-2 rounded-lg text-xs font-semibold transition ${
-              dirtyCash >= nextDealerTier.hireCost * 3
-                ? 'bg-purple-800 hover:bg-purple-700 text-purple-200'
-                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            Upgrade to {nextDealerTier.name} ({formatMoney(nextDealerTier.hireCost * 3)} 💵)
-          </button>
-        )}
-      </section>
+      </div>{/* end scrollable body */}
     </div>
   );
 }

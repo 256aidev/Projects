@@ -540,6 +540,64 @@ export const BUSINESSES: BusinessDef[] = [
     themeColor: '#7C3AED',
     icon: '🌿',
   },
+
+  // ─── DISPENSARIES ──────────────────────────────────────────────────────────
+  // NOTE: baseLaunderPerTick = base oz/tick capacity; launderEfficiency = price efficiency (fraction of avg street price)
+
+  {
+    id: 'green_cross',
+    chainName: 'Green Cross Wellness',
+    displayName: 'Medical Dispensary',
+    description: 'Licensed medical dispensary. Sells product legally at ~60% of street price — slow but 100% clean cash, zero heat.',
+    category: 'Dispensary',
+    isDispensary: true,
+    purchaseCost: 10000,
+    baseLaunderPerTick: 4,        // 4 oz/tick base capacity
+    launderEfficiency: 0.60,      // 60% of avg street price per oz
+    baseRevenuePerTick: 2,
+    baseOperatingCostPerTick: 3,
+    baseEmployeeCount: 2,
+    employeeSalaryPerTick: 0.6,
+    requiredResources: [],
+    upgradeTiers: [
+      { name: 'Wellness Booth',  upgradeCost: 0,       launderMultiplier: 1.0,  revenueMultiplier: 1.0, operatingCostMultiplier: 1.0, additionalEmployees: 0 },
+      { name: 'Clinic',          upgradeCost: 20000,   launderMultiplier: 2.0,  revenueMultiplier: 1.5, operatingCostMultiplier: 1.2, additionalEmployees: 1 },
+      { name: 'Med Center',      upgradeCost: 60000,   launderMultiplier: 4.0,  revenueMultiplier: 2.2, operatingCostMultiplier: 1.6, additionalEmployees: 3 },
+      { name: 'Licensed Store',  upgradeCost: 180000,  launderMultiplier: 8.0,  revenueMultiplier: 4.0, operatingCostMultiplier: 2.2, additionalEmployees: 5 },
+      { name: 'Regional Chain',  upgradeCost: 600000,  launderMultiplier: 20.0, revenueMultiplier: 9.0, operatingCostMultiplier: 3.5, additionalEmployees: 10 },
+    ],
+    allowedDistrictIds: ['strip_mall', 'downtown', 'wealthy_hills'],
+    heatReductionPerTick: 0.025,
+    themeColor: '#16A34A',
+    icon: '🏥',
+  },
+  {
+    id: 'bloom_cannabis',
+    chainName: 'Bloom Cannabis Co.',
+    displayName: 'Recreational Dispensary',
+    description: 'Upscale rec dispensary. Higher oz/tick throughput and better price efficiency than medical — costs more to run.',
+    category: 'Dispensary',
+    isDispensary: true,
+    purchaseCost: 35000,
+    baseLaunderPerTick: 12,       // 12 oz/tick base capacity
+    launderEfficiency: 0.70,      // 70% of avg street price per oz
+    baseRevenuePerTick: 5,
+    baseOperatingCostPerTick: 8,
+    baseEmployeeCount: 4,
+    employeeSalaryPerTick: 0.8,
+    requiredResources: [],
+    upgradeTiers: [
+      { name: 'Boutique',        upgradeCost: 0,        launderMultiplier: 1.0,  revenueMultiplier: 1.0, operatingCostMultiplier: 1.0, additionalEmployees: 0 },
+      { name: 'Showroom',        upgradeCost: 60000,    launderMultiplier: 2.0,  revenueMultiplier: 1.8, operatingCostMultiplier: 1.3, additionalEmployees: 2 },
+      { name: 'Flagship Store',  upgradeCost: 200000,   launderMultiplier: 4.5,  revenueMultiplier: 3.0, operatingCostMultiplier: 1.8, additionalEmployees: 5 },
+      { name: 'Brand',           upgradeCost: 700000,   launderMultiplier: 9.0,  revenueMultiplier: 5.5, operatingCostMultiplier: 2.5, additionalEmployees: 10 },
+      { name: 'Empire',          upgradeCost: 2500000,  launderMultiplier: 22.0, revenueMultiplier: 13.0, operatingCostMultiplier: 4.0, additionalEmployees: 20 },
+    ],
+    allowedDistrictIds: ['downtown', 'wealthy_hills', 'strip_mall'],
+    heatReductionPerTick: 0.015,
+    themeColor: '#7C3AED',
+    icon: '🌿',
+  },
 ];
 
 export const BUSINESS_MAP = Object.fromEntries(BUSINESSES.map((b) => [b.id, b]));
