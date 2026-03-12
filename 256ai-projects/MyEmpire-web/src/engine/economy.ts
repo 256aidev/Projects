@@ -5,7 +5,7 @@ import { DEALER_TIERS, WATER_TIERS, LIGHT_TIERS } from '../data/types';
 
 // ─── CRIMINAL OPERATION ───────────────────────────
 
-export function tickCriminalOperation(op: CriminalOperation): {
+export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0): {
   newOp: CriminalOperation;
   dirtyEarned: number;
 } {
@@ -44,7 +44,7 @@ export function tickCriminalOperation(op: CriminalOperation): {
       if (slot.ticksRemaining === 1) {
         if (room.autoHarvest && newSeedStock > 0) {
           // Auto-harvest: collect yield, consume a seed, restart timer
-          const units = Math.floor(slot.harvestYield * (1 + waterBonus + lightBonus));
+          const units = Math.floor(slot.harvestYield * (1 + waterBonus + lightBonus + prestigeBonus));
           autoHarvestedUnits += units;
           newSeedStock -= 1;
           return { ...slot, ticksRemaining: slot.growTimerTicks }; // restart
@@ -70,7 +70,7 @@ export function tickCriminalOperation(op: CriminalOperation): {
   };
 }
 
-export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: number): {
+export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: number, prestigeBonus = 0): {
   newOp: CriminalOperation;
   unitsHarvested: number;
 } {
@@ -79,10 +79,10 @@ export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: nu
   const slot = room.slots[slotIndex];
   if (!slot || !slot.isHarvesting || slot.ticksRemaining > 0) return { newOp: op, unitsHarvested: 0 };
 
-  // Apply maintenance bonuses to yield
+  // Apply maintenance bonuses + prestige bonus to yield
   const waterBonus = WATER_TIERS[room.waterTier ?? 0]?.yieldBonus ?? 0;
   const lightBonus = LIGHT_TIERS[room.lightTier ?? 0]?.yieldBonus ?? 0;
-  const unitsHarvested = Math.floor(slot.harvestYield * (1 + waterBonus + lightBonus));
+  const unitsHarvested = Math.floor(slot.harvestYield * (1 + waterBonus + lightBonus + prestigeBonus));
 
   const newOp = {
     ...op,

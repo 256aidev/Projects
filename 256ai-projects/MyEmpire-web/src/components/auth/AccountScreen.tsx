@@ -1,37 +1,56 @@
+import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
 import { formatMoney } from '../../engine/economy';
+import { sound } from '../../engine/sound';
+import { PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL } from '../../data/types';
 
 export default function AccountScreen() {
   const { user, signOut, signInWithGoogle } = useAuthStore();
   const setShowAccountScreen = useUIStore((s) => s.setShowAccountScreen);
-  const { dirtyCash, cleanCash, totalDirtyEarned, totalCleanEarned, tickCount, businesses } = useGameStore();
+  const addNotification = useUIStore((s) => s.addNotification);
+  const {
+    dirtyCash, cleanCash, totalDirtyEarned, totalCleanEarned,
+    tickCount, businesses, prestigeCount, prestigeBonus,
+    prestige, resetGame,
+  } = useGameStore();
 
   const isGuest = !user || (user as { uid: string }).uid === 'guest';
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [sfxVol, setSfxVol] = useState(sound.sfxVolume);
+  const [musicVol, setMusicVol] = useState(sound.musicVolume);
+  const [sfxOn, setSfxOn] = useState(!sound.sfxMuted);
+  const [musicOn, setMusicOn] = useState(!sound.musicMuted);
 
-  const handleSignOut = async () => {
-    await signOut();
-    setShowAccountScreen(false);
+  const canPrestige = totalDirtyEarned >= PRESTIGE_THRESHOLD;
+  const progressPct = Math.min(100, (totalDirtyEarned / PRESTIGE_THRESHOLD) * 100);
+
+  const handleSignOut = async () => { await signOut(); setShowAccountScreen(false); };
+  const handleSignIn = async () => { await signInWithGoogle(); setShowAccountScreen(false); };
+
+  const handlePrestige = () => {
+    if (prestige()) {
+      addNotification(`⭐ Prestige ${prestigeCount + 1}! +${Math.round(PRESTIGE_BONUS_PER_LEVEL * 100)}% yield`, 'success');
+      setShowAccountScreen(false);
+    }
   };
 
-  const handleSignIn = async () => {
-    await signInWithGoogle();
+  const handleReset = () => {
+    resetGame();
+    setConfirmReset(false);
+    addNotification('Game reset. Back to the beginning.', 'warning');
     setShowAccountScreen(false);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-gray-900 border-t border-gray-700 rounded-t-2xl p-6 pb-10 space-y-5">
+      <div className="w-full max-w-md bg-gray-900 border-t border-gray-700 rounded-t-2xl p-6 pb-10 space-y-5 overflow-y-auto max-h-[90vh]">
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-white font-bold text-lg">Account</h2>
-          <button
-            onClick={() => setShowAccountScreen(false)}
-            className="text-gray-500 hover:text-gray-300 text-2xl leading-none transition"
-          >
-            ×
-          </button>
+          <button onClick={() => setShowAccountScreen(false)} className="text-gray-500 hover:text-gray-300 text-2xl leading-none transition">×</button>
         </div>
 
         {/* User info */}
@@ -39,14 +58,57 @@ export default function AccountScreen() {
           {user?.photoURL && !isGuest ? (
             <img src={user.photoURL} alt="avatar" className="w-12 h-12 rounded-full" />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-2xl">
-              👤
-            </div>
+            <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-2xl">👤</div>
           )}
           <div>
             <p className="text-white font-semibold">{isGuest ? 'Guest Player' : (user?.displayName ?? 'Player')}</p>
             <p className="text-gray-400 text-xs">{isGuest ? 'Local save only' : (user?.email ?? '')}</p>
           </div>
+        </div>
+
+        {/* Prestige */}
+        <div className="bg-gray-800 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-gray-400 text-xs uppercase tracking-widest">Prestige</p>
+            {prestigeCount > 0 && (
+              <span className="text-yellow-400 text-sm font-bold">
+                {'⭐'.repeat(Math.min(prestigeCount, 5))}{prestigeCount > 5 ? ` ×${prestigeCount}` : ''}
+              </span>
+            )}
+          </div>
+
+          {prestigeCount > 0 && (
+            <p className="text-green-400 text-sm font-semibold">
+              +{Math.round(prestigeBonus * 100)}% grow yield active
+            </p>
+          )}
+
+          {/* Progress bar */}
+          <div>
+            <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+              <span>{formatMoney(totalDirtyEarned)} earned</span>
+              <span>Goal: {formatMoney(PRESTIGE_THRESHOLD)}</span>
+            </div>
+            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${canPrestige ? 'bg-yellow-400' : 'bg-green-600'}`}
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+
+          {canPrestige ? (
+            <button
+              onClick={handlePrestige}
+              className="w-full py-2.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold text-sm transition"
+            >
+              ⭐ PRESTIGE — +{Math.round(PRESTIGE_BONUS_PER_LEVEL * 100)}% Yield Forever
+            </button>
+          ) : (
+            <p className="text-gray-500 text-xs text-center">
+              Reach {formatMoney(PRESTIGE_THRESHOLD)} total dirty earnings to prestige
+            </p>
+          )}
         </div>
 
         {/* Game stats */}
@@ -80,8 +142,71 @@ export default function AccountScreen() {
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Sound Controls */}
+        <div className="bg-gray-800 rounded-xl p-4 space-y-3">
+          <p className="text-gray-400 text-xs uppercase tracking-widest">Sound</p>
+
+          {/* SFX */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { const next = !sfxOn; sound.setSfxMuted(!next); setSfxOn(next); }}
+              className={`text-sm font-semibold w-8 text-center transition ${sfxOn ? 'text-white' : 'text-gray-600'}`}
+            >
+              {sfxOn ? '🔔' : '🔕'}
+            </button>
+            <div className="flex-1">
+              <p className="text-gray-400 text-[10px] mb-1">SFX</p>
+              <input
+                type="range" min="0" max="1" step="0.05"
+                value={sfxVol}
+                disabled={!sfxOn}
+                onChange={(e) => { const v = parseFloat(e.target.value); sound.setSfxVolume(v); setSfxVol(v); }}
+                className="w-full accent-green-500 disabled:opacity-30"
+              />
+            </div>
+            <span className="text-gray-500 text-xs w-8 text-right">{Math.round(sfxVol * 100)}%</span>
+          </div>
+
+          {/* Music */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { const next = !musicOn; sound.setMusicMuted(!next); setMusicOn(next); }}
+              className={`text-sm font-semibold w-8 text-center transition ${musicOn ? 'text-white' : 'text-gray-600'}`}
+            >
+              {musicOn ? '🎵' : '🔇'}
+            </button>
+            <div className="flex-1">
+              <p className="text-gray-400 text-[10px] mb-1">Music</p>
+              <input
+                type="range" min="0" max="1" step="0.05"
+                value={musicVol}
+                onChange={(e) => { const v = parseFloat(e.target.value); sound.setMusicVolume(v); setMusicVol(v); }}
+                className="w-full accent-purple-500"
+              />
+            </div>
+            <span className="text-gray-500 text-xs w-8 text-right">{Math.round(musicVol * 100)}%</span>
+          </div>
+        </div>
+
+        {/* Reset */}
         <div className="space-y-2">
+          {confirmReset ? (
+            <div className="bg-red-950 border border-red-800 rounded-xl p-4 space-y-3">
+              <p className="text-red-300 text-sm font-semibold text-center">Are you sure? This wipes everything except your prestige bonuses.</p>
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmReset(false)} className="flex-1 py-2 rounded-lg bg-gray-700 text-gray-300 text-sm font-semibold">Cancel</button>
+                <button onClick={handleReset} className="flex-1 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm font-semibold">Confirm Reset</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmReset(true)}
+              className="w-full py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-red-400 font-semibold text-sm transition"
+            >
+              Reset Game
+            </button>
+          )}
+
           {isGuest ? (
             <button
               onClick={handleSignIn}
@@ -96,15 +221,14 @@ export default function AccountScreen() {
               Sign in with Google to save progress
             </button>
           ) : (
-            <button
-              onClick={handleSignOut}
-              className="w-full py-3 rounded-xl bg-red-900/50 hover:bg-red-800/60 text-red-300 font-semibold text-sm transition"
-            >
+            <button onClick={handleSignOut} className="w-full py-3 rounded-xl bg-red-900/50 hover:bg-red-800/60 text-red-300 font-semibold text-sm transition">
               Sign Out
             </button>
           )}
         </div>
+
       </div>
     </div>
   );
+
 }

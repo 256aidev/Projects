@@ -251,7 +251,13 @@ export interface GameState {
   lastTickCleanProfit: number;
   tickCount: number;
   eventCooldown: number;
+  prestigeCount: number;       // how many times prestige'd
+  prestigeBonus: number;       // cumulative yield multiplier (0.05 per level)
 }
+
+// Prestige thresholds and reward
+export const PRESTIGE_THRESHOLD = 1_000_000;   // $1M total dirty earned
+export const PRESTIGE_BONUS_PER_LEVEL = 0.05;  // +5% grow yield per prestige
 
 // ─────────────────────────────────────────
 // STATIC DEFINITIONS
@@ -375,4 +381,6 @@ export const INITIAL_GAME_STATE: GameState = {
   lastTickCleanProfit: 0,
   tickCount: 0,
   eventCooldown: 0,
+  prestigeCount: 0,
+  prestigeBonus: 0,
 };

@@ -15,6 +15,7 @@ export default function OperationView() {
   const upgradeLighting = useGameStore((s) => s.upgradeLighting);
   const buyAutoHarvest = useGameStore((s) => s.buyAutoHarvest);
   const hireDealers = useGameStore((s) => s.hireDealers);
+  const fireDealers = useGameStore((s) => s.fireDealers);
   const upgradeDealerTier = useGameStore((s) => s.upgradeDealerTier);
   const buySeed = useGameStore((s) => s.buySeed);
   const plantSeeds = useGameStore((s) => s.plantSeeds);
@@ -311,7 +312,7 @@ export default function OperationView() {
         <p className="text-gray-600 text-[10px] mb-3">
           Sell passively at avg ${avgPrice.toFixed(0)}/oz ({currentDealerTier.cutPercent}% cut)
         </p>
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-2">
           {[1, 3, 5].map((qty) => {
             const cost = currentDealerTier.hireCost * qty;
             const canAfford = dirtyCash >= cost;
@@ -332,6 +333,25 @@ export default function OperationView() {
             );
           })}
         </div>
+        {op.dealerCount > 0 && (
+          <div className="flex gap-2 mb-3">
+            {[1, 3, 5].map((qty) => {
+              const canFire = op.dealerCount >= qty;
+              return (
+                <button
+                  key={qty}
+                  onClick={() => { fireDealers(qty); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
+                  disabled={!canFire}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition ${
+                    canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-gray-600 cursor-not-allowed'
+                  }`}
+                >
+                  −{qty} Fire
+                </button>
+              );
+            })}
+          </div>
+        )}
         {nextDealerTier && (
           <button
             onClick={() => {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BusinessInstance, GameState } from '../data/types';
-import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS } from '../data/types';
+import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
 import { RESOURCE_MAP } from '../data/resources';
@@ -32,6 +32,8 @@ interface GameActions {
   setLaunderRate: (instanceId: string, dirtyPerTick: number) => void;
   purchaseResource: (resourceId: string, quantity: number) => boolean;
   unlockDistrict: (districtId: string) => boolean;
+  fireDealers: (count: number) => void;
+  prestige: () => boolean;
   resetGame: () => void;
 }
 
@@ -48,7 +50,7 @@ export const useGameStore = create<GameStore>()(
         set((state) => {
           let { dirtyCash, cleanCash } = state;
 
-          const { newOp, dirtyEarned } = tickCriminalOperation(state.operation);
+          const { newOp, dirtyEarned } = tickCriminalOperation(state.operation, state.prestigeBonus);
           dirtyCash += dirtyEarned;
 
           let totalDirtyConsumed = 0;
@@ -89,7 +91,7 @@ export const useGameStore = create<GameStore>()(
 
       harvestGrowRoom: (roomId, slotIndex) => {
         const state = get();
-        const { newOp, unitsHarvested } = harvestSlot(state.operation, roomId, slotIndex);
+        const { newOp, unitsHarvested } = harvestSlot(state.operation, roomId, slotIndex, state.prestigeBonus);
         if (unitsHarvested > 0) {
           if (newOp.seedStock > 0) {
             const room = newOp.growRooms.find((r) => r.id === roomId);
@@ -426,11 +428,37 @@ export const useGameStore = create<GameStore>()(
         return true;
       },
 
-      resetGame: () => set({ ...INITIAL_GAME_STATE }),
+      fireDealers: (count) => {
+        const state = get();
+        const remove = Math.min(count, state.operation.dealerCount);
+        if (remove <= 0) return;
+        set({ operation: { ...state.operation, dealerCount: state.operation.dealerCount - remove } });
+      },
+
+      prestige: () => {
+        const state = get();
+        if (state.totalDirtyEarned < PRESTIGE_THRESHOLD) return false;
+        const newCount = (state.prestigeCount ?? 0) + 1;
+        set({
+          ...INITIAL_GAME_STATE,
+          prestigeCount: newCount,
+          prestigeBonus: newCount * PRESTIGE_BONUS_PER_LEVEL,
+        });
+        return true;
+      },
+
+      resetGame: () => {
+        const state = get();
+        set({
+          ...INITIAL_GAME_STATE,
+          prestigeCount: state.prestigeCount ?? 0,
+          prestigeBonus: state.prestigeBonus ?? 0,
+        });
+      },
     }),
     {
       name: 'myempire-save',
-      version: 7,
+      version: 8,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -462,6 +490,10 @@ export const useGameStore = create<GameStore>()(
             }),
           };
         }
+
+        // Preserve prestige across migrations
+        if (!merged.prestigeCount) merged.prestigeCount = 0;
+        if (!merged.prestigeBonus) merged.prestigeBonus = 0;
 
         return merged;
       },
