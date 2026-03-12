@@ -72,7 +72,7 @@ export default function OperationView() {
         ) : (
           <p className="text-gray-600 text-xs text-center py-1">No product — grow some weed first</p>
         )}
-        <p className="text-gray-600 text-[10px] mt-2 text-center">Street sell = 70% of avg price · 1 unit = 1 oz · 16oz = 1lb · 100lb = 1 crate</p>
+        <p className="text-gray-600 text-[10px] mt-2 text-center">Street sell = 70% of avg price · 16oz = 1lb · 100lb = 1 crate</p>
       </section>
 
       {/* Grow Rooms */}
@@ -308,7 +308,7 @@ export default function OperationView() {
           <span className="text-2xl">🤝</span>
         </div>
         <p className="text-gray-600 text-[10px] mb-3">
-          Sell passively at avg ${avgPrice.toFixed(0)}/unit ({currentDealerTier.cutPercent}% cut)
+          Sell passively at avg ${avgPrice.toFixed(0)}/oz ({currentDealerTier.cutPercent}% cut)
         </p>
         <div className="flex gap-2 mb-3">
           {[1, 3, 5].map((qty) => {
