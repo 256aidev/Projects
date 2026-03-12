@@ -72,6 +72,7 @@ interface GameActions {
   sellBusiness: (instanceId: string) => void;
   upgradeBusiness: (instanceId: string) => boolean;
   setLaunderRate: (instanceId: string, dirtyPerTick: number) => void;
+  setCleanToDirtyRate: (instanceId: string, amount: number) => void;
   setDispensaryRate: (instanceId: string, ozPerTick: number) => void;
   purchaseResource: (resourceId: string, quantity: number) => boolean;
   unlockDistrict: (districtId: string) => boolean;
@@ -141,9 +142,22 @@ export const useGameStore = create<GameStore>()(
             finalOp = { ...newOp, productInventory: newInventory };
           }
 
+          // Reverse flow: clean cash → dirty cash (95% efficiency — 5% handling cost)
+          let totalCleanToDirty = 0;
+          let totalDirtyFromClean = 0;
+          for (const biz of state.businesses) {
+            if (!biz.isOperating) continue;
+            const rate = biz.cleanToDirtyPerTick ?? 0;
+            if (rate <= 0) continue;
+            const available = cleanCash - totalCleanToDirty; // remaining clean cash
+            const consumed = Math.min(rate, Math.max(0, available));
+            totalCleanToDirty += consumed;
+            totalDirtyFromClean += consumed * 0.95;
+          }
+
           const legitProfit = totalRevenue - totalExpenses;
-          dirtyCash = Math.max(0, dirtyCash - totalDirtyConsumed);
-          cleanCash += totalCleanProduced + legitProfit;
+          dirtyCash = Math.max(0, dirtyCash - totalDirtyConsumed) + totalDirtyFromClean;
+          cleanCash = cleanCash - totalCleanToDirty + totalCleanProduced + legitProfit;
           if (cleanCash < 0) cleanCash += cleanCash * 0.0001;
 
           const totalEarned = state.totalDirtyEarned + dirtyEarned;
@@ -222,6 +236,7 @@ export const useGameStore = create<GameStore>()(
         set({
           dirtyCash: state.dirtyCash + dirtyEarned,
           totalDirtyEarned: state.totalDirtyEarned + dirtyEarned,
+          lastTickDirtyProfit: state.lastTickDirtyProfit + dirtyEarned,
           operation: { ...state.operation, productInventory: newInventory },
           streetSellQuotaOz: newQuota,
         });
@@ -503,6 +518,7 @@ export const useGameStore = create<GameStore>()(
           isOperating: true,
           supplyModifier: 1,
           dirtyQueuedPerTick: (def.isDispensary || def.isRental) ? 0 : 5,
+          cleanToDirtyPerTick: 0,
           ...(def.isDispensary ? { productQueuedPerTick: 2 } : {}),
         };
         set({
@@ -570,6 +586,14 @@ export const useGameStore = create<GameStore>()(
         set((state) => ({
           businesses: state.businesses.map((b) =>
             b.instanceId === instanceId ? { ...b, dirtyQueuedPerTick: Math.max(0, dirtyPerTick) } : b
+          ),
+        }));
+      },
+
+      setCleanToDirtyRate: (instanceId, amount) => {
+        set((state) => ({
+          businesses: state.businesses.map((b) =>
+            b.instanceId === instanceId ? { ...b, cleanToDirtyPerTick: Math.max(0, amount) } : b
           ),
         }));
       },
@@ -735,6 +759,11 @@ export const useGameStore = create<GameStore>()(
               Object.assign(merged.generatedBlocks, neighbors);
             }
           }
+        }
+
+        // Backfill cleanToDirtyPerTick for old saves
+        for (const biz of merged.businesses) {
+          if (biz.cleanToDirtyPerTick === undefined) (biz as any).cleanToDirtyPerTick = 0;
         }
 
         // Preserve prestige across migrations
