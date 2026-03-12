@@ -6,7 +6,6 @@ import { useAuthStore } from './store/authStore';
 import { useGameStore } from './store/gameStore';
 import HUD from './components/layout/HUD';
 import NavBar from './components/layout/NavBar';
-import DistrictSelector from './components/city/DistrictSelector';
 import CityMap from './components/city/CityMap';
 import OperationView from './components/operation/OperationView';
 import LegalView from './components/legal/LegalView';
@@ -67,18 +66,15 @@ export default function App() {
         {activeView === 'operation' && <OperationView />}
 
         {activeView === 'city' && (
-          <>
-            <div className="flex items-center justify-between bg-gray-800/50 px-3 py-1.5 border-b border-gray-700/50">
-              <DistrictSelector />
-              <button
-                onClick={() => setPanel(activePanel === 'market' ? null : 'market')}
-                className="px-3 py-1 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-semibold transition whitespace-nowrap ml-2"
-              >
-                🛒 Market
-              </button>
-            </div>
+          <div className="flex-1 flex flex-col overflow-hidden relative">
+            <button
+              onClick={() => setPanel(activePanel === 'market' ? null : 'market')}
+              className="absolute top-2 right-2 z-10 px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-semibold transition whitespace-nowrap shadow-lg"
+            >
+              🛒 Market
+            </button>
             <CityMap />
-          </>
+          </div>
         )}
 
         {activeView === 'legal' && <LegalView />}

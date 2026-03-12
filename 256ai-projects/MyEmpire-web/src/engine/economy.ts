@@ -165,10 +165,10 @@ export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: nu
 
 export function calculateDispensaryCapacity(biz: BusinessInstance): number {
   const def = BUSINESS_MAP[biz.businessDefId];
+  if (!def) return 0;
   const district = DISTRICT_MAP[biz.districtId];
-  if (!def || !district) return 0;
   const tier = def.upgradeTiers[biz.upgradeLevel] ?? def.upgradeTiers[0];
-  return def.baseLaunderPerTick * tier.launderMultiplier * district.customerTrafficMultiplier;
+  return def.baseLaunderPerTick * tier.launderMultiplier * (district?.customerTrafficMultiplier ?? 1);
 }
 
 // Returns { productConsumed, cleanProduced } for one dispensary tick
@@ -188,27 +188,27 @@ export function calculateDispensaryTick(biz: BusinessInstance, availableProduct:
 
 export function calculateLaunderCapacity(biz: BusinessInstance): number {
   const def = BUSINESS_MAP[biz.businessDefId];
+  if (!def) return 0;
   const district = DISTRICT_MAP[biz.districtId];
-  if (!def || !district) return 0;
   const tier = def.upgradeTiers[biz.upgradeLevel] ?? def.upgradeTiers[0];
-  return def.baseLaunderPerTick * tier.launderMultiplier * district.customerTrafficMultiplier;
+  return def.baseLaunderPerTick * tier.launderMultiplier * (district?.customerTrafficMultiplier ?? 1);
 }
 
 export function calculateBusinessRevenue(biz: BusinessInstance): number {
   const def = BUSINESS_MAP[biz.businessDefId];
+  if (!def) return 0;
   const district = DISTRICT_MAP[biz.districtId];
-  if (!def || !district) return 0;
   const tier = def.upgradeTiers[biz.upgradeLevel] ?? def.upgradeTiers[0];
-  return def.baseRevenuePerTick * tier.revenueMultiplier * biz.supplyModifier * district.revenueMultiplier;
+  return def.baseRevenuePerTick * tier.revenueMultiplier * biz.supplyModifier * (district?.revenueMultiplier ?? 1);
 }
 
 export function calculateBusinessExpenses(biz: BusinessInstance): number {
   const def = BUSINESS_MAP[biz.businessDefId];
+  if (!def) return 0;
   const district = DISTRICT_MAP[biz.districtId];
-  if (!def || !district) return 0;
   const tier = def.upgradeTiers[biz.upgradeLevel] ?? def.upgradeTiers[0];
   const totalEmployees = def.baseEmployeeCount + tier.additionalEmployees;
-  const opCost = def.baseOperatingCostPerTick * tier.operatingCostMultiplier * district.operatingCostMultiplier;
+  const opCost = def.baseOperatingCostPerTick * tier.operatingCostMultiplier * (district?.operatingCostMultiplier ?? 1);
   const salaryCost = totalEmployees * def.employeeSalaryPerTick;
   return opCost + salaryCost;
 }

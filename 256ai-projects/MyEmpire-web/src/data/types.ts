@@ -205,6 +205,7 @@ export interface BusinessDef {
   themeColor: string;
   icon: string;
   isDispensary?: boolean;           // if true: consumes product inventory → clean cash instead of dirty cash
+  isRental?: boolean;               // if true: generates clean cash passively, no laundering
 }
 
 export interface BusinessInstance {
@@ -236,6 +237,16 @@ export interface DistrictDef {
   auditChanceMultiplier: number;
   maxBusinessSlots: number;
   gridLayout: { rows: number; cols: number };
+  gridPosition: { col: number; row: number };  // position on the city block grid
+}
+
+// A dynamically generated city block (beyond the 6 defined districts)
+export interface GeneratedBlock {
+  id: string;
+  col: number;
+  row: number;
+  unlockCost: number;
+  name: string;
 }
 
 // ─────────────────────────────────────────
@@ -329,6 +340,8 @@ export interface GameState {
   prestigeBonus: number;       // cumulative yield multiplier (0.05 per level)
   streetSellQuotaOz: number;       // oz remaining in current sell window (max 160 = 10 lbs)
   streetSellCooldownTicks: number; // ticks until quota refills (600 = 10 min)
+  generatedBlocks: Record<string, GeneratedBlock>; // dynamically discovered city blocks
+  nextBlockCost: number;           // cost of next generated block (doubles each purchase)
 }
 
 // Prestige thresholds and reward
@@ -470,4 +483,6 @@ export const INITIAL_GAME_STATE: GameState = {
   prestigeBonus: 0,
   streetSellQuotaOz: 160,
   streetSellCooldownTicks: 0,
+  generatedBlocks: {},
+  nextBlockCost: 2000,
 };

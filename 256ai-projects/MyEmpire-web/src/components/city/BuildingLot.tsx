@@ -10,6 +10,7 @@ interface BuildingLotProps {
   isAvailable: boolean;
   isLocked: boolean;
   buyLot?: { cost: number; canAfford: boolean; onBuy: () => void };
+  size?: 'sm' | 'md';
 }
 
 export default function BuildingLot({
@@ -19,11 +20,17 @@ export default function BuildingLot({
   isAvailable,
   isLocked,
   buyLot,
+  size = 'md',
 }: BuildingLotProps) {
   const selectSlot = useUIStore((s) => s.selectSlot);
   const selectBusiness = useUIStore((s) => s.selectBusiness);
   const selectedSlot = useUIStore((s) => s.selectedSlot);
   const selectedBusinessId = useUIStore((s) => s.selectedBusinessId);
+
+  const rootSize = size === 'sm' ? 'w-[72px] h-[72px]' : 'w-28 h-28';
+  const iconSize = size === 'sm' ? 'text-xl' : 'text-2xl';
+  const textMd = size === 'sm' ? 'text-[8px]' : 'text-[10px]';
+  const textSm = size === 'sm' ? 'text-[7px]' : 'text-[9px]';
 
   const isSelected =
     (selectedSlot?.districtId === districtId && selectedSlot?.slotIndex === slotIndex) ||
@@ -34,23 +41,23 @@ export default function BuildingLot({
       <button
         onClick={buyLot.onBuy}
         disabled={!buyLot.canAfford}
-        className={`w-28 h-28 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 transition ${
+        className={`${rootSize} rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 transition ${
           buyLot.canAfford
             ? 'border-amber-600 hover:border-amber-400 bg-amber-900/20 hover:bg-amber-900/30'
             : 'border-gray-700 bg-gray-800/20 opacity-50 cursor-not-allowed'
         }`}
       >
         <span className="text-lg">🔒</span>
-        <span className="text-[10px] font-semibold text-amber-400 text-center leading-tight">Buy Lot</span>
-        <span className="text-[10px] text-amber-300 font-bold">${(buyLot.cost / 1000).toFixed(0)}k</span>
-        <span className="text-[9px] text-gray-500">clean cash</span>
+        <span className={`${textMd} font-semibold text-amber-400 text-center leading-tight`}>Buy Lot</span>
+        <span className={`${textMd} text-amber-300 font-bold`}>${(buyLot.cost / 1000).toFixed(0)}k</span>
+        <span className={`${textSm} text-gray-500`}>clean cash</span>
       </button>
     );
   }
 
   if (isLocked) {
     return (
-      <div className="w-28 h-28 rounded-lg bg-gray-800/30 border border-gray-800/50" />
+      <div className={`${rootSize} rounded-lg bg-gray-800/30 border border-gray-800/50`} />
     );
   }
 
@@ -59,15 +66,15 @@ export default function BuildingLot({
       <button
         onClick={() => selectSlot(districtId, slotIndex)}
         className={`
-          building-lot w-28 h-28 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1
+          building-lot ${rootSize} rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1
           ${isSelected
             ? 'border-white bg-white/10'
             : 'border-gray-600 hover:border-gray-400 bg-gray-800/40'
           }
         `}
       >
-        <span className="text-2xl text-gray-500">+</span>
-        <span className="text-[10px] text-gray-500">Empty Lot</span>
+        <span className={`${iconSize} text-gray-500`}>+</span>
+        <span className={`${textMd} text-gray-500`}>Empty Lot</span>
       </button>
     );
   }
@@ -84,7 +91,7 @@ export default function BuildingLot({
     <button
       onClick={() => selectBusiness(business.instanceId)}
       className={`
-        building-lot w-28 h-28 rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden
+        building-lot ${rootSize} rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden
         ${isSelected ? 'border-white ring-2 ring-white/30' : 'border-transparent'}
       `}
       style={{
@@ -103,12 +110,12 @@ export default function BuildingLot({
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center">
-        <span className="text-2xl">{def.icon}</span>
-        <span className="text-[10px] font-bold text-white/90 leading-tight text-center">
+        <span className={iconSize}>{def.icon}</span>
+        <span className={`${textMd} font-bold text-white/90 leading-tight text-center`}>
           {def.chainName}
         </span>
-        <span className="text-[9px] text-white/60">{tier?.name}</span>
-        <span className={`text-[10px] font-semibold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <span className={`${textSm} text-white/60`}>{tier?.name}</span>
+        <span className={`${textMd} font-semibold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
           {profit >= 0 ? '+' : ''}{formatMoney(profit)}/s
         </span>
       </div>

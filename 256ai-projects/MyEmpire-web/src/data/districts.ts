@@ -12,8 +12,9 @@ export const DISTRICTS: DistrictDef[] = [
     unlockCost: 0,
     policePresenceMultiplier: 0.5,
     auditChanceMultiplier: 0.3,
-    maxBusinessSlots: 4,
-    gridLayout: { rows: 3, cols: 4 },
+    maxBusinessSlots: 6,
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 1, row: 1 },
   },
   {
     id: 'strip_mall',
@@ -27,7 +28,8 @@ export const DISTRICTS: DistrictDef[] = [
     policePresenceMultiplier: 1.0,
     auditChanceMultiplier: 0.7,
     maxBusinessSlots: 6,
-    gridLayout: { rows: 3, cols: 4 },
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 2, row: 1 },
   },
   {
     id: 'industrial',
@@ -40,8 +42,9 @@ export const DISTRICTS: DistrictDef[] = [
     unlockCost: 75000,
     policePresenceMultiplier: 0.7,
     auditChanceMultiplier: 1.0,
-    maxBusinessSlots: 8,
-    gridLayout: { rows: 4, cols: 4 },
+    maxBusinessSlots: 6,
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 0, row: 1 },
   },
   {
     id: 'desert_highway',
@@ -54,8 +57,9 @@ export const DISTRICTS: DistrictDef[] = [
     unlockCost: 150000,
     policePresenceMultiplier: 1.2,
     auditChanceMultiplier: 0.5,
-    maxBusinessSlots: 4,
-    gridLayout: { rows: 3, cols: 4 },
+    maxBusinessSlots: 6,
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 1, row: 0 },
   },
   {
     id: 'downtown',
@@ -69,7 +73,8 @@ export const DISTRICTS: DistrictDef[] = [
     policePresenceMultiplier: 1.5,
     auditChanceMultiplier: 1.5,
     maxBusinessSlots: 6,
-    gridLayout: { rows: 3, cols: 4 },
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 2, row: 0 },
   },
   {
     id: 'wealthy_hills',
@@ -82,8 +87,9 @@ export const DISTRICTS: DistrictDef[] = [
     unlockCost: 500000,
     policePresenceMultiplier: 0.8,
     auditChanceMultiplier: 2.0,
-    maxBusinessSlots: 4,
-    gridLayout: { rows: 3, cols: 4 },
+    maxBusinessSlots: 6,
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 2, row: 2 },
   },
 ];
 

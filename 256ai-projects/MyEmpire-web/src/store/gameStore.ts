@@ -1,9 +1,44 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { BusinessInstance, GameState } from '../data/types';
+import type { BusinessInstance, GameState, GeneratedBlock } from '../data/types';
 import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, WATER_TIERS, LIGHT_TIERS, NUTRIENT_DEFS, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
-import { DISTRICT_MAP } from '../data/districts';
+import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
+
+// ── City block helpers ──────────────────────────────────────────────────────
+
+function getBlockName(col: number, row: number): string {
+  const dirs = ['East', 'West', 'North', 'South', 'Old', 'New', 'Upper', 'Lower', 'Central'];
+  const types = ['Side', 'End', 'Quarter', 'Block', 'Row', 'Way', 'District', 'Heights'];
+  return `${dirs[Math.abs(col * 3 + row * 7) % dirs.length]} ${types[Math.abs(col * 5 + row * 11) % types.length]}`;
+}
+
+function addNeighborBlocks(
+  generatedBlocks: Record<string, GeneratedBlock>,
+  unlockedDistricts: string[],
+  nextBlockCost: number,
+  newCol: number,
+  newRow: number,
+): Record<string, GeneratedBlock> {
+  const covered = new Set<string>();
+  for (const d of DISTRICTS) covered.add(`${d.gridPosition.col},${d.gridPosition.row}`);
+  for (const b of Object.values(generatedBlocks)) covered.add(`${b.col},${b.row}`);
+  for (const id of unlockedDistricts) {
+    if (id.startsWith('gen_')) {
+      const parts = id.split('_');
+      covered.add(`${parts[1]},${parts[2]}`);
+    }
+  }
+  const newBlocks: Record<string, GeneratedBlock> = {};
+  for (const [dc, dr] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as [number, number][]) {
+    const nc = newCol + dc, nr = newRow + dr;
+    const key = `${nc},${nr}`;
+    if (covered.has(key) || generatedBlocks[`gen_${nc}_${nr}`]) continue;
+    const id = `gen_${nc}_${nr}`;
+    newBlocks[id] = { id, col: nc, row: nr, unlockCost: nextBlockCost, name: getBlockName(nc, nr) };
+  }
+  return newBlocks;
+}
 import { RESOURCE_MAP } from '../data/resources';
 import {
   tickCriminalOperation,
@@ -33,6 +68,7 @@ interface GameActions {
   buyAutoHarvest: (roomId: string) => boolean;
   purchaseBusiness: (businessDefId: string, districtId: string, slotIndex: number) => boolean;
   unlockLot: (districtId: string) => boolean;
+  unlockGeneratedBlock: (blockId: string) => boolean;
   sellBusiness: (instanceId: string) => void;
   upgradeBusiness: (instanceId: string) => boolean;
   setLaunderRate: (instanceId: string, dirtyPerTick: number) => void;
@@ -83,6 +119,8 @@ export const useGameStore = create<GameStore>()(
               const { productConsumed, cleanProduced } = calculateDispensaryTick(biz, totalInventoryOz - totalProductConsumed, weightedAvgPrice);
               totalProductConsumed += productConsumed;
               totalCleanProduced += cleanProduced;
+            } else if (bizDef?.isRental) {
+              // rental revenue is 100% clean cash — already counted in totalRevenue above
             } else {
               const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed);
               totalDirtyConsumed += dirtyConsumed;
@@ -449,13 +487,16 @@ export const useGameStore = create<GameStore>()(
       purchaseBusiness: (businessDefId, districtId, slotIndex) => {
         const state = get();
         const def = BUSINESS_MAP[businessDefId];
+        if (!def) return false;
         const district = DISTRICT_MAP[districtId];
-        if (!def || !district) return false;
+        const isGenBlock = !district && districtId.startsWith('gen_') && state.unlockedDistricts.includes(districtId);
+        if (!district && !isGenBlock) return false;
         if (state.cleanCash < def.purchaseCost) return false;
         if (!state.unlockedDistricts.includes(districtId)) return false;
-        if (!def.allowedDistrictIds.includes(districtId)) return false;
+        if (!def.isRental && !def.allowedDistrictIds.includes(districtId)) return false;
+        const maxSlots = district?.maxBusinessSlots ?? 6;
         const occupied = state.businesses.filter((b) => b.districtId === districtId);
-        if (occupied.length >= district.maxBusinessSlots) return false;
+        if (occupied.length >= maxSlots) return false;
         if (occupied.some((b) => b.slotIndex === slotIndex)) return false;
         const instance: BusinessInstance = {
           instanceId: `biz_${nextInstanceId++}_${Date.now()}`,
@@ -465,7 +506,7 @@ export const useGameStore = create<GameStore>()(
           upgradeLevel: 0,
           isOperating: true,
           supplyModifier: 1,
-          dirtyQueuedPerTick: def.isDispensary ? 0 : 5,
+          dirtyQueuedPerTick: (def.isDispensary || def.isRental) ? 0 : 5,
           ...(def.isDispensary ? { productQueuedPerTick: 2 } : {}),
         };
         set({
@@ -479,9 +520,11 @@ export const useGameStore = create<GameStore>()(
       unlockLot: (districtId) => {
         const state = get();
         const district = DISTRICT_MAP[districtId];
-        if (!district) return false;
+        const isGenBlock = !district && districtId.startsWith('gen_') && state.unlockedDistricts.includes(districtId);
+        if (!district && !isGenBlock) return false;
+        const maxSlots = district?.maxBusinessSlots ?? 6;
         const currentUnlocked = state.unlockedSlots?.[districtId] ?? 2;
-        if (currentUnlocked >= district.maxBusinessSlots) return false;
+        if (currentUnlocked >= maxSlots) return false;
         // Cost doubles each lot: lot 3 = $1k, lot 4 = $2k, lot 5 = $4k...
         const cost = 1000 * Math.pow(2, currentUnlocked - 2);
         if (state.cleanCash < cost) return false;
@@ -567,10 +610,42 @@ export const useGameStore = create<GameStore>()(
         if (state.unlockedDistricts.includes(districtId)) return false;
         const district = DISTRICT_MAP[districtId];
         if (!district || state.cleanCash < district.unlockCost) return false;
+        const newNeighbors = addNeighborBlocks(
+          state.generatedBlocks, state.unlockedDistricts,
+          state.nextBlockCost, district.gridPosition.col, district.gridPosition.row,
+        );
         set({
           cleanCash: state.cleanCash - district.unlockCost,
           totalSpent: state.totalSpent + district.unlockCost,
           unlockedDistricts: [...state.unlockedDistricts, districtId],
+          generatedBlocks: { ...state.generatedBlocks, ...newNeighbors },
+          unlockedSlots: { ...(state.unlockedSlots ?? {}), [districtId]: state.unlockedSlots?.[districtId] ?? 2 },
+        });
+        return true;
+      },
+
+      unlockGeneratedBlock: (blockId) => {
+        const state = get();
+        if (!blockId.startsWith('gen_')) return false;
+        if (state.unlockedDistricts.includes(blockId)) return false;
+        const parts = blockId.split('_');
+        const col = parseInt(parts[1]), row = parseInt(parts[2]);
+        if (isNaN(col) || isNaN(row)) return false;
+        const cost = state.nextBlockCost;
+        if (state.cleanCash < cost) return false;
+        const newGenBlocks = { ...state.generatedBlocks };
+        delete newGenBlocks[blockId];
+        const newNeighbors = addNeighborBlocks(
+          newGenBlocks, [...state.unlockedDistricts, blockId],
+          state.nextBlockCost * 2, col, row,
+        );
+        set({
+          cleanCash: state.cleanCash - cost,
+          totalSpent: state.totalSpent + cost,
+          unlockedDistricts: [...state.unlockedDistricts, blockId],
+          generatedBlocks: { ...newGenBlocks, ...newNeighbors },
+          nextBlockCost: state.nextBlockCost * 2,
+          unlockedSlots: { ...(state.unlockedSlots ?? {}), [blockId]: 2 },
         });
         return true;
       },
@@ -605,7 +680,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 9,
+      version: 10,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -648,6 +723,22 @@ export const useGameStore = create<GameStore>()(
         }
         if (merged.operation && merged.operation.productInventory === null) {
           merged.operation = { ...merged.operation, productInventory: {} };
+        }
+
+        // Seed generatedBlocks for any unlocked districts if empty (handles old saves + fresh installs via migrate)
+        if (!merged.generatedBlocks || Object.keys(merged.generatedBlocks).length === 0) {
+          merged.generatedBlocks = {};
+          merged.nextBlockCost = merged.nextBlockCost ?? 2000;
+          for (const districtId of merged.unlockedDistricts) {
+            const d = DISTRICT_MAP[districtId];
+            if (d) {
+              const neighbors = addNeighborBlocks(
+                merged.generatedBlocks, merged.unlockedDistricts,
+                merged.nextBlockCost, d.gridPosition.col, d.gridPosition.row,
+              );
+              Object.assign(merged.generatedBlocks, neighbors);
+            }
+          }
         }
 
         // Preserve prestige across migrations

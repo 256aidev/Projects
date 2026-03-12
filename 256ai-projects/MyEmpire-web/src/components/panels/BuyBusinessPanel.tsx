@@ -15,10 +15,17 @@ export default function BuyBusinessPanel() {
   if (!selectedSlot) return null;
 
   const district = DISTRICT_MAP[selectedSlot.districtId];
-  if (!district) return null;
+  const isGenBlock = !district && selectedSlot.districtId.startsWith('gen_');
+  if (!district && !isGenBlock) return null;
+
+  const revenueMultiplier = district?.revenueMultiplier ?? 1;
+  const opCostMultiplier = district?.operatingCostMultiplier ?? 1;
+  const districtName = district?.name ?? 'New Block';
 
   const available = BUSINESSES.filter((b) =>
-    b.allowedDistrictIds.includes(selectedSlot.districtId),
+    b.isRental
+      ? true  // rentals allowed everywhere
+      : b.allowedDistrictIds.includes(selectedSlot.districtId),
   );
 
   return (
@@ -28,13 +35,13 @@ export default function BuyBusinessPanel() {
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-white font-bold text-lg mb-1">Buy Business</h3>
-        <p className="text-gray-400 text-xs mb-4">{district.name} - Lot #{selectedSlot.slotIndex + 1}</p>
+        <p className="text-gray-400 text-xs mb-4">{districtName} - Lot #{selectedSlot.slotIndex + 1}</p>
 
         <div className="flex flex-col gap-3">
           {available.map((def) => {
             const canAfford = cleanCash >= def.purchaseCost;
-            const baseProfitPerSec = (def.baseRevenuePerTick * district.revenueMultiplier)
-              - (def.baseOperatingCostPerTick * district.operatingCostMultiplier)
+            const baseProfitPerSec = (def.baseRevenuePerTick * revenueMultiplier)
+              - (def.baseOperatingCostPerTick * opCostMultiplier)
               - (def.baseEmployeeCount * def.employeeSalaryPerTick);
 
             return (
