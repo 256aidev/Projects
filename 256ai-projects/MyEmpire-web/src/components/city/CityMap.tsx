@@ -8,6 +8,7 @@ import BuildingLot from './BuildingLot';
 
 const BLOCK_W = 164;
 const BLOCK_H = 258;
+const ROAD_W = 22;
 
 function blockName(col: number, row: number): string {
   const dirs = ['East', 'West', 'North', 'South', 'Old', 'New', 'Upper', 'Lower', 'Central'];
@@ -111,7 +112,7 @@ export default function CityMap() {
 
   // Pan / zoom state
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(0.78);
+  const [zoom, setZoom] = useState(0.9);
   const dragging = useRef(false);
   const hasMoved = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -135,7 +136,7 @@ export default function CityMap() {
 
   function onWheel(e: React.WheelEvent) {
     e.preventDefault();
-    setZoom(z => Math.max(0.3, Math.min(2.2, z * (e.deltaY < 0 ? 1.12 : 0.9))));
+    setZoom(z => Math.max(0.3, Math.min(4, z * (e.deltaY < 0 ? 1.12 : 0.9))));
   }
 
   // Build position map
@@ -191,10 +192,53 @@ export default function CityMap() {
   const gridCols = maxCol - minCol + 1;
   const gridRows = maxRow - minRow + 1;
 
-  const cells: Cell[] = [];
-  for (let r = minRow; r <= maxRow; r++) {
-    for (let c = minCol; c <= maxCol; c++) {
-      cells.push(positionMap.get(`${c},${r}`) ?? null);
+  // Build a 2D lookup for blocks
+  function getCell(c: number, r: number): Cell {
+    return positionMap.get(`${c},${r}`) ?? null;
+  }
+
+  // Grid template: block ROAD block ROAD block ...
+  const colTemplate = Array.from({ length: gridCols }, (_, i) =>
+    i < gridCols - 1 ? `${BLOCK_W}px ${ROAD_W}px` : `${BLOCK_W}px`
+  ).join(' ');
+  const rowTemplate = Array.from({ length: gridRows }, (_, i) =>
+    i < gridRows - 1 ? `${BLOCK_H}px ${ROAD_W}px` : `${BLOCK_H}px`
+  ).join(' ');
+
+  // Build grid children: blocks at even positions, roads at odd positions
+  type GridItem =
+    | { type: 'block'; cell: Cell; key: string }
+    | { type: 'road'; dir: 'h' | 'v' | 'x'; visible: boolean; key: string };
+
+  const gridItems: GridItem[] = [];
+  const tvr = gridRows * 2 - 1;
+  const tvc = gridCols * 2 - 1;
+  for (let gr = 0; gr < tvr; gr++) {
+    for (let gc = 0; gc < tvc; gc++) {
+      const bRow = gr % 2 === 0;
+      const bCol = gc % 2 === 0;
+
+      if (bRow && bCol) {
+        gridItems.push({ type: 'block', cell: getCell(minCol + gc / 2, minRow + gr / 2), key: `b${gc}_${gr}` });
+      } else {
+        let vis = false;
+        let dir: 'h' | 'v' | 'x' = 'x';
+        if (!bRow && bCol) {
+          dir = 'h';
+          const c = minCol + gc / 2;
+          vis = !!(getCell(c, minRow + (gr - 1) / 2) || getCell(c, minRow + (gr + 1) / 2));
+        } else if (bRow && !bCol) {
+          dir = 'v';
+          const r = minRow + gr / 2;
+          vis = !!(getCell(minCol + (gc - 1) / 2, r) || getCell(minCol + (gc + 1) / 2, r));
+        } else {
+          dir = 'x';
+          const cL = minCol + (gc - 1) / 2, cR = minCol + (gc + 1) / 2;
+          const rA = minRow + (gr - 1) / 2, rB = minRow + (gr + 1) / 2;
+          vis = !!(getCell(cL, rA) || getCell(cR, rA) || getCell(cL, rB) || getCell(cR, rB));
+        }
+        gridItems.push({ type: 'road', dir, visible: vis, key: `r${gc}_${gr}` });
+      }
     }
   }
 
@@ -226,63 +270,90 @@ export default function CityMap() {
             pointerEvents: 'auto',
           }}
         >
-          {/* Isometric tilt */}
-          <div style={{ transform: 'perspective(900px) rotateX(52deg) rotateZ(-8deg)', transformOrigin: 'center center' }}>
-            <div
-              className="grid gap-3"
-              style={{ gridTemplateColumns: `repeat(${gridCols}, ${BLOCK_W}px)` }}
-            >
-              {cells.map((cell, i) => {
-                if (!cell) {
-                  return <div key={i} style={{ width: BLOCK_W, height: BLOCK_H }} />;
-                }
-
-                if (cell.kind === 'district-unlocked') {
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: colTemplate,
+              gridTemplateRows: rowTemplate,
+            }}
+          >
+            {gridItems.map((item) => {
+              if (item.type === 'road') {
+                if (!item.visible) return <div key={item.key} />;
+                if (item.dir === 'h') {
+                  // Horizontal road strip (between rows)
                   return (
-                    <UnlockedBlock
-                      key={cell.id}
-                      districtId={cell.id}
-                      name={cell.name}
-                      color={cell.color}
-                      businesses={businesses}
-                      unlockedSlots={unlockedSlots}
-                      cleanCash={cleanCash}
-                      onUnlockLot={() => unlockLot(cell.id)}
-                    />
+                    <div key={item.key} className="relative" style={{ height: ROAD_W }}>
+                      <div className="absolute inset-0 bg-gray-800 rounded-sm" />
+                      <div className="absolute inset-x-2 top-1/2 -translate-y-px border-t-2 border-dashed border-yellow-600/40" />
+                    </div>
                   );
                 }
-
-                if (cell.kind === 'district-locked') {
+                if (item.dir === 'v') {
+                  // Vertical road strip (between cols)
                   return (
-                    <LockedBlock
-                      key={cell.id}
-                      name={cell.name}
-                      cost={cell.cost}
-                      color={cell.color}
-                      canAfford={cleanCash >= cell.cost}
-                      onUnlock={() => {
-                        if (unlockDistrict(cell.id)) addNotification(`Unlocked ${cell.name}!`, 'success');
-                        else addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
-                      }}
-                    />
+                    <div key={item.key} className="relative" style={{ width: ROAD_W }}>
+                      <div className="absolute inset-0 bg-gray-800 rounded-sm" />
+                      <div className="absolute inset-y-2 left-1/2 -translate-x-px border-l-2 border-dashed border-yellow-600/40" />
+                    </div>
                   );
                 }
+                // Intersection
+                return (
+                  <div key={item.key} className="relative" style={{ width: ROAD_W, height: ROAD_W }}>
+                    <div className="absolute inset-0 bg-gray-800 rounded-sm" />
+                  </div>
+                );
+              }
 
+              // Block cell
+              const cell = item.cell;
+              if (!cell) {
+                return <div key={item.key} style={{ width: BLOCK_W, height: BLOCK_H }} />;
+              }
+              if (cell.kind === 'district-unlocked') {
+                return (
+                  <UnlockedBlock
+                    key={cell.id}
+                    districtId={cell.id}
+                    name={cell.name}
+                    color={cell.color}
+                    businesses={businesses}
+                    unlockedSlots={unlockedSlots}
+                    cleanCash={cleanCash}
+                    onUnlockLot={() => unlockLot(cell.id)}
+                  />
+                );
+              }
+              if (cell.kind === 'district-locked') {
                 return (
                   <LockedBlock
                     key={cell.id}
                     name={cell.name}
                     cost={cell.cost}
-                    color="#4B5563"
+                    color={cell.color}
                     canAfford={cleanCash >= cell.cost}
                     onUnlock={() => {
-                      if (unlockGeneratedBlock(cell.id)) addNotification(`Expanded into ${cell.name}!`, 'success');
+                      if (unlockDistrict(cell.id)) addNotification(`Unlocked ${cell.name}!`, 'success');
                       else addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
                     }}
                   />
                 );
-              })}
-            </div>
+              }
+              return (
+                <LockedBlock
+                  key={cell.id}
+                  name={cell.name}
+                  cost={cell.cost}
+                  color="#4B5563"
+                  canAfford={cleanCash >= cell.cost}
+                  onUnlock={() => {
+                    if (unlockGeneratedBlock(cell.id)) addNotification(`Expanded into ${cell.name}!`, 'success');
+                    else addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
@@ -290,7 +361,7 @@ export default function CityMap() {
       {/* Zoom controls */}
       <div className="absolute bottom-4 right-3 flex flex-col gap-1 z-10">
         <button
-          onClick={() => setZoom(z => Math.min(z * 1.25, 2.2))}
+          onClick={() => setZoom(z => Math.min(z * 1.25, 4))}
           className="w-8 h-8 rounded-lg bg-gray-800/90 border border-gray-700 text-white text-lg font-bold flex items-center justify-center active:bg-gray-700"
         >+</button>
         <button
@@ -298,7 +369,7 @@ export default function CityMap() {
           className="w-8 h-8 rounded-lg bg-gray-800/90 border border-gray-700 text-white text-lg font-bold flex items-center justify-center active:bg-gray-700"
         >−</button>
         <button
-          onClick={() => { setOffset({ x: 0, y: 0 }); setZoom(0.78); }}
+          onClick={() => { setOffset({ x: 0, y: 0 }); setZoom(0.9); }}
           className="w-8 h-8 rounded-lg bg-gray-800/90 border border-gray-700 text-gray-400 text-xs flex items-center justify-center active:bg-gray-700"
         >⌂</button>
       </div>
