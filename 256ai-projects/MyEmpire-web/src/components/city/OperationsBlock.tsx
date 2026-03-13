@@ -1,9 +1,10 @@
+import { useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { GROW_ROOM_TYPE_DEFS } from '../../data/types';
 import { formatUnits } from '../../engine/economy';
+import type { GrowRoom } from '../../data/types';
 
 const BLOCK_W = 164;
-const BLOCK_H = 258;
 
 /** Visual labels for each grow room type */
 const ROOM_VISUALS: Record<string, { emoji: string; label: string; bg: string; border: string }> = {
@@ -14,13 +15,10 @@ const ROOM_VISUALS: Record<string, { emoji: string; label: string; bg: string; b
   grow_facility: { emoji: '🏗️', label: 'Grow Facility', bg: '#0EA5E930', border: '#0EA5E9' },
 };
 
-function RoomBuilding({ roomTypeId, isOwned }: { roomTypeId: string; isOwned: boolean }) {
+function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwned: boolean; room: GrowRoom | undefined }) {
   const vis = ROOM_VISUALS[roomTypeId] ?? { emoji: '🏠', label: roomTypeId, bg: '#33333330', border: '#555' };
-  const rooms = useGameStore(s => s.operation?.growRooms?.filter(r => r.typeId === roomTypeId) ?? []);
-  const room = rooms[0];
 
   if (!isOwned) {
-    // Locked — show as purchasable
     return (
       <div
         className="w-[72px] h-[72px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 opacity-40"
@@ -32,7 +30,6 @@ function RoomBuilding({ roomTypeId, isOwned }: { roomTypeId: string; isOwned: bo
     );
   }
 
-  // Owned — show active room
   const activeSlots = room?.slots?.filter(s => s.isHarvesting).length ?? 0;
   const totalSlots = room?.slots?.length ?? 0;
   const readySlots = room?.slots?.filter(s => s.isHarvesting && s.ticksRemaining === 0).length ?? 0;
@@ -42,7 +39,6 @@ function RoomBuilding({ roomTypeId, isOwned }: { roomTypeId: string; isOwned: bo
       className="w-[72px] h-[72px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden"
       style={{ backgroundColor: vis.bg, borderColor: vis.border + '80' }}
     >
-      {/* Building height indicator */}
       <div
         className="absolute inset-x-1 bottom-0 rounded-t-sm"
         style={{
@@ -71,12 +67,17 @@ export default function OperationsBlock() {
   const seedStock = useGameStore(s => s.operation?.seedStock ?? 0);
   const dealerCount = useGameStore(s => s.operation?.dealerCount ?? 0);
   const productInventory = useGameStore(s => s.operation?.productInventory ?? {});
-  const totalOz = Object.values(productInventory).reduce((sum, e) => sum + (e?.oz ?? 0), 0);
+  const totalOz = useMemo(
+    () => Object.values(productInventory).reduce((sum, e) => sum + (e?.oz ?? 0), 0),
+    [productInventory],
+  );
 
-  const ownedTypeIds = new Set(growRooms.map(r => r.typeId));
-
-  // Show all room types: closet is always owned, rest depend on purchase
-  const roomTypes = GROW_ROOM_TYPE_DEFS;
+  const ownedTypeIds = useMemo(() => new Set(growRooms.map(r => r.typeId)), [growRooms]);
+  const roomMap = useMemo(() => {
+    const m = new Map<string, GrowRoom>();
+    for (const r of growRooms) m.set(r.typeId, r);
+    return m;
+  }, [growRooms]);
 
   return (
     <div
@@ -85,23 +86,21 @@ export default function OperationsBlock() {
     >
       <p className="text-[9px] font-bold text-center mb-1 text-green-400">🌿 Operations</p>
 
-      {/* Stats bar */}
       <div className="flex items-center justify-center gap-2 mb-1.5">
         <span className="text-[7px] text-gray-400">🌱 {seedStock}</span>
         <span className="text-[7px] text-gray-400">🤝 {dealerCount}</span>
         <span className="text-[7px] text-green-400">{formatUnits(totalOz)}</span>
       </div>
 
-      {/* Grid of room buildings */}
       <div className="grid grid-cols-2 gap-1">
-        {roomTypes.map(def => (
+        {GROW_ROOM_TYPE_DEFS.map(def => (
           <RoomBuilding
             key={def.id}
             roomTypeId={def.id}
             isOwned={ownedTypeIds.has(def.id)}
+            room={roomMap.get(def.id)}
           />
         ))}
-        {/* Dealer HQ slot */}
         {dealerCount > 0 && (
           <div
             className="w-[72px] h-[72px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5"
