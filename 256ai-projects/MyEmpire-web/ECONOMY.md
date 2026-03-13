@@ -8,18 +8,23 @@ All costs in the game are formula-driven. Adding new content (rooms, strains, up
 
 ## 1. Grow Room Buildings
 
-Each building type can be purchased once (dirty cash). Prices follow a x4 progression per tier, with ALL costs derived from the building's purchase cost.
+Each building type can be purchased once. Prices follow a x4 progression per tier, with ALL costs derived from the building's purchase cost.
 
 **Core rule:** Each tier costs 4x the previous. `strainUnlockBase = 2x purchaseCost`. `autoHarvestCost = purchaseCost`. `upgradeCostMultiplier = 4^tierIndex`.
 
-| Room | Purchase Cost (dirty) | upgradeCostMultiplier | autoHarvestCost |
-|------|----------------------|----------------------|-----------------|
-| Closet | $0 (free starter) | 1x | $500 |
-| Shed | $2,000 | 4x | $2,000 |
-| Garage | $8,000 | 16x | $8,000 |
-| Small Grow Facility | $32,000 | 64x | $32,000 |
-| Grow Facility | $128,000 | 256x | $128,000 |
-| Large Grow Facility | $512,000 | 1,024x | $512,000 |
+**Yield rule:** `harvestYield = plantsCapacity × 12` (each plant yields 3/4 lb = 12 oz)
+
+| Room | Cost | Currency | Plants | Yield/Harvest | upgradeCostMultiplier |
+|------|------|----------|--------|--------------|----------------------|
+| Closet | $0 (free) | dirty | 1 | 12 oz | 1x |
+| Shed | $2,000 | dirty | 2 | 24 oz (1.5 lbs) | 4x |
+| Garage | $8,000 | dirty | 4 | 48 oz (3 lbs) | 16x |
+| Small Grow | $32,000 | dirty | 10 | 120 oz (7.5 lbs) | 64x |
+| Grow Facility | $128,000 | dirty | 25 | 300 oz (18.75 lbs) | 256x |
+| Large Grow | $512,000 | dirty | 50 | 600 oz (37.5 lbs) | 1,024x |
+| **Legal Distribution** | **$25,000,000** | **CLEAN** | **100** | **1,200 oz (75 lbs)** | **4,096x** |
+
+**Legal Distribution** is the endgame capstone — the only grow building purchased with clean cash. It has a golden theme and its product sells for clean cash directly (no laundering). See strains: Royal Gold, Crown Jewel, Sovereign Kush, Empire Reserve.
 
 **`upgradeCostMultiplier`** scales all equipment upgrade costs within that room. Example: a $600 FloraGro I upgrade costs $600 x 256 = $153,600 in the Grow Facility.
 
@@ -43,6 +48,7 @@ Each room starts with 1 strain slot (free). Additional strain slots cost progres
 | Small Grow | $32,000 | $64,000 | Durban Poison | $64,000 | $128,000 | $256,000 |
 | Grow Facility | $128,000 | $256,000 | Gelato | $256,000 | $512,000 | $1,024,000 |
 | Large Grow | $512,000 | $1,024,000 | Exotic Kush | $1,024,000 | $2,048,000 | $4,096,000 |
+| Legal Distribution | $25M | $50M | Royal Gold | $50M | $100M | $200M |
 
 **Code:** `getStrainUnlockCost(def, slotIndex)` in `src/data/types.ts`
 

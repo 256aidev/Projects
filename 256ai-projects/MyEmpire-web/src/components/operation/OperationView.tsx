@@ -16,6 +16,7 @@ function seedPrice(qty: number): number {
 export default function OperationView() {
   const op = useGameStore((s) => s.operation);
   const dirtyCash = useGameStore((s) => s.dirtyCash);
+  const cleanCash = useGameStore((s) => s.cleanCash);
   const harvestGrowRoom = useGameStore((s) => s.harvestGrowRoom);
   const buyGrowRoom = useGameStore((s) => s.buyGrowRoom);
   const upgradeRoom = useGameStore((s) => s.upgradeRoom);
@@ -268,12 +269,13 @@ export default function OperationView() {
             const maintenancePerCycle = getRoomCycleCost(room);
             const upgMult = def?.upgradeCostMultiplier ?? 1;
 
+            const isLegalRoom = def?.isLegal;
             return (
-              <div key={room.id} className="bg-gray-800/60 border border-gray-700 rounded-xl overflow-hidden">
+              <div key={room.id} className={`bg-gray-800/60 border rounded-xl overflow-hidden ${isLegalRoom ? 'border-yellow-600/50' : 'border-gray-700'}`}>
                 {/* Room header */}
-                <div className="flex items-center justify-between px-3 py-2 bg-gray-900/50 border-b border-gray-700">
+                <div className={`flex items-center justify-between px-3 py-2 border-b ${isLegalRoom ? 'bg-yellow-900/20 border-yellow-700/40' : 'bg-gray-900/50 border-gray-700'}`}>
                   <div>
-                    <p className="text-white font-bold text-sm">{room.name}</p>
+                    <p className={`font-bold text-sm ${isLegalRoom ? 'text-yellow-300' : 'text-white'}`}>{room.name} {isLegalRoom ? '👑' : ''}</p>
                     <p className="text-gray-500 text-xs">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield · <span className="text-red-400">{formatMoney(maintenancePerCycle)}/cycle overhead</span></p>
                   </div>
                   {isMaxLevel ? (
@@ -405,7 +407,9 @@ export default function OperationView() {
 
           {/* Buy new room buttons */}
           {GROW_ROOM_TYPE_DEFS.filter((def) => def.id !== 'closet' && !ownedTypeIds.has(def.id)).map((def) => {
-            const canAfford = dirtyCash >= def.purchaseCost;
+            const useClean = def.purchaseCurrency === 'clean';
+            const canAfford = useClean ? cleanCash >= def.purchaseCost : dirtyCash >= def.purchaseCost;
+            const isLegal = def.isLegal;
             return (
               <button
                 key={def.id}
@@ -413,20 +417,27 @@ export default function OperationView() {
                   if (buyGrowRoom(def.id)) {
                     addNotification(`Built ${def.name}!`, 'success');
                   } else {
-                    addNotification(`Need ${formatMoney(def.purchaseCost)} dirty cash`, 'warning');
+                    addNotification(`Need ${formatMoney(def.purchaseCost)} ${useClean ? 'clean' : 'dirty'} cash`, 'warning');
                   }
                 }}
                 disabled={!canAfford}
                 className={`border-2 border-dashed rounded-xl p-4 text-center transition ${
-                  canAfford ? 'border-green-600/50 hover:border-green-500 bg-green-900/10' : 'border-gray-700 opacity-40 cursor-not-allowed'
+                  canAfford
+                    ? isLegal
+                      ? 'border-yellow-500/50 hover:border-yellow-400 bg-yellow-900/10'
+                      : 'border-green-600/50 hover:border-green-500 bg-green-900/10'
+                    : 'border-gray-700 opacity-40 cursor-not-allowed'
                 }`}
               >
-                <p className="text-green-400 text-lg mb-1">+</p>
+                <p className={`text-lg mb-1 ${isLegal ? 'text-yellow-400' : 'text-green-400'}`}>+</p>
                 <p className="text-white text-sm font-semibold">{def.name}</p>
                 <p className="text-gray-400 text-xs mt-0.5">
                   Starts with {def.strainSlots[0].strainName} · up to {def.strainSlots.length} strains
                 </p>
-                <p className="text-yellow-400 text-sm font-bold mt-1">{formatMoney(def.purchaseCost)} 💵</p>
+                <p className={`text-sm font-bold mt-1 ${isLegal ? 'text-yellow-300' : 'text-yellow-400'}`}>
+                  {formatMoney(def.purchaseCost)} {useClean ? '🏦' : '💵'}
+                </p>
+                {isLegal && <p className="text-yellow-500/70 text-[10px] mt-0.5">Legal Operation</p>}
               </button>
             );
           })}

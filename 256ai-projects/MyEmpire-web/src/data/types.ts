@@ -13,7 +13,10 @@ export interface StrainSlotDef {
 export interface GrowRoomTypeDef {
   id: string;
   name: string;
-  purchaseCost: number;      // dirty cash to buy
+  purchaseCost: number;      // cost to buy
+  purchaseCurrency?: 'dirty' | 'clean'; // default: 'dirty'
+  isLegal?: boolean;         // if true, product sells for clean cash (no laundering needed)
+  themeColor?: string;       // custom UI color (e.g., gold for legal ops)
   strainUnlockBase: number;  // base cost for first strain unlock (doubles each slot)
   strainSlots: StrainSlotDef[];  // index = unlock order (max 4)
   autoHarvestCost: number;   // one-time cost to enable auto-harvest for this room
@@ -277,12 +280,22 @@ export interface UpgradeTier {
 
 export type BusinessCategory =
   | 'FoodFront'
+  | 'AutoFront'
+  | 'ServiceFront'
+  | 'NightlifeFront'
+  | 'FinanceFront'
+  | 'RetailFront'
+  | 'RealEstate'
   | 'LogisticsSupport'
   | 'LaunderingSupport'
   | 'LuxuryPrestige'
   | 'SupplyProduction'
   | 'TransportAsset'
-  | 'Dispensary';
+  | 'Dispensary'
+  | 'ShadyFront'
+  | 'LegitFront'
+  | 'Production'
+  | 'Wholesale';
 
 export interface BusinessDef {
   id: string;
@@ -305,6 +318,13 @@ export interface BusinessDef {
   icon: string;
   isDispensary?: boolean;           // if true: consumes product inventory → clean cash instead of dirty cash
   isRental?: boolean;               // if true: generates clean cash passively, no laundering
+  isProduction?: boolean;           // if true: produces resources each tick (stored in inventory)
+  producesResourceId?: string;      // resource ID this business produces
+  productionPerTick?: number;       // units produced per tick (base, before upgrades)
+  isWholesale?: boolean;            // if true: buys resources from inventory → clean cash
+  consumesResourceId?: string;      // resource ID this business buys (or 'any' for general stores)
+  buyPricePerUnit?: number;         // clean cash paid per unit consumed
+  consumptionPerTick?: number;      // units consumed per tick (base, before upgrades)
 }
 
 export interface BusinessInstance {
@@ -488,7 +508,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     autoHarvestCost: 500,     // = virtual base
     upgradeCostMultiplier: 1, // ×1 (base tier)
     strainSlots: [
-      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 8 },
+      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12 },
     ],
   },
   {
@@ -499,10 +519,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     autoHarvestCost: 2000,     // = purchaseCost
     upgradeCostMultiplier: 4,  // ×4
     strainSlots: [
-      { strainName: 'OG Kush',     pricePerUnit: 12, plantsCapacity: 12, growTimerTicks: 40, harvestYield: 28 },
-      { strainName: 'White Widow', pricePerUnit: 16, plantsCapacity: 12, growTimerTicks: 38, harvestYield: 28 },
-      { strainName: 'Purple Haze', pricePerUnit: 22, plantsCapacity: 12, growTimerTicks: 36, harvestYield: 28 },
-      { strainName: 'Blue Dream',  pricePerUnit: 30, plantsCapacity: 12, growTimerTicks: 34, harvestYield: 28 },
+      { strainName: 'OG Kush',     pricePerUnit: 12, plantsCapacity: 2, growTimerTicks: 40, harvestYield: 24 },
+      { strainName: 'White Widow', pricePerUnit: 16, plantsCapacity: 2, growTimerTicks: 38, harvestYield: 24 },
+      { strainName: 'Purple Haze', pricePerUnit: 22, plantsCapacity: 2, growTimerTicks: 36, harvestYield: 24 },
+      { strainName: 'Blue Dream',  pricePerUnit: 30, plantsCapacity: 2, growTimerTicks: 34, harvestYield: 24 },
     ],
   },
   {
@@ -513,10 +533,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     autoHarvestCost: 8000,      // = purchaseCost
     upgradeCostMultiplier: 16,  // ×4²
     strainSlots: [
-      { strainName: 'Sour Diesel',        pricePerUnit: 20, plantsCapacity: 20, growTimerTicks: 36, harvestYield: 55 },
-      { strainName: 'AK-47',              pricePerUnit: 28, plantsCapacity: 20, growTimerTicks: 34, harvestYield: 55 },
-      { strainName: 'Gorilla Glue',       pricePerUnit: 36, plantsCapacity: 20, growTimerTicks: 32, harvestYield: 55 },
-      { strainName: "Girl Scout Cookies", pricePerUnit: 46, plantsCapacity: 20, growTimerTicks: 30, harvestYield: 55 },
+      { strainName: 'Sour Diesel',        pricePerUnit: 20, plantsCapacity: 4, growTimerTicks: 36, harvestYield: 48 },
+      { strainName: 'AK-47',              pricePerUnit: 28, plantsCapacity: 4, growTimerTicks: 34, harvestYield: 48 },
+      { strainName: 'Gorilla Glue',       pricePerUnit: 36, plantsCapacity: 4, growTimerTicks: 32, harvestYield: 48 },
+      { strainName: "Girl Scout Cookies", pricePerUnit: 46, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 48 },
     ],
   },
   {
@@ -527,10 +547,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     autoHarvestCost: 32000,      // = purchaseCost
     upgradeCostMultiplier: 64,   // ×4³
     strainSlots: [
-      { strainName: 'Durban Poison', pricePerUnit: 35, plantsCapacity: 30, growTimerTicks: 32, harvestYield: 100 },
-      { strainName: 'Jack Herer',    pricePerUnit: 45, plantsCapacity: 30, growTimerTicks: 30, harvestYield: 100 },
-      { strainName: 'Amnesia Haze',  pricePerUnit: 58, plantsCapacity: 30, growTimerTicks: 28, harvestYield: 100 },
-      { strainName: 'Wedding Cake',  pricePerUnit: 72, plantsCapacity: 30, growTimerTicks: 26, harvestYield: 100 },
+      { strainName: 'Durban Poison', pricePerUnit: 35, plantsCapacity: 10, growTimerTicks: 32, harvestYield: 120 },
+      { strainName: 'Jack Herer',    pricePerUnit: 45, plantsCapacity: 10, growTimerTicks: 30, harvestYield: 120 },
+      { strainName: 'Amnesia Haze',  pricePerUnit: 58, plantsCapacity: 10, growTimerTicks: 28, harvestYield: 120 },
+      { strainName: 'Wedding Cake',  pricePerUnit: 72, plantsCapacity: 10, growTimerTicks: 26, harvestYield: 120 },
     ],
   },
   {
@@ -541,10 +561,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     autoHarvestCost: 128000,      // = purchaseCost
     upgradeCostMultiplier: 256,   // ×4⁴
     strainSlots: [
-      { strainName: 'Gelato',   pricePerUnit: 60,  plantsCapacity: 50, growTimerTicks: 28, harvestYield: 200 },
-      { strainName: 'Runtz',    pricePerUnit: 78,  plantsCapacity: 50, growTimerTicks: 26, harvestYield: 200 },
-      { strainName: 'Zkittlez', pricePerUnit: 95,  plantsCapacity: 50, growTimerTicks: 24, harvestYield: 200 },
-      { strainName: 'Biscotti', pricePerUnit: 120, plantsCapacity: 50, growTimerTicks: 22, harvestYield: 200 },
+      { strainName: 'Gelato',   pricePerUnit: 60,  plantsCapacity: 25, growTimerTicks: 28, harvestYield: 300 },
+      { strainName: 'Runtz',    pricePerUnit: 78,  plantsCapacity: 25, growTimerTicks: 26, harvestYield: 300 },
+      { strainName: 'Zkittlez', pricePerUnit: 95,  plantsCapacity: 25, growTimerTicks: 24, harvestYield: 300 },
+      { strainName: 'Biscotti', pricePerUnit: 120, plantsCapacity: 25, growTimerTicks: 22, harvestYield: 300 },
     ],
   },
   {
@@ -555,10 +575,27 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     autoHarvestCost: 512000,       // = purchaseCost
     upgradeCostMultiplier: 1024,   // ×4⁵
     strainSlots: [
-      { strainName: 'Exotic Kush',  pricePerUnit: 150, plantsCapacity: 80, growTimerTicks: 20, harvestYield: 400 },
-      { strainName: 'Moonrock OG',  pricePerUnit: 200, plantsCapacity: 80, growTimerTicks: 18, harvestYield: 400 },
-      { strainName: 'THC Diamond',  pricePerUnit: 260, plantsCapacity: 80, growTimerTicks: 16, harvestYield: 400 },
-      { strainName: 'Golden Leaf',  pricePerUnit: 340, plantsCapacity: 80, growTimerTicks: 14, harvestYield: 400 },
+      { strainName: 'Exotic Kush',  pricePerUnit: 150, plantsCapacity: 50, growTimerTicks: 20, harvestYield: 600 },
+      { strainName: 'Moonrock OG',  pricePerUnit: 200, plantsCapacity: 50, growTimerTicks: 18, harvestYield: 600 },
+      { strainName: 'THC Diamond',  pricePerUnit: 260, plantsCapacity: 50, growTimerTicks: 16, harvestYield: 600 },
+      { strainName: 'Golden Leaf',  pricePerUnit: 340, plantsCapacity: 50, growTimerTicks: 14, harvestYield: 600 },
+    ],
+  },
+  {
+    id: 'legal_distribution',
+    name: 'Legal Distribution',
+    purchaseCost: 25000000,         // $25M — endgame capstone
+    purchaseCurrency: 'clean',      // only grow building purchased with CLEAN cash
+    isLegal: true,                  // product sells for clean cash directly
+    themeColor: '#D4AF37',          // gold
+    strainUnlockBase: 50000000,     // 2× purchaseCost
+    autoHarvestCost: 25000000,      // = purchaseCost
+    upgradeCostMultiplier: 4096,    // ×4⁶
+    strainSlots: [
+      { strainName: 'Royal Gold',       pricePerUnit: 400, plantsCapacity: 100, growTimerTicks: 20, harvestYield: 1200 },
+      { strainName: 'Crown Jewel',      pricePerUnit: 500, plantsCapacity: 100, growTimerTicks: 18, harvestYield: 1200 },
+      { strainName: 'Sovereign Kush',   pricePerUnit: 650, plantsCapacity: 100, growTimerTicks: 16, harvestYield: 1200 },
+      { strainName: 'Empire Reserve',   pricePerUnit: 800, plantsCapacity: 100, growTimerTicks: 14, harvestYield: 1200 },
     ],
   },
 ];
@@ -584,7 +621,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
       upgradeLevel: 0,
       upgradeLevels: {},
       slots: [
-        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 8, isHarvesting: true, ticksRemaining: 30 },
+        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12, isHarvesting: true, ticksRemaining: 30 },
       ],
     },
   ],

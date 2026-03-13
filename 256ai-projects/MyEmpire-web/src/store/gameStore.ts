@@ -288,7 +288,10 @@ export const useGameStore = create<GameStore>()(
       buyGrowRoom: (typeId) => {
         const state = get();
         const def = GROW_ROOM_TYPE_MAP[typeId];
-        if (!def || state.dirtyCash < def.purchaseCost) return false;
+        if (!def) return false;
+        const useClean = def.purchaseCurrency === 'clean';
+        const wallet = useClean ? state.cleanCash : state.dirtyCash;
+        if (wallet < def.purchaseCost) return false;
         const firstSlot = def.strainSlots[0];
         const newRoom: import('../data/types').GrowRoom = {
           id: `room_${Date.now()}`,
@@ -301,7 +304,9 @@ export const useGameStore = create<GameStore>()(
           ],
         };
         set({
-          dirtyCash: state.dirtyCash - def.purchaseCost,
+          ...(useClean
+            ? { cleanCash: state.cleanCash - def.purchaseCost }
+            : { dirtyCash: state.dirtyCash - def.purchaseCost }),
           totalSpent: state.totalSpent + def.purchaseCost,
           operation: { ...state.operation, growRooms: [...state.operation.growRooms, newRoom] },
         });
