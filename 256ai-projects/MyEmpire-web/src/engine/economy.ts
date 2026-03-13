@@ -1,7 +1,7 @@
 import type { BusinessInstance, CriminalOperation, GrowRoom } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
-import { DEALER_TIERS, ROOM_UPGRADE_DEFS } from '../data/types';
+import { DEALER_TIERS, ROOM_UPGRADE_DEFS, GROW_ROOM_TYPE_MAP } from '../data/types';
 
 // ─── ROOM UPGRADE HELPERS ────────────────────────
 
@@ -139,7 +139,10 @@ export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: nu
   const doubleChance = getRoomBonus(room, 'double');
   const cycleCost = getRoomCycleCost(room);
 
-  const baseUnits = Math.floor(slot.harvestYield * (1 + yieldBonus + prestigeBonus));
+  // Always use canonical yield from def (saved state may be stale)
+  const def = GROW_ROOM_TYPE_MAP[room.typeId];
+  const canonicalYield = def?.strainSlots[slotIndex]?.harvestYield ?? slot.harvestYield;
+  const baseUnits = Math.floor(canonicalYield * (1 + yieldBonus + prestigeBonus));
   const doubled = doubleChance > 0 && Math.random() < doubleChance;
   const unitsHarvested = doubled ? baseUnits * 2 : baseUnits;
 

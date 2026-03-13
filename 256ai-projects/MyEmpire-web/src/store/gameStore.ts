@@ -707,7 +707,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 16,
+      version: 17,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -741,6 +741,9 @@ export const useGameStore = create<GameStore>()(
                   return {
                     ...slot,
                     growTimerTicks: defSlot.growTimerTicks,
+                    plantsCapacity: defSlot.plantsCapacity,
+                    harvestYield: defSlot.harvestYield,
+                    pricePerUnit: defSlot.pricePerUnit,
                     ticksRemaining: Math.min(slot.ticksRemaining, defSlot.growTimerTicks),
                   };
                 }),

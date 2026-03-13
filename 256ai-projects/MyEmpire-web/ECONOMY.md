@@ -482,3 +482,4 @@ Every tick (1 second):
 | 14 | Residential districts, apartments |
 | 15 | Job district (currentJobId, jobFiredCooldown) |
 | 16 | Heat system active, lawyers (activeLawyerId backfill) |
+| 17 | Migration syncs plantsCapacity, harvestYield, pricePerUnit from canonical defs |
