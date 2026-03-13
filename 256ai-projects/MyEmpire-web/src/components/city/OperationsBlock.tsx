@@ -17,6 +17,7 @@ const ROOM_VISUALS: Record<string, { emoji: string; label: string; bg: string; b
   garage: { emoji: '🔧', label: 'The Garage',      bg: '#CA8A0430', border: '#CA8A04' },
   small_grow: { emoji: '🏭', label: 'Grow House',   bg: '#16A34A30', border: '#16A34A' },
   grow_facility: { emoji: '🏗️', label: 'Grow Facility', bg: '#0EA5E930', border: '#0EA5E9' },
+  large_grow:    { emoji: '🏢', label: 'Large Grow',    bg: '#7C3AED30', border: '#7C3AED' },
 };
 
 function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwned: boolean; room: GrowRoom | undefined }) {
@@ -107,10 +108,10 @@ export default function OperationsBlock() {
           />
         ))}
 
-        {/* Warehouse — same size as grow room buildings */}
+        {/* Warehouse — full width, same height as grow rooms */}
         <button
           onClick={() => setPanel('warehouse')}
-          className="w-[72px] h-[88px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-amber-900/20 transition relative overflow-hidden"
+          className="col-span-2 h-[88px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-amber-900/20 transition relative overflow-hidden"
           style={{ backgroundColor: '#92400E20', borderColor: '#92400E60' }}
         >
           <span className="text-xl leading-none">📦</span>
