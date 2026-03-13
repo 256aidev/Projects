@@ -129,34 +129,7 @@ export default function OperationView() {
             <p className="text-white font-semibold text-xs">Seeds <span className="text-gray-400 font-normal">{op.seedStock} in stock · {formatMoney(INITIAL_OPERATION.seedCostPerUnit)}/seed</span></p>
             <span className="text-lg">🌱</span>
           </div>
-          {[
-            [10, 25, 50],
-            [1000, 10000, 100000],
-          ].map((row, rowIdx) => (
-            <div key={rowIdx} className={`flex gap-1.5 ${rowIdx > 0 ? 'mt-1' : ''}`}>
-              {row.map((qty) => {
-                const cost = seedPrice(qty) * qty;
-                const canAfford = dirtyCash >= cost;
-                return (
-                  <button
-                    key={qty}
-                    onClick={() => {
-                      if (buySeed(qty)) { sound.play('buy'); addNotification(`Bought ${qty} seeds`, 'success'); }
-                      else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
-                    }}
-                    disabled={!canAfford}
-                    className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
-                      canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
-                    }`}
-                  >
-                    x{qty >= 1000 ? `${qty / 1000}k` : qty} ({formatMoney(cost)})
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-          {/* Bulk seed buttons with volume discount */}
-          <BulkSeedRow buySeed={buySeed} dirtyCash={dirtyCash} addNotification={addNotification} />
+          <SeedButtons buySeed={buySeed} dirtyCash={dirtyCash} addNotification={addNotification} />
         </div>
 
         <div className="w-px bg-gray-700 self-stretch" />
@@ -452,7 +425,7 @@ export default function OperationView() {
   );
 }
 
-function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
+function SeedButtons({ buySeed, dirtyCash, addNotification }: {
   buySeed: (qty: number) => boolean;
   dirtyCash: number;
   addNotification: (msg: string, type: string) => void;
@@ -460,30 +433,51 @@ function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
   const [customQty, setCustomQty] = useState('');
   const [showCustom, setShowCustom] = useState(false);
 
-  const bulkButtons = [
-    { qty: 1000, label: '1k' },
-    { qty: 10000, label: '10k' },
-  ];
-
   const handleBuy = (qty: number) => {
     const price = seedPrice(qty);
     const cost = price * qty;
     if (buySeed(qty)) {
       sound.play('buy');
       const saved = (INITIAL_OPERATION.seedCostPerUnit - price) * qty;
-      addNotification(`Bought ${qty >= 1000 ? `${qty / 1000}k` : qty} seeds at $${price}/ea${saved > 0 ? ` (saved ${formatMoney(saved)})` : ''}`, 'success');
+      addNotification(`Bought ${qty >= 1000 ? `${qty / 1000}k` : qty} seeds${saved > 0 ? ` (saved ${formatMoney(saved)})` : ''}`, 'success');
     } else {
       addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
     }
   };
 
+  const fmtQty = (qty: number) => qty >= 1000 ? `${qty / 1000}k` : String(qty);
+
+  const rows = [
+    [1, 2, 10],
+    [50, 1000, 10000],
+  ];
+
   return (
-    <div className="mt-1">
-      <div className="flex gap-1.5">
-        {bulkButtons.map(({ qty, label }) => {
-          const price = seedPrice(qty);
-          const cost = price * qty;
-          const discount = INITIAL_OPERATION.seedCostPerUnit - price;
+    <div>
+      {rows.map((row, rowIdx) => (
+        <div key={rowIdx} className={`flex gap-1.5 ${rowIdx > 0 ? 'mt-1' : ''}`}>
+          {row.map((qty) => {
+            const cost = seedPrice(qty) * qty;
+            const canAfford = dirtyCash >= cost;
+            return (
+              <button
+                key={qty}
+                onClick={() => handleBuy(qty)}
+                disabled={!canAfford}
+                className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
+                  canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
+                }`}
+              >
+                x{fmtQty(qty)} ({formatMoney(cost)})
+              </button>
+            );
+          })}
+        </div>
+      ))}
+      {/* Row 3: bulk discount tiers + custom */}
+      <div className="flex gap-1.5 mt-1">
+        {[20000, 30000].map((qty) => {
+          const cost = seedPrice(qty) * qty;
           const canAfford = dirtyCash >= cost;
           return (
             <button
@@ -491,17 +485,16 @@ function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
               onClick={() => handleBuy(qty)}
               disabled={!canAfford}
               className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
-                canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
+                canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
               }`}
             >
-              {label} ({formatMoney(cost)})
-              {discount > 0 && <span className="text-yellow-400"> -${discount}</span>}
+              x{fmtQty(qty)} ({formatMoney(cost)})
             </button>
           );
         })}
         <button
           onClick={() => setShowCustom(!showCustom)}
-          className="flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition bg-emerald-800 hover:bg-emerald-700 text-emerald-200"
+          className="flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition bg-green-800 hover:bg-green-700 text-green-200"
         >
           Custom
         </button>
@@ -518,26 +511,22 @@ function BulkSeedRow({ buySeed, dirtyCash, addNotification }: {
           />
           {(() => {
             const qty = Math.max(0, Math.floor(Number(customQty) || 0));
-            const price = qty > 0 ? seedPrice(qty) : INITIAL_OPERATION.seedCostPerUnit;
-            const cost = price * qty;
-            const discount = INITIAL_OPERATION.seedCostPerUnit - price;
+            const cost = qty > 0 ? seedPrice(qty) * qty : 0;
             const canAfford = qty > 0 && dirtyCash >= cost;
             return (
               <button
                 onClick={() => { if (qty > 0) handleBuy(qty); setCustomQty(''); setShowCustom(false); }}
                 disabled={!canAfford}
-                className={`flex-1 py-1.5 rounded text-[10px] font-semibold transition ${
-                  canAfford ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
+                className={`flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition ${
+                  canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                 }`}
               >
-                Buy {qty > 0 ? `${qty >= 1000 ? `${(qty/1000).toFixed(qty%1000?1:0)}k` : qty}` : '...'} · {formatMoney(cost)}
-                {discount > 0 && <span className="text-yellow-400"> (${price}/ea)</span>}
+                Buy {qty > 0 ? fmtQty(qty) : '...'} ({formatMoney(cost)})
               </button>
             );
           })()}
         </div>
       )}
-      <p className="text-gray-600 text-[9px] mt-0.5">Bulk: 10k+ $4/seed · 20k+ $3/seed · 30k+ $2/seed</p>
     </div>
   );
 }
