@@ -107,19 +107,17 @@ export default function OperationsBlock() {
           />
         ))}
 
-        {/* Warehouse — spans full row (1×2) */}
+        {/* Warehouse — same size as grow room buildings */}
         <button
           onClick={() => setPanel('warehouse')}
-          className="col-span-2 h-[44px] rounded-lg border-2 flex items-center justify-center gap-2 hover:bg-amber-900/20 transition"
+          className="w-[72px] h-[88px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-amber-900/20 transition relative overflow-hidden"
           style={{ backgroundColor: '#92400E20', borderColor: '#92400E60' }}
         >
-          <span className="text-lg">📦</span>
-          <div className="flex flex-col items-start">
-            <span className="text-[8px] font-bold text-amber-400 leading-tight">Stash House</span>
-            <span className="text-[7px] text-gray-400">
-              {totalOz > 0 ? `${formatUnits(totalOz)} stored` : 'Empty'}
-            </span>
-          </div>
+          <span className="text-xl leading-none">📦</span>
+          <span className="text-[9px] font-bold text-amber-400 text-center leading-tight">Stash House</span>
+          <span className="text-[8px] text-gray-400">
+            {totalOz > 0 ? `${formatUnits(totalOz)} stored` : 'Empty'}
+          </span>
         </button>
       </div>
     </div>

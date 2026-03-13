@@ -15,6 +15,7 @@ export default function BuildingMenu() {
   const upgradeBusiness = useGameStore((s) => s.upgradeBusiness);
   const sellBusiness = useGameStore((s) => s.sellBusiness);
   const setLaunderRate = useGameStore((s) => s.setLaunderRate);
+  const setCleanToDirtyRate = useGameStore((s) => s.setCleanToDirtyRate);
   const setDispensaryRate = useGameStore((s) => s.setDispensaryRate);
 
   const biz = businesses.find((b) => b.instanceId === selectedBusinessId);
@@ -125,6 +126,36 @@ export default function BuildingMenu() {
                 value={Math.min(biz.dirtyQueuedPerTick, Math.ceil(calculateLaunderCapacity(biz)))}
                 onChange={(e) => setLaunderRate(biz.instanceId, Number(e.target.value))}
                 className="w-full accent-green-500"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Reverse flow: clean → dirty */}
+        {!def.isRental && (
+          <div className="bg-orange-900/20 border border-orange-800/30 rounded-xl p-3 mb-3">
+            <p className="text-orange-400 text-xs font-bold uppercase tracking-wide mb-2">🔄 Reverse Flow <span className="font-normal text-gray-500">(clean → dirty)</span></p>
+            <div className="grid grid-cols-2 gap-2 text-center mb-2">
+              <div>
+                <p className="text-[10px] text-gray-500">Sending</p>
+                <p className="text-orange-400 font-bold text-sm">{formatMoney(biz.cleanToDirtyPerTick ?? 0)}/s</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500">Receiving (95%)</p>
+                <p className="text-yellow-400 font-bold text-sm">{formatMoney((biz.cleanToDirtyPerTick ?? 0) * 0.95)}/s</p>
+              </div>
+            </div>
+            <p className="text-gray-600 text-[9px] text-center mb-2">5% handling cost — skim clean cash back into dirty cash</p>
+            <div>
+              <p className="text-[10px] text-gray-400 mb-1">Clean cash to convert/tick</p>
+              <input
+                type="range"
+                min={0}
+                max={Math.ceil(calculateLaunderCapacity(biz))}
+                step={1}
+                value={biz.cleanToDirtyPerTick ?? 0}
+                onChange={(e) => setCleanToDirtyRate(biz.instanceId, Number(e.target.value))}
+                className="w-full accent-orange-500"
               />
             </div>
           </div>
