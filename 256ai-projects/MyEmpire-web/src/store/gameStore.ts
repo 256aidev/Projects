@@ -49,7 +49,7 @@ import {
   calculateLaunderTick,
   calculateDispensaryTick,
 } from '../engine/economy';
-import { calculateHeatTick, getHeatTier } from '../engine/heat';
+import { calculateHeatTick, getHeatTier, HEAT_MAX } from '../engine/heat';
 
 interface GameActions {
   tick: () => void;
@@ -186,7 +186,7 @@ export const useGameStore = create<GameStore>()(
             state.operation.dealerCount, state.operation.dealerTierIndex,
             state.businesses, activeLawyerId,
           );
-          const newHeat = Math.max(0, Math.min(100, state.heat + heatDelta));
+          const newHeat = Math.max(0, Math.min(HEAT_MAX, state.heat + heatDelta));
 
           // Job income (clean cash) + heat-based firing
           let jobIncome = 0;
@@ -385,7 +385,7 @@ export const useGameStore = create<GameStore>()(
           dirtyCash: state.dirtyCash - totalCost,
           totalSpent: state.totalSpent + totalCost,
           operation: { ...state.operation, dealerCount: state.operation.dealerCount + count },
-          heat: Math.min(100, state.heat + count * 0.2),
+          heat: Math.min(HEAT_MAX, state.heat + count * 0.2),
         });
         return true;
       },
@@ -657,7 +657,7 @@ export const useGameStore = create<GameStore>()(
           dirtyCash: state.dirtyCash - jobDef.bribeCost,
           totalSpent: state.totalSpent + jobDef.bribeCost,
           currentJobId: jobId,
-          heat: Math.min(100, state.heat + heatBump),
+          heat: Math.min(HEAT_MAX, state.heat + heatBump),
         });
         return true;
       },
@@ -707,7 +707,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 17,
+      version: 18,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -802,6 +802,11 @@ export const useGameStore = create<GameStore>()(
         // Preserve prestige across migrations
         if (!merged.prestigeCount) merged.prestigeCount = 0;
         if (!merged.prestigeBonus) merged.prestigeBonus = 0;
+
+        // Heat scale migration: 0-100 → 0-1000 (v18)
+        if (_version < 18 && merged.heat > 0 && merged.heat <= 100) {
+          merged.heat = merged.heat * 10;
+        }
 
         // Bootstrap unlocked slots for existing saves
         if (!merged.unlockedSlots) {

@@ -447,12 +447,12 @@ export interface JobDef {
 }
 
 export const JOB_DEFS: JobDef[] = [
-  { id: 'fast_food',    name: 'Fast Food',          bribeCost: 1000,    cleanPerTick: 3,   maxHeat: 75, icon: '🍔', description: 'Flipping burgers, no questions asked' },
-  { id: 'retail',       name: 'Retail',             bribeCost: 5000,    cleanPerTick: 8,   maxHeat: 60, icon: '👔', description: 'Folding shirts at the mall' },
-  { id: 'clerk',        name: 'Office Clerk',       bribeCost: 25000,   cleanPerTick: 20,  maxHeat: 45, icon: '📋', description: 'Pushing papers downtown' },
-  { id: 'warehouse',    name: 'Warehouse Manager',  bribeCost: 100000,  cleanPerTick: 50,  maxHeat: 30, icon: '📦', description: 'Moving boxes, no background check' },
-  { id: 'finance',      name: 'Finance Bro',        bribeCost: 400000,  cleanPerTick: 120, maxHeat: 20, icon: '📊', description: 'Cooking the books on Wall Street' },
-  { id: 'corporate',    name: 'Corporate Exec',     bribeCost: 1000000, cleanPerTick: 250, maxHeat: 10, icon: '💼', description: 'Corner office, one slip and you\'re done' },
+  { id: 'fast_food',    name: 'Fast Food',          bribeCost: 1000,    cleanPerTick: 3,   maxHeat: 750, icon: '🍔', description: 'Flipping burgers, no questions asked' },
+  { id: 'retail',       name: 'Retail',             bribeCost: 5000,    cleanPerTick: 8,   maxHeat: 600, icon: '👔', description: 'Folding shirts at the mall' },
+  { id: 'clerk',        name: 'Office Clerk',       bribeCost: 25000,   cleanPerTick: 20,  maxHeat: 450, icon: '📋', description: 'Pushing papers downtown' },
+  { id: 'warehouse',    name: 'Warehouse Manager',  bribeCost: 100000,  cleanPerTick: 50,  maxHeat: 300, icon: '📦', description: 'Moving boxes, no background check' },
+  { id: 'finance',      name: 'Finance Bro',        bribeCost: 400000,  cleanPerTick: 120, maxHeat: 200, icon: '📊', description: 'Cooking the books on Wall Street' },
+  { id: 'corporate',    name: 'Corporate Exec',     bribeCost: 1000000, cleanPerTick: 250, maxHeat: 100, icon: '💼', description: 'Corner office, one slip and you\'re done' },
 ];
 
 export const JOB_MAP = Object.fromEntries(JOB_DEFS.map(j => [j.id, j]));

@@ -6,7 +6,7 @@ const TABS: { id: ViewName; label: string; icon: string | null }[] = [
   { id: 'operation', label: 'Operation', icon: null },  // null = use CannabisLeaf
   { id: 'city',      label: 'City',      icon: '🏙️' },
   { id: 'legal',     label: 'Legal',     icon: '⚖️' },
-  { id: 'finance',   label: 'Finance',   icon: '📊' },
+  { id: 'finance',   label: 'Stats',     icon: '📊' },
 ];
 
 export default function NavBar() {

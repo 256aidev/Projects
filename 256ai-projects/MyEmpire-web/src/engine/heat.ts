@@ -11,11 +11,14 @@ const DIRTY_CASH_RATE = 0.04;
 // Natural decay per tick (always active)
 const NATURAL_DECAY = 0.01;
 
+// Maximum heat value
+export const HEAT_MAX = 1000;
+
 export function getHeatTier(heat: number): HeatTier {
-  if (heat >= 90) return 4;
-  if (heat >= 75) return 3;
-  if (heat >= 50) return 2;
-  if (heat >= 25) return 1;
+  if (heat >= 900) return 4;
+  if (heat >= 750) return 3;
+  if (heat >= 500) return 2;
+  if (heat >= 250) return 1;
   return 0;
 }
 
@@ -96,6 +99,6 @@ export function calculateHeatTick(
   activeLawyerId: string | null,
 ): number {
   const breakdown = getHeatBreakdown(dirtyCash, dealerCount, dealerTierIndex, businesses, activeLawyerId);
-  const newHeat = Math.max(0, Math.min(100, currentHeat + breakdown.netPerTick));
+  const newHeat = Math.max(0, Math.min(HEAT_MAX, currentHeat + breakdown.netPerTick));
   return newHeat - currentHeat;
 }

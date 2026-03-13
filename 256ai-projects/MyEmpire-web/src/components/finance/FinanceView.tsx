@@ -91,7 +91,7 @@ export default function FinanceView() {
 
   return (
     <div className="flex-1 overflow-y-auto p-3 space-y-3">
-      <p className="text-white font-bold text-base px-1">Finance</p>
+      <p className="text-white font-bold text-base px-1">Stats</p>
 
       {/* Cash Position */}
       <Section title="Cash Position">

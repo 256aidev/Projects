@@ -1,5 +1,5 @@
 import { useGameStore } from '../../store/gameStore';
-import { getHeatTier, getHeatBreakdown } from '../../engine/heat';
+import { getHeatTier, getHeatBreakdown, HEAT_MAX } from '../../engine/heat';
 import { HEAT_TIER_NAMES, HEAT_TIER_COLORS } from '../../data/types';
 import { LAWYER_DEFS, LAWYER_MAP } from '../../data/lawyers';
 import { formatMoney } from '../../engine/economy';
@@ -43,10 +43,10 @@ export default function LegalView() {
         <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden mb-2">
           <div
             className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${heat}%`, backgroundColor: tierColor }}
+            style={{ width: `${(heat / HEAT_MAX) * 100}%`, backgroundColor: tierColor }}
           />
         </div>
-        <p className="text-gray-400 text-xs text-right">{Math.floor(heat)} / 100</p>
+        <p className="text-gray-400 text-xs text-right">{Math.floor(heat)} / {HEAT_MAX}</p>
 
         {heatTier === 0 && heat < 1 && (
           <p className="text-green-400 text-xs mt-2 text-center">

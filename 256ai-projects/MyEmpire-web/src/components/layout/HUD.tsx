@@ -3,7 +3,7 @@ import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney, formatUnits } from '../../engine/economy';
-import { getHeatTier } from '../../engine/heat';
+import { getHeatTier, HEAT_MAX } from '../../engine/heat';
 import { HEAT_TIER_NAMES, HEAT_TIER_COLORS } from '../../data/types';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
@@ -79,7 +79,7 @@ export default function HUD() {
         <div className="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${heat}%`, backgroundColor: tierColor }}
+            style={{ width: `${(heat / HEAT_MAX) * 100}%`, backgroundColor: tierColor }}
           />
         </div>
         <span className="text-[10px] font-mono" style={{ color: tierColor }}>{Math.floor(heat)}</span>

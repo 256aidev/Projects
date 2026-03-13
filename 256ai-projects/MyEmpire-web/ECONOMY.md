@@ -263,17 +263,17 @@ Direct street sales at 70% of average product price, with a quota system.
 
 ## 13. Heat System — ACTIVE
 
-Heat is a 0-100 scale representing police attention. The primary heat source is **holding dirty cash** — the more you sit on, the faster heat rises. This creates core pressure to launder.
+Heat is a 0-1000 scale representing police attention. The primary heat source is **holding dirty cash** — the more you sit on, the faster heat rises. This creates core pressure to launder.
 
 ### Heat Tiers
 
 | Tier | Name | Range | Color |
 |------|------|-------|-------|
-| 0 | Unknown | 0-24 | Green |
-| 1 | Noticed | 25-49 | Yellow |
-| 2 | Watched | 50-74 | Orange |
-| 3 | Pressured | 75-89 | Red |
-| 4 | Targeted | 90-100 | Dark Red |
+| 0 | Unknown | 0-249 | Green |
+| 1 | Noticed | 250-499 | Yellow |
+| 2 | Watched | 500-749 | Orange |
+| 3 | Pressured | 750-899 | Red |
+| 4 | Targeted | 900-1000 | Dark Red |
 
 ### Heat Formula (called every tick)
 
@@ -295,7 +295,7 @@ Heat Loss:
   totalLoss     = naturalDecay + lawyerDecay + businessDecay
 
 heatDelta = totalGain - totalLoss
-newHeat   = clamp(0, 100, heat + heatDelta)
+newHeat   = clamp(0, 1000, heat + heatDelta)
 ```
 
 **Dirty cash heat examples:**
@@ -349,12 +349,12 @@ Jobs let players earn clean cash by working legit jobs, bribed into with dirty c
 
 | Job | Bribe Cost (dirty) | Clean $/tick | Max Heat |
 |-----|-------------------|-------------|----------|
-| Fast Food | $1,000 | $3/s | 75 |
-| Retail | $5,000 | $8/s | 60 |
-| Office Clerk | $25,000 | $20/s | 45 |
-| Warehouse Manager | $100,000 | $50/s | 30 |
-| Finance Bro | $400,000 | $120/s | 20 |
-| Corporate Exec | $1,000,000 | $250/s | 10 |
+| Fast Food | $1,000 | $3/s | 750 |
+| Retail | $5,000 | $8/s | 600 |
+| Office Clerk | $25,000 | $20/s | 450 |
+| Warehouse Manager | $100,000 | $50/s | 300 |
+| Finance Bro | $400,000 | $120/s | 200 |
+| Corporate Exec | $1,000,000 | $250/s | 100 |
 
 **Early game flow:** Grow weed -> sell for dirty cash -> bribe into Fast Food ($1K) -> earn $3/tick clean -> accumulate $3K -> buy first taco shop -> start laundering -> scale up.
 
@@ -483,3 +483,4 @@ Every tick (1 second):
 | 15 | Job district (currentJobId, jobFiredCooldown) |
 | 16 | Heat system active, lawyers (activeLawyerId backfill) |
 | 17 | Migration syncs plantsCapacity, harvestYield, pricePerUnit from canonical defs |
+| 18 | Heat max 100→1000, tier thresholds ×10, job maxHeat ×10 |
