@@ -65,7 +65,6 @@ function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwn
 export default function OperationsBlock() {
   const growRooms = useGameStore(s => s.operation?.growRooms ?? []);
   const seedStock = useGameStore(s => s.operation?.seedStock ?? 0);
-  const dealerCount = useGameStore(s => s.operation?.dealerCount ?? 0);
   const productInventory = useGameStore(s => s.operation?.productInventory ?? {});
   const totalOz = useMemo(
     () => Object.values(productInventory).reduce((sum, e) => sum + (e?.oz ?? 0), 0),
@@ -88,7 +87,6 @@ export default function OperationsBlock() {
 
       <div className="flex items-center justify-center gap-2 mb-1.5">
         <span className="text-[7px] text-gray-400">🌱 {seedStock}</span>
-        <span className="text-[7px] text-gray-400">🤝 {dealerCount}</span>
         <span className="text-[7px] text-green-400">{formatUnits(totalOz)}</span>
       </div>
 
@@ -101,16 +99,6 @@ export default function OperationsBlock() {
             room={roomMap.get(def.id)}
           />
         ))}
-        {dealerCount > 0 && (
-          <div
-            className="w-[72px] h-[72px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5"
-            style={{ backgroundColor: '#6366F130', borderColor: '#6366F180' }}
-          >
-            <span className="text-lg leading-none">🤝</span>
-            <span className="text-[8px] font-bold text-white/90 text-center leading-tight">Dealer HQ</span>
-            <span className="text-[7px] text-indigo-400">{dealerCount} dealers</span>
-          </div>
-        )}
       </div>
     </div>
   );

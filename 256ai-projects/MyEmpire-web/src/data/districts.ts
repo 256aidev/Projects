@@ -106,6 +106,21 @@ export const DISTRICTS: DistrictDef[] = [
     gridLayout: { rows: 3, cols: 2 },
     gridPosition: { col: 0, row: 2 },
   },
+  {
+    id: 'dealer_network',
+    name: 'The Network',
+    description: 'Your dealer empire. Corner boys, crews, and distribution.',
+    themeColor: '#6366F1',
+    revenueMultiplier: 0,
+    operatingCostMultiplier: 0,
+    customerTrafficMultiplier: 0,
+    unlockCost: 0,
+    policePresenceMultiplier: 0,
+    auditChanceMultiplier: 0,
+    maxBusinessSlots: 0,
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 1, row: 2 },
+  },
 ];
 
 export const DISTRICT_MAP = Object.fromEntries(DISTRICTS.map((d) => [d.id, d]));

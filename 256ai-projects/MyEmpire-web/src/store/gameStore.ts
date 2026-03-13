@@ -614,7 +614,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 12,
+      version: 13,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -680,9 +680,12 @@ export const useGameStore = create<GameStore>()(
           }
         }
 
-        // Ensure operations district is always unlocked
+        // Ensure operations + dealer districts are always unlocked
         if (!merged.unlockedDistricts.includes('operations')) {
           merged.unlockedDistricts = [...merged.unlockedDistricts, 'operations'];
+        }
+        if (!merged.unlockedDistricts.includes('dealer_network')) {
+          merged.unlockedDistricts = [...merged.unlockedDistricts, 'dealer_network'];
         }
 
         // Backfill cleanToDirtyPerTick for old saves

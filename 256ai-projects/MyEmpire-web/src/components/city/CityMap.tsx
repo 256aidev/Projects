@@ -6,6 +6,7 @@ import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
 import BuildingLot from './BuildingLot';
 import OperationsBlock from './OperationsBlock';
+import DealerNetworkBlock from './DealerNetworkBlock';
 
 const BLOCK_W = 164;
 const BLOCK_H = 258;
@@ -316,6 +317,9 @@ export default function CityMap() {
                 // Special rendering for operations block
                 if (cell.id === 'operations') {
                   return <OperationsBlock key={cell.id} />;
+                }
+                if (cell.id === 'dealer_network') {
+                  return <DealerNetworkBlock key={cell.id} />;
                 }
                 return (
                   <UnlockedBlock
