@@ -59,7 +59,14 @@ export default function BuildingMenu() {
         {def.isDispensary ? (
           /* ── DISPENSARY PANEL ── */
           <div className="bg-green-900/20 border border-green-800/30 rounded-xl p-3 mb-3">
-            <p className="text-green-400 text-xs font-bold uppercase tracking-wide mb-2">🌿 Product Sales</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-green-400 text-xs font-bold uppercase tracking-wide">🌿 Product Sales</p>
+              {def.heatReductionPerTick !== 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${def.heatReductionPerTick < 0 ? 'bg-red-900/60 text-red-400' : 'bg-blue-900/60 text-blue-400'}`}>
+                  {def.heatReductionPerTick < 0 ? '🔥' : '❄️'} {def.heatReductionPerTick < 0 ? '+' : ''}{(-def.heatReductionPerTick * 100).toFixed(1)} heat/s
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2 text-center mb-2">
               <div>
                 <p className="text-[10px] text-gray-500">Capacity</p>
@@ -97,7 +104,14 @@ export default function BuildingMenu() {
         ) : (
           /* ── LAUNDERING PANEL ── */
           <div className="bg-green-900/20 border border-green-800/30 rounded-xl p-3 mb-3">
-            <p className="text-green-400 text-xs font-bold uppercase tracking-wide mb-2">💰 Laundering</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-green-400 text-xs font-bold uppercase tracking-wide">💰 Laundering</p>
+              {def.heatReductionPerTick !== 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${def.heatReductionPerTick < 0 ? 'bg-red-900/60 text-red-400' : 'bg-blue-900/60 text-blue-400'}`}>
+                  {def.heatReductionPerTick < 0 ? '🔥' : '❄️'} {def.heatReductionPerTick < 0 ? '+' : ''}{(-def.heatReductionPerTick * 100).toFixed(1)} heat/s
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2 text-center">
               <div>
                 <p className="text-[10px] text-gray-500">Capacity</p>
@@ -134,7 +148,9 @@ export default function BuildingMenu() {
         {/* Reverse flow: clean → dirty */}
         {!def.isRental && (
           <div className="bg-orange-900/20 border border-orange-800/30 rounded-xl p-3 mb-3">
-            <p className="text-orange-400 text-xs font-bold uppercase tracking-wide mb-2">🔄 Reverse Flow <span className="font-normal text-gray-500">(clean → dirty)</span></p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-orange-400 text-xs font-bold uppercase tracking-wide">🔄 Reverse Flow <span className="font-normal text-gray-500">(clean → dirty)</span></p>
+            </div>
             <div className="grid grid-cols-2 gap-2 text-center mb-2">
               <div>
                 <p className="text-[10px] text-gray-500">Sending</p>
