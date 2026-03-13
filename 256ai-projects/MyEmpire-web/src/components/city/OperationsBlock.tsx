@@ -76,11 +76,6 @@ export default function OperationsBlock() {
     [productInventory],
   );
 
-  const strainInfo = useMemo(() => {
-    const entries = Object.entries(productInventory);
-    return entries.map(([strain, data]) => ({ strain, oz: data?.oz ?? 0 })).filter(e => e.oz > 0);
-  }, [productInventory]);
-
   const ownedTypeIds = useMemo(() => new Set(growRooms.map(r => r.typeId)), [growRooms]);
   const roomMap = useMemo(() => {
     const m = new Map<string, GrowRoom>();
@@ -111,24 +106,22 @@ export default function OperationsBlock() {
             room={roomMap.get(def.id)}
           />
         ))}
-      </div>
 
-      {/* Warehouse building */}
-      <button
-        onClick={() => setPanel('warehouse')}
-        className="flex-1 border-t border-green-900/40 mt-1 pt-2 flex flex-col items-center justify-center gap-1 rounded-lg hover:bg-amber-900/20 transition"
-      >
-        <span className="text-2xl">🏚️</span>
-        <span className="text-[9px] font-bold text-amber-400">The Stash House</span>
-        {strainInfo.length > 0 ? (
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="text-[8px] text-green-400 font-semibold">{formatUnits(totalOz)} stored</span>
-            <span className="text-[7px] text-gray-500">{strainInfo.length} strain{strainInfo.length !== 1 ? 's' : ''} · tap to open</span>
+        {/* Warehouse — spans full row (1×2) */}
+        <button
+          onClick={() => setPanel('warehouse')}
+          className="col-span-2 h-[44px] rounded-lg border-2 flex items-center justify-center gap-2 hover:bg-amber-900/20 transition"
+          style={{ backgroundColor: '#92400E20', borderColor: '#92400E60' }}
+        >
+          <span className="text-lg">📦</span>
+          <div className="flex flex-col items-start">
+            <span className="text-[8px] font-bold text-amber-400 leading-tight">Stash House</span>
+            <span className="text-[7px] text-gray-400">
+              {totalOz > 0 ? `${formatUnits(totalOz)} stored` : 'Empty'}
+            </span>
           </div>
-        ) : (
-          <span className="text-[7px] text-gray-500">Empty · tap to open</span>
-        )}
-      </button>
+        </button>
+      </div>
     </div>
   );
 }
