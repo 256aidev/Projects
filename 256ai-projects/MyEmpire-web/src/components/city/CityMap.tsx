@@ -183,6 +183,22 @@ export default function CityMap() {
     }
   }
 
+  // Add unlocked generated blocks that were removed from generatedBlocks state
+  for (const districtId of unlockedDistricts) {
+    if (!districtId.startsWith('gen_')) continue;
+    const parts = districtId.split('_');
+    const col = parseInt(parts[1]), row = parseInt(parts[2]);
+    const key = `${col},${row}`;
+    if (!positionMap.has(key)) {
+      positionMap.set(key, {
+        kind: 'district-unlocked',
+        id: districtId,
+        name: blockName(col, row),
+        color: '#6B7280',
+      });
+    }
+  }
+
   // Dynamically compute virtual neighbor blocks
   const covered = new Set(positionMap.keys());
   // Also mark operations-span cells as covered so gen-locked blocks aren't placed there

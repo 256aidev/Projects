@@ -29,6 +29,7 @@ export default function OperationView() {
   const plantSeeds = useGameStore((s) => s.plantSeeds);
   const sellProduct = useGameStore((s) => s.sellProduct);
   const streetSellQuotaOz = useGameStore((s) => s.streetSellQuotaOz ?? 160);
+  const prestigeBonus = useGameStore((s) => s.prestigeBonus ?? 0);
   const addNotification = useUIStore((s) => s.addNotification);
 
   const currentDealerTier = DEALER_TIERS[op.dealerTierIndex];
@@ -310,13 +311,15 @@ export default function OperationView() {
                         : slot.isHarvesting ? 1 : 0;
                       const ready = slot.isHarvesting && slot.ticksRemaining === 0;
                       const idle = !slot.isHarvesting;
+                      const yieldBonus = getRoomBonus(room, 'yield') + prestigeBonus;
+                      const effectiveYield = Math.floor(slot.harvestYield * (1 + yieldBonus));
 
                       return (
                         <div key={slotIndex} className="bg-gray-900/50 rounded-lg p-2">
                           <div className="flex items-center justify-between mb-1">
                             <div>
                               <p className="text-green-400 font-semibold text-xs">{slot.strainName}</p>
-                              <p className="text-gray-600 text-[10px]">${slot.pricePerUnit}/oz · {slot.plantsCapacity} plants · {formatUnits(slot.harvestYield)}/harvest</p>
+                              <p className="text-gray-600 text-[10px]">${slot.pricePerUnit}/oz · {slot.plantsCapacity} plants · {formatUnits(effectiveYield)}/harvest</p>
                             </div>
                             <span>{ready ? <CannabisLeaf size={18} /> : idle ? '💤' : '🌱'}</span>
                           </div>
