@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { useUIStore } from '../../store/uiStore';
 import { GROW_ROOM_TYPE_DEFS } from '../../data/types';
 import { formatUnits } from '../../engine/economy';
 import type { GrowRoom } from '../../data/types';
@@ -69,6 +70,7 @@ export default function OperationsBlock() {
   const growRooms = useGameStore(s => s.operation?.growRooms ?? []);
   const seedStock = useGameStore(s => s.operation?.seedStock ?? 0);
   const productInventory = useGameStore(s => s.operation?.productInventory ?? {});
+  const setPanel = useUIStore(s => s.setPanel);
   const totalOz = useMemo(
     () => Object.values(productInventory).reduce((sum, e) => sum + (e?.oz ?? 0), 0),
     [productInventory],
@@ -111,20 +113,22 @@ export default function OperationsBlock() {
         ))}
       </div>
 
-      {/* Stash breakdown */}
-      {strainInfo.length > 0 && (
-        <div className="flex-1 border-t border-green-900/40 pt-1.5">
-          <p className="text-[8px] text-green-500/70 text-center mb-1">📦 Product Stash</p>
-          <div className="flex flex-col gap-0.5">
-            {strainInfo.slice(0, 5).map(({ strain, oz }) => (
-              <div key={strain} className="flex items-center justify-between px-1">
-                <span className="text-[7px] text-gray-400 truncate max-w-[90px]">{strain}</span>
-                <span className="text-[7px] text-green-400 font-semibold">{formatUnits(oz)}</span>
-              </div>
-            ))}
+      {/* Warehouse building */}
+      <button
+        onClick={() => setPanel('warehouse')}
+        className="flex-1 border-t border-green-900/40 mt-1 pt-2 flex flex-col items-center justify-center gap-1 rounded-lg hover:bg-amber-900/20 transition"
+      >
+        <span className="text-2xl">🏚️</span>
+        <span className="text-[9px] font-bold text-amber-400">The Stash House</span>
+        {strainInfo.length > 0 ? (
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="text-[8px] text-green-400 font-semibold">{formatUnits(totalOz)} stored</span>
+            <span className="text-[7px] text-gray-500">{strainInfo.length} strain{strainInfo.length !== 1 ? 's' : ''} · tap to open</span>
           </div>
-        </div>
-      )}
+        ) : (
+          <span className="text-[7px] text-gray-500">Empty · tap to open</span>
+        )}
+      </button>
     </div>
   );
 }
