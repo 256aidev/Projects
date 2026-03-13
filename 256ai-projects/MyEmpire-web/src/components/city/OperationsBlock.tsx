@@ -26,7 +26,7 @@ function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwn
   if (!isOwned) {
     return (
       <div
-        className="w-[72px] h-[88px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 opacity-40"
+        className="w-[72px] h-[78px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 opacity-40"
         style={{ borderColor: vis.border + '60' }}
       >
         <span className="text-xl">🔒</span>
@@ -41,7 +41,7 @@ function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwn
 
   return (
     <div
-      className="w-[72px] h-[88px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden"
+      className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden"
       style={{ backgroundColor: vis.bg, borderColor: vis.border + '80' }}
     >
       <div
@@ -112,7 +112,7 @@ export default function OperationsBlock() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={`vacant-${i}`}
-            className="w-[72px] h-[88px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 opacity-25"
+            className="w-[72px] h-[78px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 opacity-25"
             style={{ borderColor: '#22c55e30' }}
           >
             <span className="text-lg text-gray-600">🏗️</span>
@@ -123,7 +123,7 @@ export default function OperationsBlock() {
         {/* Warehouse — last building in the block */}
         <button
           onClick={() => setPanel('warehouse')}
-          className="w-[72px] h-[88px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-amber-900/20 transition relative overflow-hidden"
+          className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-amber-900/20 transition relative overflow-hidden"
           style={{ backgroundColor: '#92400E20', borderColor: '#92400E60' }}
         >
           <span className="text-xl leading-none">📦</span>
