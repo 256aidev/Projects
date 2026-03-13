@@ -1,6 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
-import { getHeatTier, getHeatBreakdown, HEAT_MAX } from '../../engine/heat';
-import { HEAT_TIER_NAMES, HEAT_TIER_COLORS } from '../../data/types';
+import { getHeatTier, getHeatBreakdown, getRivalHeatTier, getRivalHeatBreakdown, HEAT_MAX } from '../../engine/heat';
+import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS } from '../../data/types';
 import { LAWYER_DEFS, LAWYER_MAP } from '../../data/lawyers';
 import { formatMoney } from '../../engine/economy';
 
@@ -16,11 +16,18 @@ export default function LegalView() {
   const hireLawyer = useGameStore((s) => s.hireLawyer);
   const fireLawyer = useGameStore((s) => s.fireLawyer);
 
+  const rivalHeat = useGameStore((s) => s.rivalHeat ?? 0);
+
   const heatTier = getHeatTier(heat);
   const tierName = HEAT_TIER_NAMES[heatTier];
   const tierColor = HEAT_TIER_COLORS[heatTier];
 
+  const rivalTier = getRivalHeatTier(rivalHeat);
+  const rivalTierName = RIVAL_TIER_NAMES[rivalTier];
+  const rivalTierColor = RIVAL_TIER_COLORS[rivalTier];
+
   const breakdown = getHeatBreakdown(dirtyCash, dealerCount, dealerTierIndex, businesses, activeLawyerId);
+  const rivalBreakdown = getRivalHeatBreakdown(dealerCount, dealerTierIndex, businesses);
   const activeLawyer = activeLawyerId ? LAWYER_MAP[activeLawyerId] : null;
 
   return (
@@ -96,6 +103,61 @@ export default function LegalView() {
             <span className="text-gray-300">Net heat/tick</span>
             <span style={{ color: breakdown.netPerTick > 0 ? '#ef4444' : '#22c55e' }}>
               {breakdown.netPerTick > 0 ? '+' : ''}{breakdown.netPerTick.toFixed(4)}/s
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Rival Heat */}
+      <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-white font-semibold">Rival Heat</h3>
+            <p className="text-xs" style={{ color: rivalTierColor }}>Tier {rivalTier}: {rivalTierName}</p>
+          </div>
+          <span className="text-3xl">🔫</span>
+        </div>
+
+        <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden mb-2">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${(rivalHeat / HEAT_MAX) * 100}%`, backgroundColor: rivalTierColor }}
+          />
+        </div>
+        <p className="text-gray-400 text-xs text-right">{Math.floor(rivalHeat)} / {HEAT_MAX}</p>
+
+        {rivalTier === 0 && rivalHeat < 1 && (
+          <p className="text-green-400 text-xs mt-2 text-center">
+            No rival gangs have noticed you yet.
+          </p>
+        )}
+
+        {/* Rival breakdown */}
+        <div className="mt-3 space-y-1 text-[11px]">
+          <p className="text-gray-500 font-semibold uppercase tracking-wide text-[9px]">Rivalry Sources</p>
+          {dealerCount > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-400">Dealer presence ({dealerCount})</span>
+              <span className="text-red-400">+{rivalBreakdown.dealerHeat.toFixed(4)}/s</span>
+            </div>
+          )}
+          {rivalBreakdown.territoryHeat > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-400">Territory expansion</span>
+              <span className="text-red-400">+{rivalBreakdown.territoryHeat.toFixed(4)}/s</span>
+            </div>
+          )}
+
+          <p className="text-gray-500 font-semibold uppercase tracking-wide text-[9px] mt-2">Reduction</p>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Natural cooldown</span>
+            <span className="text-green-400">-{rivalBreakdown.naturalDecay.toFixed(3)}/s</span>
+          </div>
+
+          <div className="border-t border-gray-700 mt-1 pt-1 flex justify-between font-semibold">
+            <span className="text-gray-300">Net rival heat/tick</span>
+            <span style={{ color: rivalBreakdown.netPerTick > 0 ? '#ef4444' : '#22c55e' }}>
+              {rivalBreakdown.netPerTick > 0 ? '+' : ''}{rivalBreakdown.netPerTick.toFixed(4)}/s
             </span>
           </div>
         </div>

@@ -333,6 +333,37 @@ Lawyers provide a per-tick heat decay bonus. One lawyer at a time. Hiring a new 
 
 **Code:** `calculateHeatTick()`, `getHeatTier()`, `getHeatBreakdown()` in `src/engine/heat.ts`, `LAWYER_DEFS` in `src/data/lawyers.ts`, `hireLawyer()`, `fireLawyer()` in `src/store/gameStore.ts`
 
+### 13b. Rival Heat System — ACTIVE
+
+Rival heat is a separate 0-1000 scale representing attention from rival gangs. As you expand your dealer network and territory, rivals take notice.
+
+#### Rival Heat Tiers
+
+| Tier | Name | Range | Color |
+|------|------|-------|-------|
+| 0 | Off Radar | 0-249 | Green |
+| 1 | On Their Radar | 250-499 | Purple |
+| 2 | Rival Territory | 500-749 | Magenta |
+| 3 | Turf War | 750-899 | Rose |
+| 4 | All-Out War | 900-1000 | Dark Red |
+
+#### Rival Heat Formula
+
+```
+Sources:
+  dealerHeat    = dealerCount × currentTier.heatPerTick × 0.5
+  territoryHeat = operatingBusinessCount × 0.002
+
+Reduction:
+  naturalDecay  = 0.005/tick
+
+rivalHeat = clamp(0, 1000, rivalHeat + totalGain - naturalDecay)
+```
+
+Future: Rival gangs will be defined with territories, strength, and consequences at high rival heat (raids, theft, turf wars).
+
+**Code:** `calculateRivalHeatTick()`, `getRivalHeatTier()`, `getRivalHeatBreakdown()` in `src/engine/heat.ts`
+
 ---
 
 ## 14. Dirty Jobs District (Clean Cash Bootstrap)
@@ -484,3 +515,4 @@ Every tick (1 second):
 | 16 | Heat system active, lawyers (activeLawyerId backfill) |
 | 17 | Migration syncs plantsCapacity, harvestYield, pricePerUnit from canonical defs |
 | 18 | Heat max 100→1000, tier thresholds ×10, job maxHeat ×10 |
+| 19 | Rival heat system (rivalHeat field, 0-1000 scale) |

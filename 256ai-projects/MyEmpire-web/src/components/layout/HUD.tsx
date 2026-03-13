@@ -3,8 +3,8 @@ import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney, formatUnits } from '../../engine/economy';
-import { getHeatTier, HEAT_MAX } from '../../engine/heat';
-import { HEAT_TIER_NAMES, HEAT_TIER_COLORS } from '../../data/types';
+import { getHeatTier, getRivalHeatTier, HEAT_MAX } from '../../engine/heat';
+import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS } from '../../data/types';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
 
@@ -21,6 +21,10 @@ export default function HUD() {
   const heatTier = getHeatTier(heat);
   const tierColor = HEAT_TIER_COLORS[heatTier];
   const tierName = HEAT_TIER_NAMES[heatTier];
+  const rivalHeat = useGameStore((s) => s.rivalHeat ?? 0);
+  const rivalTier = getRivalHeatTier(rivalHeat);
+  const rivalColor = RIVAL_TIER_COLORS[rivalTier];
+  const rivalTierName = RIVAL_TIER_NAMES[rivalTier];
 
   const { user, syncing } = useAuthStore();
   const setShowAccountScreen = useUIStore((s) => s.setShowAccountScreen);
@@ -73,16 +77,28 @@ export default function HUD() {
 
       <div className="h-6 w-px bg-gray-700 mx-1" />
 
-      {/* Heat indicator */}
-      <div className="flex items-center gap-1" title={`Heat: ${Math.floor(heat)} — ${tierName}`}>
-        <span className="text-xs">🌡️</span>
-        <div className="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+      {/* Police heat */}
+      <div className="flex items-center gap-1" title={`Police: ${Math.floor(heat)} — ${tierName}`}>
+        <span className="text-xs">🚔</span>
+        <div className="w-14 h-2 bg-gray-700 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${(heat / HEAT_MAX) * 100}%`, backgroundColor: tierColor }}
           />
         </div>
         <span className="text-[10px] font-mono" style={{ color: tierColor }}>{Math.floor(heat)}</span>
+      </div>
+
+      {/* Rival heat */}
+      <div className="flex items-center gap-1" title={`Rivals: ${Math.floor(rivalHeat)} — ${rivalTierName}`}>
+        <span className="text-xs">🔫</span>
+        <div className="w-14 h-2 bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${(rivalHeat / HEAT_MAX) * 100}%`, backgroundColor: rivalColor }}
+          />
+        </div>
+        <span className="text-[10px] font-mono" style={{ color: rivalColor }}>{Math.floor(rivalHeat)}</span>
       </div>
 
       {/* Sound controls — SFX and Music independently */}
