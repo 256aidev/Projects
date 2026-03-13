@@ -1,8 +1,15 @@
 import type { BusinessInstance, HeatTier } from '../data/types';
+import { DEALER_TIERS } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
+import { LAWYER_MAP } from '../data/lawyers';
 
-const HEAT_NOTICE_THRESHOLD = 100_000;
+// Dirty cash heat constants
+const DIRTY_CASH_DIVISOR = 50_000; // at $50K dirty, dirtyCashHeat = DIRTY_CASH_RATE
+const DIRTY_CASH_RATE = 0.04;
+
+// Natural decay per tick (always active)
+const NATURAL_DECAY = 0.01;
 
 export function getHeatTier(heat: number): HeatTier {
   if (heat >= 90) return 4;
@@ -12,31 +19,34 @@ export function getHeatTier(heat: number): HeatTier {
   return 0;
 }
 
-export function calculateHeatTick(
-  currentHeat: number,
-  totalEarned: number,
+export interface HeatBreakdown {
+  dirtyCashHeat: number;
+  dealerHeat: number;
+  policeMultiplier: number;
+  totalGain: number;
+  naturalDecay: number;
+  lawyerDecay: number;
+  businessDecay: number;
+  totalLoss: number;
+  netPerTick: number;
+}
+
+export function getHeatBreakdown(
+  dirtyCash: number,
+  dealerCount: number,
+  dealerTierIndex: number,
   businesses: BusinessInstance[],
-): number {
-  if (totalEarned < HEAT_NOTICE_THRESHOLD) return 0;
+  activeLawyerId: string | null,
+): HeatBreakdown {
+  // Heat gain from holding dirty cash
+  const dirtyCashHeat = (dirtyCash / DIRTY_CASH_DIVISOR) * DIRTY_CASH_RATE;
 
-  const businessCount = businesses.filter((b) => b.isOperating).length;
+  // Heat gain from dealer operations
+  const tier = DEALER_TIERS[dealerTierIndex];
+  const dealerHeat = tier ? dealerCount * tier.heatPerTick : 0;
 
-  // Base gain from running businesses
-  const baseGain = businessCount * 0.005;
-
-  // Natural decay
-  let decay = 0.01;
-
-  // Heat reduction from front businesses
-  for (const biz of businesses) {
-    if (!biz.isOperating) continue;
-    const def = BUSINESS_MAP[biz.businessDefId];
-    if (!def) continue;
-    decay += def.heatReductionPerTick * 0.005;
-  }
-
-  // Average police presence multiplier from districts with businesses
-  const districtIds = [...new Set(businesses.filter((b) => b.isOperating).map((b) => b.districtId))];
+  // Police presence multiplier from districts with active businesses
+  const districtIds = [...new Set(businesses.filter(b => b.isOperating).map(b => b.districtId))];
   let policeMultiplier = 1;
   if (districtIds.length > 0) {
     policeMultiplier = districtIds.reduce((sum, id) => {
@@ -45,7 +55,47 @@ export function calculateHeatTick(
     }, 0) / districtIds.length;
   }
 
-  const heatDelta = (baseGain * policeMultiplier) - decay;
-  const newHeat = Math.max(0, Math.min(100, currentHeat + heatDelta));
+  const totalGain = (dirtyCashHeat + dealerHeat) * policeMultiplier;
+
+  // Decay sources
+  const naturalDecay = NATURAL_DECAY;
+
+  const lawyer = activeLawyerId ? LAWYER_MAP[activeLawyerId] : null;
+  const lawyerDecay = lawyer?.heatDecayBonus ?? 0;
+
+  let businessDecay = 0;
+  for (const biz of businesses) {
+    if (!biz.isOperating) continue;
+    const def = BUSINESS_MAP[biz.businessDefId];
+    if (!def) continue;
+    businessDecay += def.heatReductionPerTick * 0.005;
+  }
+
+  const totalLoss = naturalDecay + lawyerDecay + businessDecay;
+  const netPerTick = totalGain - totalLoss;
+
+  return {
+    dirtyCashHeat,
+    dealerHeat,
+    policeMultiplier,
+    totalGain,
+    naturalDecay,
+    lawyerDecay,
+    businessDecay,
+    totalLoss,
+    netPerTick,
+  };
+}
+
+export function calculateHeatTick(
+  currentHeat: number,
+  dirtyCash: number,
+  dealerCount: number,
+  dealerTierIndex: number,
+  businesses: BusinessInstance[],
+  activeLawyerId: string | null,
+): number {
+  const breakdown = getHeatBreakdown(dirtyCash, dealerCount, dealerTierIndex, businesses, activeLawyerId);
+  const newHeat = Math.max(0, Math.min(100, currentHeat + breakdown.netPerTick));
   return newHeat - currentHeat;
 }

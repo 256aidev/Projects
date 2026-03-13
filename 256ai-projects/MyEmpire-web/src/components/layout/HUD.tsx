@@ -3,6 +3,8 @@ import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney, formatUnits } from '../../engine/economy';
+import { getHeatTier } from '../../engine/heat';
+import { HEAT_TIER_NAMES, HEAT_TIER_COLORS } from '../../data/types';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
 
@@ -15,6 +17,10 @@ export default function HUD() {
   const lastTickCleanProfit = useGameStore((s) => s.lastTickCleanProfit);
   const bizCount = useGameStore((s) => s.businesses.length);
   const productInventory = useGameStore((s) => s.operation.productInventory);
+  const heat = useGameStore((s) => s.heat);
+  const heatTier = getHeatTier(heat);
+  const tierColor = HEAT_TIER_COLORS[heatTier];
+  const tierName = HEAT_TIER_NAMES[heatTier];
 
   const { user, syncing } = useAuthStore();
   const setShowAccountScreen = useUIStore((s) => s.setShowAccountScreen);
@@ -63,6 +69,20 @@ export default function HUD() {
         <span>🏢</span>
         <span className="text-white font-semibold">{bizCount}</span>
         <span className="text-gray-500 text-xs">fronts</span>
+      </div>
+
+      <div className="h-6 w-px bg-gray-700 mx-1" />
+
+      {/* Heat indicator */}
+      <div className="flex items-center gap-1" title={`Heat: ${Math.floor(heat)} — ${tierName}`}>
+        <span className="text-xs">🌡️</span>
+        <div className="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${heat}%`, backgroundColor: tierColor }}
+          />
+        </div>
+        <span className="text-[10px] font-mono" style={{ color: tierColor }}>{Math.floor(heat)}</span>
       </div>
 
       {/* Sound controls — SFX and Music independently */}

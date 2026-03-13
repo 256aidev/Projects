@@ -249,13 +249,9 @@ Direct street sales at 70% of average product price, with a quota system.
 
 ---
 
-## 13. Heat System
+## 13. Heat System — ACTIVE
 
-Heat is a 0-100 scale that increases from criminal activity and decreases from front businesses.
-
-### Status: PARTIALLY ACTIVE
-
-`calculateHeatTick()` exists in code but is **NOT called in the game loop tick()**. Heat does not auto-update yet. The only active heat mechanic is the Job District firing system.
+Heat is a 0-100 scale representing police attention. The primary heat source is **holding dirty cash** — the more you sit on, the faster heat rises. This creates core pressure to launder.
 
 ### Heat Tiers
 
@@ -267,39 +263,63 @@ Heat is a 0-100 scale that increases from criminal activity and decreases from f
 | 3 | Pressured | 75-89 | Red |
 | 4 | Targeted | 90-100 | Dark Red |
 
-### Heat Sources (DEFINED, not yet wired into tick)
-
-- **Dealer activity:** `tier.heatPerTick x dealerCount` per tick
-- **Police multiplier:** District `policePresenceMultiplier` scales heat gain
-
-### Heat Reduction (DEFINED, not yet wired into tick)
-
-- **Natural decay:** 0.01 per tick (background cooling)
-- **Business reduction:** Each business has `heatReductionPerTick` (e.g., Car Wash: 0.025, Laundromat: 0.020)
-- **Lawyers:** Planned but not implemented ("coming soon" in Legal view)
-
-### Heat Formula (in `calculateHeatTick()` -- not yet called)
+### Heat Formula (called every tick)
 
 ```
-heatGain = dealerCount x 0.005 x avgPoliceMultiplier
-heatDecay = 0.01 + sum(biz.heatReductionPerTick x 0.005)
-heatDelta = heatGain - heatDecay
-newHeat = clamp(0, 100, currentHeat + heatDelta)
+Constants:
+  DIRTY_CASH_DIVISOR = 50,000
+  DIRTY_CASH_RATE    = 0.04
+  NATURAL_DECAY      = 0.01
+
+Heat Gain:
+  dirtyCashHeat = (dirtyCash / 50,000) × 0.04
+  dealerHeat    = dealerCount × tier.heatPerTick
+  totalGain     = (dirtyCashHeat + dealerHeat) × avgPoliceMultiplier
+
+Heat Loss:
+  naturalDecay  = 0.01 (always)
+  lawyerDecay   = activeLawyer.heatDecayBonus (if hired)
+  businessDecay = Σ(biz.heatReductionPerTick × 0.005) for operating fronts
+  totalLoss     = naturalDecay + lawyerDecay + businessDecay
+
+heatDelta = totalGain - totalLoss
+newHeat   = clamp(0, 100, heat + heatDelta)
 ```
 
-### Active Heat Mechanics
+**Dirty cash heat examples:**
+| Dirty Cash On Hand | Heat/Tick | Time to Tier 1 (heat 25) |
+|-------------------|-----------|--------------------------|
+| $1,000 | 0.0008 | ~9 hours |
+| $5,000 | 0.004 | ~100 min |
+| $50,000 | 0.04 | ~10 min |
+| $500,000 | 0.4 | ~1 min |
 
-- **Job firing:** If `heat > job.maxHeat`, player is auto-fired with 60s cooldown
-- **Heat notice:** UI badge appears when `totalDirtyEarned >= $100K`
-- **Heat display:** Shown in Legal view with tier name, color, and bar
+### One-Time Heat Bumps
 
-### TODO to fully activate heat
+- **Job bribe:** `+0.5 + (jobIndex × 0.5)` → ranges from +0.5 (Fast Food) to +3.0 (Corporate Exec)
+- **Dealer hire:** `+0.2 per dealer hired`
 
-1. Import and call `calculateHeatTick()` in the `tick()` function in `gameStore.ts`
-2. Wire lawyer hiring to reduce heat decay
-3. Add event/raid triggers at high heat tiers
+### Heat Effects
 
-**Code:** `calculateHeatTick()`, `getHeatTier()` in `src/engine/heat.ts`
+- **Job firing:** If `heat > job.maxHeat` → auto-fired, 60-tick cooldown
+- **Lawyer requirement:** Higher heat tiers unlock (and require) better lawyers
+- **HUD display:** Heat bar visible at all times in top bar
+
+### Lawyers — Heat Reduction
+
+Lawyers provide a per-tick heat decay bonus. One lawyer at a time. Hiring a new one replaces the old. Auto-fired if you can't afford the retainer.
+
+| Lawyer | Unlock Cost (clean) | Retainer (clean/tick) | Heat Decay Bonus | Required Tier |
+|--------|-------------------|---------------------|-----------------|---------------|
+| Public Defender | $500 | $2/tick | -0.005/s | 0 (Unknown) |
+| Strip Mall Lawyer | $5,000 | $8/tick | -0.015/s | 1 (Noticed) |
+| Criminal Defense Attorney | $25,000 | $25/tick | -0.035/s | 2 (Watched) |
+| The Fixer | $100,000 | $80/tick | -0.060/s | 3 (Pressured) |
+| Cartel Counsel | $500,000 | $250/tick | -0.100/s | 4 (Targeted) |
+
+**Auto-fire:** If `cleanCash < retainer` on a tick, lawyer is fired immediately (no refund).
+
+**Code:** `calculateHeatTick()`, `getHeatTier()`, `getHeatBreakdown()` in `src/engine/heat.ts`, `LAWYER_DEFS` in `src/data/lawyers.ts`, `hireLawyer()`, `fireLawyer()` in `src/store/gameStore.ts`
 
 ---
 
@@ -409,9 +429,11 @@ Every tick (1 second):
 2. **Inventory calc:** Compute total oz and weighted avg price across all strains
 3. **Business processing:** Revenue, expenses, laundering (dirty->clean), dispensary (product->clean), rental (pure clean)
 4. **Reverse flow:** Clean->dirty at 95% via configured business rates
-5. **Job income:** If employed, add `cleanPerTick`; check heat->fire
-6. **Street sell quota:** Refill 16/60 oz per tick (max 160)
-7. **State update:** Update all cash totals, tick count, cooldowns
+5. **Lawyer retainer:** Deduct lawyer retainer from clean cash; auto-fire if can't afford
+6. **Heat calculation:** `calculateHeatTick()` computes heat gain (dirty cash + dealers) vs decay (natural + lawyer + businesses)
+7. **Job income:** If employed, add `cleanPerTick`; check heat->fire (uses new heat value)
+8. **Street sell quota:** Refill 16/60 oz per tick (max 160)
+9. **State update:** Update all cash totals, heat, tick count, cooldowns
 
 **Code:** `tick()` in `src/store/gameStore.ts`, `tickCriminalOperation()` in `src/engine/economy.ts`
 
@@ -431,7 +453,8 @@ Every tick (1 second):
 | `calculateDispensaryTick(biz, oz, price)` | `src/engine/economy.ts` | Product -> clean per tick |
 | `calculateBusinessRevenue(biz)` | `src/engine/economy.ts` | Clean cash revenue per tick |
 | `calculateBusinessExpenses(biz)` | `src/engine/economy.ts` | Operating costs per tick |
-| `calculateHeatTick()` | `src/engine/heat.ts` | Heat delta per tick (NOT YET CALLED) |
+| `calculateHeatTick()` | `src/engine/heat.ts` | Heat delta per tick (dirty cash + dealers - decay) |
+| `getHeatBreakdown()` | `src/engine/heat.ts` | Detailed heat gain/loss breakdown for UI |
 | `getHeatTier(heat)` | `src/engine/heat.ts` | Numeric heat -> tier name/color |
 | `formatMoney(amount)` | `src/engine/economy.ts` | Human-readable money ($1.5K, $2.3M) |
 | `formatUnits(oz)` | `src/engine/economy.ts` | Human-readable weight (3lb 4oz, 2 crates) |
@@ -446,3 +469,4 @@ Every tick (1 second):
 | 13 | Unified upgrade system (upgradeLevels), per-strain inventory |
 | 14 | Residential districts, apartments |
 | 15 | Job district (currentJobId, jobFiredCooldown) |
+| 16 | Heat system active, lawyers (activeLawyerId backfill) |

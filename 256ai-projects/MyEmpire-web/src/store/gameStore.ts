@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BusinessInstance, GameState, GeneratedBlock } from '../data/types';
-import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL, getStrainUnlockCost, getDealerHireCost, JOB_MAP } from '../data/types';
+import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL, getStrainUnlockCost, getDealerHireCost, JOB_MAP, JOB_DEFS } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
 
@@ -40,6 +40,7 @@ function addNeighborBlocks(
   return newBlocks;
 }
 import { RESOURCE_MAP } from '../data/resources';
+import { LAWYER_MAP } from '../data/lawyers';
 import {
   tickCriminalOperation,
   harvestSlot,
@@ -48,6 +49,7 @@ import {
   calculateLaunderTick,
   calculateDispensaryTick,
 } from '../engine/economy';
+import { calculateHeatTick, getHeatTier } from '../engine/heat';
 
 interface GameActions {
   tick: () => void;
@@ -74,6 +76,8 @@ interface GameActions {
   fireDealers: (count: number) => void;
   applyForJob: (jobId: string) => boolean;
   quitJob: () => void;
+  hireLawyer: (lawyerId: string) => boolean;
+  fireLawyer: () => void;
   prestige: () => boolean;
   resetGame: () => void;
 }
@@ -163,13 +167,34 @@ export const useGameStore = create<GameStore>()(
           // Street sell quota: drip refill at 1 lb (16 oz) per minute = 16/60 oz per tick
           const streetSellQuotaOz = Math.min(160, (state.streetSellQuotaOz ?? 160) + 16 / 60);
 
+          // Lawyer retainer (deducted from clean cash each tick)
+          let activeLawyerId = state.activeLawyerId;
+          if (activeLawyerId) {
+            const lawyer = LAWYER_MAP[activeLawyerId];
+            if (lawyer) {
+              if (cleanCash >= lawyer.monthlyRetainer) {
+                cleanCash -= lawyer.monthlyRetainer;
+              } else {
+                activeLawyerId = null; // can't afford — auto-fired
+              }
+            }
+          }
+
+          // Heat calculation
+          const heatDelta = calculateHeatTick(
+            state.heat, dirtyCash,
+            state.operation.dealerCount, state.operation.dealerTierIndex,
+            state.businesses, activeLawyerId,
+          );
+          const newHeat = Math.max(0, Math.min(100, state.heat + heatDelta));
+
           // Job income (clean cash) + heat-based firing
           let jobIncome = 0;
           let currentJobId = state.currentJobId;
           let jobFiredCooldown = Math.max(0, (state.jobFiredCooldown ?? 0) - 1);
           if (currentJobId) {
             const jobDef = JOB_MAP[currentJobId];
-            if (jobDef && state.heat > jobDef.maxHeat) {
+            if (jobDef && newHeat > jobDef.maxHeat) {
               // FIRED — heat too high
               currentJobId = null;
               jobFiredCooldown = 60; // 1 minute cooldown
@@ -182,6 +207,8 @@ export const useGameStore = create<GameStore>()(
           return {
             dirtyCash,
             cleanCash,
+            heat: newHeat,
+            activeLawyerId,
             operation: finalOp,
             totalDirtyEarned: totalEarned,
             totalCleanEarned: state.totalCleanEarned + Math.max(0, totalCleanProduced + legitProfit + jobIncome),
@@ -353,6 +380,7 @@ export const useGameStore = create<GameStore>()(
           dirtyCash: state.dirtyCash - totalCost,
           totalSpent: state.totalSpent + totalCost,
           operation: { ...state.operation, dealerCount: state.operation.dealerCount + count },
+          heat: Math.min(100, state.heat + count * 0.2),
         });
         return true;
       },
@@ -618,16 +646,37 @@ export const useGameStore = create<GameStore>()(
         if ((state.jobFiredCooldown ?? 0) > 0) return false;
         if (state.heat > jobDef.maxHeat) return false;
         if (state.dirtyCash < jobDef.bribeCost) return false;
+        const jobIndex = JOB_DEFS.findIndex(j => j.id === jobId);
+        const heatBump = 0.5 + (jobIndex >= 0 ? jobIndex : 0) * 0.5;
         set({
           dirtyCash: state.dirtyCash - jobDef.bribeCost,
           totalSpent: state.totalSpent + jobDef.bribeCost,
           currentJobId: jobId,
+          heat: Math.min(100, state.heat + heatBump),
         });
         return true;
       },
 
       quitJob: () => {
         set({ currentJobId: null });
+      },
+
+      hireLawyer: (lawyerId) => {
+        const state = get();
+        const lawyer = LAWYER_MAP[lawyerId];
+        if (!lawyer) return false;
+        if (state.cleanCash < lawyer.unlockCost) return false;
+        if (getHeatTier(state.heat) < lawyer.requiredHeatTier) return false;
+        set({
+          cleanCash: state.cleanCash - lawyer.unlockCost,
+          totalSpent: state.totalSpent + lawyer.unlockCost,
+          activeLawyerId: lawyerId,
+        });
+        return true;
+      },
+
+      fireLawyer: () => {
+        set({ activeLawyerId: null });
       },
 
       prestige: () => {
@@ -653,7 +702,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 15,
+      version: 16,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -733,6 +782,9 @@ export const useGameStore = create<GameStore>()(
         // Backfill job fields for old saves
         if (merged.currentJobId === undefined) merged.currentJobId = null;
         if (merged.jobFiredCooldown === undefined) merged.jobFiredCooldown = 0;
+
+        // Backfill lawyer/heat fields for old saves
+        if (merged.activeLawyerId === undefined) (merged as any).activeLawyerId = null;
 
         // Backfill cleanToDirtyPerTick for old saves
         for (const biz of merged.businesses) {
