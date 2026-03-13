@@ -8,8 +8,8 @@ import { LAWYER_MAP } from '../data/lawyers';
 const DIRTY_CASH_DIVISOR = 50_000; // at $50K dirty, dirtyCashHeat = DIRTY_CASH_RATE
 const DIRTY_CASH_RATE = 0.04;
 
-// Natural decay per tick (always active)
-const NATURAL_DECAY = 0.01;
+// Natural decay per tick (always active) — scaled for 0-1000 range
+const NATURAL_DECAY = 0.1;
 
 // Maximum heat value
 export const HEAT_MAX = 1000;
@@ -73,7 +73,7 @@ export function getHeatBreakdown(
     if (!biz.isOperating) continue;
     const def = BUSINESS_MAP[biz.businessDefId];
     if (!def) continue;
-    businessDecay += def.heatReductionPerTick * 0.005;
+    businessDecay += def.heatReductionPerTick;
   }
 
   const totalLoss = naturalDecay + lawyerDecay + businessDecay;
@@ -107,7 +107,7 @@ export function calculateHeatTick(
 
 // ─── RIVAL HEAT ──────────────────────────────────
 
-const RIVAL_NATURAL_DECAY = 0.005;
+const RIVAL_NATURAL_DECAY = 0.05;
 
 export function getRivalHeatTier(heat: number): HeatTier {
   if (heat >= 900) return 4;

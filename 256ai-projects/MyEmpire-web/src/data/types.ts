@@ -475,6 +475,78 @@ export const JOB_DEFS: JobDef[] = [
 export const JOB_MAP = Object.fromEntries(JOB_DEFS.map(j => [j.id, j]));
 
 // ─────────────────────────────────────────
+// RIVALS & HITMEN
+// ─────────────────────────────────────────
+
+export interface RivalBusiness {
+  districtId: string;
+  slotIndex: number;
+  businessDefId: string;
+  health: number;          // 0-100, destroyed at 0
+}
+
+export interface RivalSyndicate {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  dirtyCash: number;
+  cleanCash: number;
+  productOz: number;
+  businesses: RivalBusiness[];
+  hitmen: number;
+  aggression: number;      // 0-1, how likely to attack per tick
+  power: number;           // overall strength scaling (grows over time)
+  isDefeated: boolean;
+}
+
+export interface HitmanDef {
+  id: string;
+  name: string;
+  cost: number;            // dirty cash to hire
+  attack: number;          // damage dealt on offense
+  defense: number;         // damage blocked on defense
+  upkeep: number;          // dirty cash per tick
+}
+
+export const HITMAN_DEFS: HitmanDef[] = [
+  { id: 'thug',       name: 'Street Thug',       cost: 5000,    attack: 10, defense: 5,  upkeep: 2 },
+  { id: 'enforcer',   name: 'Enforcer',          cost: 25000,   attack: 25, defense: 15, upkeep: 8 },
+  { id: 'assassin',   name: 'Professional Hit',  cost: 100000,  attack: 60, defense: 30, upkeep: 25 },
+  { id: 'spec_ops',   name: 'Spec Ops Crew',     cost: 500000,  attack: 150, defense: 80, upkeep: 80 },
+];
+
+export const HITMAN_MAP = Object.fromEntries(HITMAN_DEFS.map(h => [h.id, h]));
+
+export type RivalActionType = 'rob' | 'raid' | 'sabotage' | 'arson';
+
+export interface RivalAction {
+  type: RivalActionType;
+  name: string;
+  description: string;
+  hitmenRequired: number;   // min hitmen needed
+  successBase: number;      // base success chance 0-1
+  heatGain: number;         // rival heat gained
+}
+
+export const RIVAL_ACTIONS: RivalAction[] = [
+  { type: 'rob',      name: 'Rob',      description: 'Steal their dirty cash',           hitmenRequired: 1, successBase: 0.7, heatGain: 5 },
+  { type: 'raid',     name: 'Raid',     description: 'Steal their product stash',        hitmenRequired: 2, successBase: 0.5, heatGain: 10 },
+  { type: 'sabotage', name: 'Sabotage', description: 'Damage a business (50% health)',   hitmenRequired: 2, successBase: 0.6, heatGain: 15 },
+  { type: 'arson',    name: 'Arson',    description: 'Burn it down (destroy business)',   hitmenRequired: 4, successBase: 0.3, heatGain: 30 },
+];
+
+export interface HiredHitman {
+  defId: string;
+  count: number;
+}
+
+export interface GameSettings {
+  rivalCount: number;    // 1-5
+  gameStarted: boolean;  // false = show start screen
+}
+
+// ─────────────────────────────────────────
 // GAME STATE
 // ─────────────────────────────────────────
 
@@ -507,6 +579,11 @@ export interface GameState {
   nextBlockCost: number;           // cost of next generated block (doubles each purchase)
   currentJobId: string | null;     // current job ID or null (from JOB_DEFS)
   jobFiredCooldown: number;        // ticks remaining before can get new job (0 = ready)
+  // Rivals & hitmen
+  gameSettings: GameSettings;
+  rivals: RivalSyndicate[];
+  hitmen: HiredHitman[];           // player's hired hitmen
+  rivalAttackLog: string[];        // recent attack messages (last 10)
 }
 
 // Prestige thresholds and reward
@@ -679,4 +756,8 @@ export const INITIAL_GAME_STATE: GameState = {
   nextBlockCost: 2000,
   currentJobId: null,
   jobFiredCooldown: 0,
+  gameSettings: { rivalCount: 3, gameStarted: false },
+  rivals: [],
+  hitmen: [],
+  rivalAttackLog: [],
 };

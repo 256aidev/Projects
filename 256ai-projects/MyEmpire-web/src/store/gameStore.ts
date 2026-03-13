@@ -394,7 +394,7 @@ export const useGameStore = create<GameStore>()(
           dirtyCash: state.dirtyCash - totalCost,
           totalSpent: state.totalSpent + totalCost,
           operation: { ...state.operation, dealerCount: state.operation.dealerCount + count },
-          heat: Math.min(HEAT_MAX, state.heat + count * 0.2),
+          heat: Math.min(HEAT_MAX, state.heat + count * 2),
         });
         return true;
       },
@@ -661,7 +661,7 @@ export const useGameStore = create<GameStore>()(
         if (state.heat > jobDef.maxHeat) return false;
         if (state.dirtyCash < jobDef.bribeCost) return false;
         const jobIndex = JOB_DEFS.findIndex(j => j.id === jobId);
-        const heatBump = 0.5 + (jobIndex >= 0 ? jobIndex : 0) * 0.5;
+        const heatBump = 5 + (jobIndex >= 0 ? jobIndex : 0) * 5;
         set({
           dirtyCash: state.dirtyCash - jobDef.bribeCost,
           totalSpent: state.totalSpent + jobDef.bribeCost,

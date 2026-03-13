@@ -281,7 +281,7 @@ Heat is a 0-1000 scale representing police attention. The primary heat source is
 Constants:
   DIRTY_CASH_DIVISOR = 50,000
   DIRTY_CASH_RATE    = 0.04
-  NATURAL_DECAY      = 0.01
+  NATURAL_DECAY      = 0.1
 
 Heat Gain:
   dirtyCashHeat = (dirtyCash / 50,000) × 0.04
@@ -289,27 +289,27 @@ Heat Gain:
   totalGain     = (dirtyCashHeat + dealerHeat) × avgPoliceMultiplier
 
 Heat Loss:
-  naturalDecay  = 0.01 (always)
+  naturalDecay  = 0.1 (always)
   lawyerDecay   = activeLawyer.heatDecayBonus (if hired)
-  businessDecay = Σ(biz.heatReductionPerTick × 0.005) for operating fronts
+  businessDecay = Σ(biz.heatReductionPerTick) for operating fronts
   totalLoss     = naturalDecay + lawyerDecay + businessDecay
 
 heatDelta = totalGain - totalLoss
 newHeat   = clamp(0, 1000, heat + heatDelta)
 ```
 
-**Dirty cash heat examples:**
-| Dirty Cash On Hand | Heat/Tick | Time to Tier 1 (heat 25) |
+**Dirty cash heat examples (0-1000 scale):**
+| Dirty Cash On Hand | Heat/Tick | Time to Tier 1 (heat 250) |
 |-------------------|-----------|--------------------------|
-| $1,000 | 0.0008 | ~9 hours |
-| $5,000 | 0.004 | ~100 min |
-| $50,000 | 0.04 | ~10 min |
-| $500,000 | 0.4 | ~1 min |
+| $1,000 | 0.0008 | ~90 hours |
+| $5,000 | 0.004 | ~17 hours |
+| $50,000 | 0.04 | ~100 min |
+| $500,000 | 0.4 | ~10 min |
 
 ### One-Time Heat Bumps
 
-- **Job bribe:** `+0.5 + (jobIndex × 0.5)` → ranges from +0.5 (Fast Food) to +3.0 (Corporate Exec)
-- **Dealer hire:** `+0.2 per dealer hired`
+- **Job bribe:** `+5 + (jobIndex × 5)` → ranges from +5 (Fast Food) to +30 (Corporate Exec)
+- **Dealer hire:** `+2 per dealer hired`
 
 ### Heat Effects
 
@@ -323,11 +323,11 @@ Lawyers provide a per-tick heat decay bonus. One lawyer at a time. Hiring a new 
 
 | Lawyer | Unlock Cost (clean) | Retainer (clean/tick) | Heat Decay Bonus | Required Tier |
 |--------|-------------------|---------------------|-----------------|---------------|
-| Public Defender | $500 | $2/tick | -0.005/s | 0 (Unknown) |
-| Strip Mall Lawyer | $5,000 | $8/tick | -0.015/s | 1 (Noticed) |
-| Criminal Defense Attorney | $25,000 | $25/tick | -0.035/s | 2 (Watched) |
-| The Fixer | $100,000 | $80/tick | -0.060/s | 3 (Pressured) |
-| Cartel Counsel | $500,000 | $250/tick | -0.100/s | 4 (Targeted) |
+| Public Defender | $500 | $2/tick | -0.05/s | 0 (Unknown) |
+| Strip Mall Lawyer | $5,000 | $8/tick | -0.15/s | 1 (Noticed) |
+| Criminal Defense Attorney | $25,000 | $25/tick | -0.35/s | 2 (Watched) |
+| The Fixer | $100,000 | $80/tick | -0.60/s | 3 (Pressured) |
+| Cartel Counsel | $500,000 | $250/tick | -1.0/s | 4 (Targeted) |
 
 **Auto-fire:** If `cleanCash < retainer` on a tick, lawyer is fired immediately (no refund).
 
@@ -355,7 +355,7 @@ Sources:
   territoryHeat = operatingBusinessCount × 0.002
 
 Reduction:
-  naturalDecay  = 0.005/tick
+  naturalDecay  = 0.05/tick
 
 rivalHeat = clamp(0, 1000, rivalHeat + totalGain - naturalDecay)
 ```
