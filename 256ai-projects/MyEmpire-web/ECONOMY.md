@@ -6,17 +6,20 @@ All costs in the game are formula-driven. Adding new content (rooms, strains, up
 
 ## 1. Grow Room Buildings
 
-Each building type can be purchased once. Prices increase with each tier.
+Each building type can be purchased once. Prices follow a ×4 progression per tier, with ALL costs derived from the building's purchase cost.
+
+**Core rule:** Each tier costs 4× the previous. `strainUnlockBase = 2× purchaseCost`. `autoHarvestCost = purchaseCost`. `upgradeCostMultiplier = 4^tierIndex`.
 
 | Room | Purchase Cost | upgradeCostMultiplier | autoHarvestCost |
 |------|--------------|----------------------|-----------------|
 | Closet | $0 (free starter) | 1× | $500 |
-| Shed | $1,500 | 2× | $1,000 |
-| Garage | $16,000 | 4× | $2,000 |
-| Small Grow Facility | $100,000 | 8× | $4,000 |
-| Grow Facility | $250,000 | 16× | $8,000 |
+| Shed | $2,000 | 4× | $2,000 |
+| Garage | $8,000 | 16× | $8,000 |
+| Small Grow Facility | $32,000 | 64× | $32,000 |
+| Grow Facility | $128,000 | 256× | $128,000 |
+| Large Grow Facility | $512,000 | 1,024× | $512,000 |
 
-**`upgradeCostMultiplier`** scales all equipment upgrade costs within that room. Example: a $500 Water upgrade costs $500 × 16 = $8,000 in the Grow Facility.
+**`upgradeCostMultiplier`** scales all equipment upgrade costs within that room. Example: a $600 FloraGro I upgrade costs $600 × 256 = $153,600 in the Grow Facility.
 
 ---
 
@@ -31,10 +34,11 @@ Each room starts with 1 strain slot (free). Additional strain slots cost progres
 | Room | purchaseCost | strainUnlockBase | Slot 1 (free) | Slot 2 | Slot 3 | Slot 4 |
 |------|-------------|-----------------|---------------|--------|--------|--------|
 | Closet | $0 | $0 | Basic Bud | — | — | — |
-| Shed | $1,500 | $3,000 | OG Kush | $3,000 | $6,000 | $12,000 |
-| Garage | $16,000 | $32,000 | Sour Diesel | $32,000 | $64,000 | $128,000 |
-| Small Grow | $100,000 | $200,000 | Durban Poison | $200,000 | $400,000 | $800,000 |
-| Grow Facility | $250,000 | $500,000 | Gelato | $500,000 | $1,000,000 | $2,000,000 |
+| Shed | $2,000 | $4,000 | OG Kush | $4,000 | $8,000 | $16,000 |
+| Garage | $8,000 | $16,000 | Sour Diesel | $16,000 | $32,000 | $64,000 |
+| Small Grow | $32,000 | $64,000 | Durban Poison | $64,000 | $128,000 | $256,000 |
+| Grow Facility | $128,000 | $256,000 | Gelato | $256,000 | $512,000 | $1,024,000 |
+| Large Grow | $512,000 | $1,024,000 | Exotic Kush | $1,024,000 | $2,048,000 | $4,096,000 |
 
 **Code:** `getStrainUnlockCost(def, slotIndex)` in `src/data/types.ts`
 

@@ -17,7 +17,7 @@ export interface GrowRoomTypeDef {
   strainUnlockBase: number;  // base cost for first strain unlock (doubles each slot)
   strainSlots: StrainSlotDef[];  // index = unlock order (max 4)
   autoHarvestCost: number;   // one-time cost to enable auto-harvest for this room
-  upgradeCostMultiplier: number; // scales water/light/nutrient upgrade costs (2× per tier)
+  upgradeCostMultiplier: number; // scales water/light/nutrient upgrade costs (×4 per tier)
 }
 
 /** Cost to unlock strain slot N (0-indexed). Slot 0 is free, slot 1+ doubles each time. */
@@ -456,10 +456,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'closet',
     name: 'Closet',
-    purchaseCost: 0,
-    strainUnlockBase: 0,  // can't be upgraded — starter room only
-    autoHarvestCost: 500,
-    upgradeCostMultiplier: 1,
+    purchaseCost: 0,          // free starter (virtual base = $500 for formula coherence)
+    strainUnlockBase: 0,      // can't be upgraded — starter room only
+    autoHarvestCost: 500,     // = virtual base
+    upgradeCostMultiplier: 1, // ×1 (base tier)
     strainSlots: [
       { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 8 },
     ],
@@ -467,10 +467,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'shed',
     name: 'Shed',
-    purchaseCost: 1500,
-    strainUnlockBase: 3000,  // 2× purchaseCost, then doubles: $3K, $6K, $12K
-    autoHarvestCost: 1000,
-    upgradeCostMultiplier: 2,
+    purchaseCost: 2000,        // ×4 tier 1
+    strainUnlockBase: 4000,    // 2× purchaseCost, then doubles: $4K, $8K, $16K
+    autoHarvestCost: 2000,     // = purchaseCost
+    upgradeCostMultiplier: 4,  // ×4
     strainSlots: [
       { strainName: 'OG Kush',     pricePerUnit: 12, plantsCapacity: 12, growTimerTicks: 40, harvestYield: 28 },
       { strainName: 'White Widow', pricePerUnit: 16, plantsCapacity: 12, growTimerTicks: 38, harvestYield: 28 },
@@ -481,10 +481,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'garage',
     name: 'Garage',
-    purchaseCost: 16000,
-    strainUnlockBase: 32000,  // 2× purchaseCost, then doubles: $32K, $64K, $128K
-    autoHarvestCost: 2000,
-    upgradeCostMultiplier: 4,
+    purchaseCost: 8000,         // ×4 tier 2
+    strainUnlockBase: 16000,    // 2× purchaseCost, then doubles: $16K, $32K, $64K
+    autoHarvestCost: 8000,      // = purchaseCost
+    upgradeCostMultiplier: 16,  // ×4²
     strainSlots: [
       { strainName: 'Sour Diesel',        pricePerUnit: 20, plantsCapacity: 20, growTimerTicks: 36, harvestYield: 55 },
       { strainName: 'AK-47',              pricePerUnit: 28, plantsCapacity: 20, growTimerTicks: 34, harvestYield: 55 },
@@ -495,10 +495,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'small_grow',
     name: 'Small Grow Facility',
-    purchaseCost: 100000,
-    strainUnlockBase: 200000,  // 2× purchaseCost, then doubles: $200K, $400K, $800K
-    autoHarvestCost: 4000,
-    upgradeCostMultiplier: 8,
+    purchaseCost: 32000,         // ×4 tier 3
+    strainUnlockBase: 64000,     // 2× purchaseCost, then doubles: $64K, $128K, $256K
+    autoHarvestCost: 32000,      // = purchaseCost
+    upgradeCostMultiplier: 64,   // ×4³
     strainSlots: [
       { strainName: 'Durban Poison', pricePerUnit: 35, plantsCapacity: 30, growTimerTicks: 32, harvestYield: 100 },
       { strainName: 'Jack Herer',    pricePerUnit: 45, plantsCapacity: 30, growTimerTicks: 30, harvestYield: 100 },
@@ -509,15 +509,29 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'grow_facility',
     name: 'Grow Facility',
-    purchaseCost: 250000,
-    strainUnlockBase: 500000,  // 2× purchaseCost, then doubles: $500K, $1M, $2M
-    autoHarvestCost: 8000,
-    upgradeCostMultiplier: 16,
+    purchaseCost: 128000,         // ×4 tier 4
+    strainUnlockBase: 256000,     // 2× purchaseCost, then doubles: $256K, $512K, $1.02M
+    autoHarvestCost: 128000,      // = purchaseCost
+    upgradeCostMultiplier: 256,   // ×4⁴
     strainSlots: [
       { strainName: 'Gelato',   pricePerUnit: 60,  plantsCapacity: 50, growTimerTicks: 28, harvestYield: 200 },
       { strainName: 'Runtz',    pricePerUnit: 78,  plantsCapacity: 50, growTimerTicks: 26, harvestYield: 200 },
       { strainName: 'Zkittlez', pricePerUnit: 95,  plantsCapacity: 50, growTimerTicks: 24, harvestYield: 200 },
       { strainName: 'Biscotti', pricePerUnit: 120, plantsCapacity: 50, growTimerTicks: 22, harvestYield: 200 },
+    ],
+  },
+  {
+    id: 'large_grow',
+    name: 'Large Grow Facility',
+    purchaseCost: 512000,          // ×4 tier 5
+    strainUnlockBase: 1024000,     // 2× purchaseCost, then doubles: $1.02M, $2.05M, $4.1M
+    autoHarvestCost: 512000,       // = purchaseCost
+    upgradeCostMultiplier: 1024,   // ×4⁵
+    strainSlots: [
+      { strainName: 'Exotic Kush',  pricePerUnit: 150, plantsCapacity: 80, growTimerTicks: 20, harvestYield: 400 },
+      { strainName: 'Moonrock OG',  pricePerUnit: 200, plantsCapacity: 80, growTimerTicks: 18, harvestYield: 400 },
+      { strainName: 'THC Diamond',  pricePerUnit: 260, plantsCapacity: 80, growTimerTicks: 16, harvestYield: 400 },
+      { strainName: 'Golden Leaf',  pricePerUnit: 340, plantsCapacity: 80, growTimerTicks: 14, harvestYield: 400 },
     ],
   },
 ];
