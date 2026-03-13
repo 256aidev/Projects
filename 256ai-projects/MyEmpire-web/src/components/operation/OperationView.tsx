@@ -316,7 +316,7 @@ export default function OperationView() {
                           <div className="flex items-center justify-between mb-1">
                             <div>
                               <p className="text-green-400 font-semibold text-xs">{slot.strainName}</p>
-                              <p className="text-gray-600 text-[10px]">${slot.pricePerUnit}/oz · {slot.plantsCapacity}p</p>
+                              <p className="text-gray-600 text-[10px]">${slot.pricePerUnit}/oz · {slot.plantsCapacity} plants · {formatUnits(slot.harvestYield)}/harvest</p>
                             </div>
                             <span>{ready ? <CannabisLeaf size={18} /> : idle ? '💤' : '🌱'}</span>
                           </div>
