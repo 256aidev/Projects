@@ -2,6 +2,7 @@ import type { BusinessInstance } from '../../data/types';
 import { BUSINESS_MAP } from '../../data/businesses';
 import { useUIStore } from '../../store/uiStore';
 import { calculateBusinessRevenue, calculateBusinessExpenses, formatMoney } from '../../engine/economy';
+import BuildingSprite, { hasSprite } from './BuildingSprite';
 
 interface BuildingLotProps {
   slotIndex: number;
@@ -10,7 +11,7 @@ interface BuildingLotProps {
   isAvailable: boolean;
   isLocked: boolean;
   buyLot?: { cost: number; canAfford: boolean; onBuy: () => void };
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
 }
 
 export default function BuildingLot({
@@ -27,10 +28,10 @@ export default function BuildingLot({
   const selectedSlot = useUIStore((s) => s.selectedSlot);
   const selectedBusinessId = useUIStore((s) => s.selectedBusinessId);
 
-  const rootSize = size === 'sm' ? 'w-[72px] h-[72px]' : 'w-28 h-28';
-  const iconSize = size === 'sm' ? 'text-xl' : 'text-2xl';
-  const textMd = size === 'sm' ? 'text-[8px]' : 'text-[10px]';
-  const textSm = size === 'sm' ? 'text-[7px]' : 'text-[9px]';
+  const rootSize = size === 'xs' ? 'w-[56px] h-[56px]' : size === 'sm' ? 'w-[72px] h-[72px]' : 'w-28 h-28';
+  const iconSize = size === 'xs' ? 'text-base' : size === 'sm' ? 'text-xl' : 'text-2xl';
+  const textMd = size === 'xs' ? 'text-[7px]' : size === 'sm' ? 'text-[8px]' : 'text-[10px]';
+  const textSm = size === 'xs' ? 'text-[6px]' : size === 'sm' ? 'text-[7px]' : 'text-[9px]';
 
   const isSelected =
     (selectedSlot?.districtId === districtId && selectedSlot?.slotIndex === slotIndex) ||
@@ -86,6 +87,34 @@ export default function BuildingLot({
 
   const profit = calculateBusinessRevenue(business) - calculateBusinessExpenses(business);
   const tier = def.upgradeTiers[business.upgradeLevel];
+  const spriteAvailable = hasSprite(business.businessDefId);
+  const lotPx = size === 'xs' ? 56 : size === 'sm' ? 72 : 112;
+
+  if (spriteAvailable) {
+    return (
+      <button
+        onClick={() => selectBusiness(business.instanceId)}
+        className={`relative rounded-lg overflow-hidden ${isSelected ? 'ring-2 ring-white/50' : ''}`}
+        style={{ width: lotPx, height: lotPx }}
+      >
+        <BuildingSprite businessDefId={business.businessDefId} w={lotPx} h={lotPx} />
+        {/* Profit overlay — bottom */}
+        <div className="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-center">
+          <span className={`${textMd} font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {profit >= 0 ? '+' : ''}{formatMoney(profit)}/s
+          </span>
+        </div>
+        {/* Tier badge — top left */}
+        <div className="absolute top-0.5 left-0.5 bg-black/50 rounded px-1">
+          <span className={`${textSm} text-white/70`}>{tier?.name}</span>
+        </div>
+        {/* Supply indicator */}
+        {business.supplyModifier < 1 && (
+          <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-yellow-500 animate-pulse" title="Low supply" />
+        )}
+      </button>
+    );
+  }
 
   return (
     <button

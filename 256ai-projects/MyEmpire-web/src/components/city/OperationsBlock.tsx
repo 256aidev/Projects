@@ -5,6 +5,9 @@ import { formatUnits } from '../../engine/economy';
 import type { GrowRoom } from '../../data/types';
 
 const BLOCK_W = 164;
+const BLOCK_H = 258;
+const ROAD_W = 22;
+const DOUBLE_H = BLOCK_H * 2 + ROAD_W; // spans 2 rows with road removed
 
 /** Visual labels for each grow room type */
 const ROOM_VISUALS: Record<string, { emoji: string; label: string; bg: string; border: string }> = {
@@ -21,10 +24,10 @@ function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwn
   if (!isOwned) {
     return (
       <div
-        className="w-[72px] h-[72px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 opacity-40"
+        className="w-[72px] h-[88px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 opacity-40"
         style={{ borderColor: vis.border + '60' }}
       >
-        <span className="text-lg">🔒</span>
+        <span className="text-xl">🔒</span>
         <span className="text-[8px] text-gray-400 text-center leading-tight">{vis.label}</span>
       </div>
     );
@@ -36,7 +39,7 @@ function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwn
 
   return (
     <div
-      className="w-[72px] h-[72px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden"
+      className="w-[72px] h-[88px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden"
       style={{ backgroundColor: vis.bg, borderColor: vis.border + '80' }}
     >
       <div
@@ -47,13 +50,13 @@ function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwn
         }}
       />
       <div className="relative z-10 flex flex-col items-center">
-        <span className="text-lg leading-none">{vis.emoji}</span>
-        <span className="text-[8px] font-bold text-white/90 text-center leading-tight">{vis.label}</span>
-        <span className="text-[7px] text-gray-400">
+        <span className="text-xl leading-none">{vis.emoji}</span>
+        <span className="text-[9px] font-bold text-white/90 text-center leading-tight">{vis.label}</span>
+        <span className="text-[8px] text-gray-400">
           {activeSlots}/{totalSlots} growing
         </span>
         {readySlots > 0 && (
-          <span className="text-[7px] text-green-400 font-bold animate-pulse">
+          <span className="text-[8px] text-green-400 font-bold animate-pulse">
             {readySlots} READY!
           </span>
         )}
@@ -71,6 +74,11 @@ export default function OperationsBlock() {
     [productInventory],
   );
 
+  const strainInfo = useMemo(() => {
+    const entries = Object.entries(productInventory);
+    return entries.map(([strain, data]) => ({ strain, oz: data?.oz ?? 0 })).filter(e => e.oz > 0);
+  }, [productInventory]);
+
   const ownedTypeIds = useMemo(() => new Set(growRooms.map(r => r.typeId)), [growRooms]);
   const roomMap = useMemo(() => {
     const m = new Map<string, GrowRoom>();
@@ -80,17 +88,19 @@ export default function OperationsBlock() {
 
   return (
     <div
-      style={{ width: BLOCK_W, borderColor: '#22c55e50', backgroundColor: '#22c55e08' }}
-      className="rounded-lg border p-2"
+      style={{ width: BLOCK_W, height: DOUBLE_H, borderColor: '#22c55e50', backgroundColor: '#22c55e08' }}
+      className="rounded-lg border p-2 flex flex-col"
     >
-      <p className="text-[9px] font-bold text-center mb-1 text-green-400">🌿 Operations</p>
+      <p className="text-[10px] font-bold text-center mb-1 text-green-400">🌿 Home Turf — Operations</p>
 
-      <div className="flex items-center justify-center gap-2 mb-1.5">
-        <span className="text-[7px] text-gray-400">🌱 {seedStock}</span>
-        <span className="text-[7px] text-green-400">{formatUnits(totalOz)}</span>
+      {/* Stats bar */}
+      <div className="flex items-center justify-center gap-3 mb-2">
+        <span className="text-[8px] text-gray-400">🌱 {seedStock} seeds</span>
+        <span className="text-[8px] text-green-400 font-semibold">{formatUnits(totalOz)} stash</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-1">
+      {/* Grid of room buildings */}
+      <div className="grid grid-cols-2 gap-1.5 mb-2">
         {GROW_ROOM_TYPE_DEFS.map(def => (
           <RoomBuilding
             key={def.id}
@@ -100,6 +110,21 @@ export default function OperationsBlock() {
           />
         ))}
       </div>
+
+      {/* Stash breakdown */}
+      {strainInfo.length > 0 && (
+        <div className="flex-1 border-t border-green-900/40 pt-1.5">
+          <p className="text-[8px] text-green-500/70 text-center mb-1">📦 Product Stash</p>
+          <div className="flex flex-col gap-0.5">
+            {strainInfo.slice(0, 5).map(({ strain, oz }) => (
+              <div key={strain} className="flex items-center justify-between px-1">
+                <span className="text-[7px] text-gray-400 truncate max-w-[90px]">{strain}</span>
+                <span className="text-[7px] text-green-400 font-semibold">{formatUnits(oz)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

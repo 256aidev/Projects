@@ -12,6 +12,10 @@ const BLOCK_W = 164;
 const BLOCK_H = 258;
 const ROAD_W = 22;
 
+/** Operations spans 2 block rows (removes road between them) */
+const OPS_DISTRICT_ID = 'operations';
+const OPS_SPAN_ROWS = 2; // how many block-rows operations covers
+
 function blockName(col: number, row: number): string {
   const dirs = ['East', 'West', 'North', 'South', 'Old', 'New', 'Upper', 'Lower', 'Central'];
   const types = ['Side', 'End', 'Quarter', 'Block', 'Row', 'Way', 'District', 'Heights'];
@@ -45,7 +49,7 @@ function LockedBlock({ name, cost, color, canAfford, onUnlock }: {
   );
 }
 
-function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cleanCash, onUnlockLot }: {
+function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cleanCash, onUnlockLot, maxSlots }: {
   districtId: string;
   name: string;
   color: string;
@@ -53,6 +57,7 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
   unlockedSlots: Record<string, number> | undefined;
   cleanCash: number;
   onUnlockLot: () => void;
+  maxSlots: number;
 }) {
   const districtUnlocked = unlockedSlots?.[districtId] ?? 2;
   const nextLotCost = 1000 * Math.pow(2, districtUnlocked - 2);
@@ -61,6 +66,8 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
     if (biz.districtId === districtId) slotMap.set(biz.slotIndex, biz);
   }
 
+  const lotSize = maxSlots > 6 ? 'xs' as const : 'sm' as const;
+
   return (
     <div
       style={{ width: BLOCK_W, borderColor: color + '50', backgroundColor: color + '12' }}
@@ -68,13 +75,14 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
     >
       <p className="text-[9px] font-bold text-center mb-1.5 truncate" style={{ color }}>{name}</p>
       <div className="grid grid-cols-2 gap-1">
-        {Array.from({ length: 6 }, (_, i) => {
+        {Array.from({ length: maxSlots }, (_, i) => {
           const business = slotMap.get(i) ?? null;
           const isUnlocked = i < districtUnlocked;
-          const isBuyable = i === districtUnlocked && i < 6 && !business;
+          const isBuyable = i === districtUnlocked && i < maxSlots && !business;
 
           if (!isUnlocked && !business && !isBuyable) {
-            return <div key={i} className="w-[72px] h-[72px] rounded bg-black/15" />;
+            const sz = maxSlots > 6 ? 'w-[56px] h-[56px]' : 'w-[72px] h-[72px]';
+            return <div key={i} className={`${sz} rounded bg-black/15`} />;
           }
           return (
             <BuildingLot
@@ -89,7 +97,7 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
                 canAfford: cleanCash >= nextLotCost,
                 onBuy: onUnlockLot,
               } : undefined}
-              size="sm"
+              size={lotSize}
             />
           );
         })}
@@ -141,8 +149,18 @@ export default function CityMap() {
     setZoom(z => Math.max(0.3, Math.min(4, z * (e.deltaY < 0 ? 1.12 : 0.9))));
   }
 
-  // Build position map
+  // ── Build position map ────────────────────────────────────────────────────
   const positionMap = new Map<string, Cell>();
+
+  // Compute operations span positions (reserve the row below operations)
+  const opsDef = DISTRICT_MAP[OPS_DISTRICT_ID];
+  const opsPos = opsDef?.gridPosition;
+  const opsSpanKeys = new Set<string>(); // extra cells consumed by operations span
+  if (opsPos) {
+    for (let dr = 1; dr < OPS_SPAN_ROWS; dr++) {
+      opsSpanKeys.add(`${opsPos.col},${opsPos.row + dr}`);
+    }
+  }
 
   for (const d of DISTRICTS) {
     const key = `${d.gridPosition.col},${d.gridPosition.row}`;
@@ -166,6 +184,9 @@ export default function CityMap() {
 
   // Dynamically compute virtual neighbor blocks
   const covered = new Set(positionMap.keys());
+  // Also mark operations-span cells as covered so gen-locked blocks aren't placed there
+  for (const sk of opsSpanKeys) covered.add(sk);
+
   for (const districtId of unlockedDistricts) {
     let pos: { col: number; row: number } | undefined;
     const d = DISTRICT_MAP[districtId];
@@ -184,6 +205,11 @@ export default function CityMap() {
     }
   }
 
+  // Include span cells in bounding box calculation
+  for (const sk of opsSpanKeys) {
+    if (!positionMap.has(sk)) positionMap.set(sk, null);
+  }
+
   // Bounding box
   let minCol = Infinity, maxCol = -Infinity, minRow = Infinity, maxRow = -Infinity;
   for (const key of positionMap.keys()) {
@@ -194,12 +220,11 @@ export default function CityMap() {
   const gridCols = maxCol - minCol + 1;
   const gridRows = maxRow - minRow + 1;
 
-  // Build a 2D lookup for blocks
   function getCell(c: number, r: number): Cell {
     return positionMap.get(`${c},${r}`) ?? null;
   }
 
-  // Grid template: block ROAD block ROAD block ...
+  // Grid template
   const colTemplate = Array.from({ length: gridCols }, (_, i) =>
     i < gridCols - 1 ? `${BLOCK_W}px ${ROAD_W}px` : `${BLOCK_W}px`
   ).join(' ');
@@ -207,21 +232,36 @@ export default function CityMap() {
     i < gridRows - 1 ? `${BLOCK_H}px ${ROAD_W}px` : `${BLOCK_H}px`
   ).join(' ');
 
-  // Build grid children: blocks at even positions, roads at odd positions
+  // ── Build grid children with explicit placement ───────────────────────────
+  // Compute virtual grid coords for operations span cells to skip
+  const opsSkipVirtual = new Set<string>();
+  if (opsPos) {
+    const opsVc = (opsPos.col - minCol) * 2;
+    const opsVr = (opsPos.row - minRow) * 2;
+    // Skip the road and block below operations (cells covered by the span)
+    for (let dr = 1; dr < OPS_SPAN_ROWS; dr++) {
+      opsSkipVirtual.add(`${opsVc},${opsVr + dr * 2 - 1}`); // road between
+      opsSkipVirtual.add(`${opsVc},${opsVr + dr * 2}`);     // block below
+    }
+  }
+
   type GridItem =
-    | { type: 'block'; cell: Cell; key: string }
-    | { type: 'road'; dir: 'h' | 'v' | 'x'; visible: boolean; key: string };
+    | { type: 'block'; cell: Cell; key: string; gc: number; gr: number }
+    | { type: 'road'; dir: 'h' | 'v' | 'x'; visible: boolean; key: string; gc: number; gr: number };
 
   const gridItems: GridItem[] = [];
   const tvr = gridRows * 2 - 1;
   const tvc = gridCols * 2 - 1;
   for (let gr = 0; gr < tvr; gr++) {
     for (let gc = 0; gc < tvc; gc++) {
+      // Skip cells covered by operations span
+      if (opsSkipVirtual.has(`${gc},${gr}`)) continue;
+
       const bRow = gr % 2 === 0;
       const bCol = gc % 2 === 0;
 
       if (bRow && bCol) {
-        gridItems.push({ type: 'block', cell: getCell(minCol + gc / 2, minRow + gr / 2), key: `b${gc}_${gr}` });
+        gridItems.push({ type: 'block', cell: getCell(minCol + gc / 2, minRow + gr / 2), key: `b${gc}_${gr}`, gc, gr });
       } else {
         let vis = false;
         let dir: 'h' | 'v' | 'x' = 'x';
@@ -239,10 +279,13 @@ export default function CityMap() {
           const rA = minRow + (gr - 1) / 2, rB = minRow + (gr + 1) / 2;
           vis = !!(getCell(cL, rA) || getCell(cR, rA) || getCell(cL, rB) || getCell(cR, rB));
         }
-        gridItems.push({ type: 'road', dir, visible: vis, key: `r${gc}_${gr}` });
+        gridItems.push({ type: 'road', dir, visible: vis, key: `r${gc}_${gr}`, gc, gr });
       }
     }
   }
+
+  // Compute the grid-row span value for operations: block + road + block = 3 virtual rows
+  const opsGridSpan = OPS_SPAN_ROWS * 2 - 1; // 2 blocks + 1 road = 3
 
   return (
     <div
@@ -280,29 +323,32 @@ export default function CityMap() {
             }}
           >
             {gridItems.map((item) => {
+              // Explicit grid placement (1-indexed)
+              const placement: React.CSSProperties = {
+                gridColumn: item.gc + 1,
+                gridRow: item.gr + 1,
+              };
+
               if (item.type === 'road') {
-                if (!item.visible) return <div key={item.key} />;
+                if (!item.visible) return <div key={item.key} style={placement} />;
                 if (item.dir === 'h') {
-                  // Horizontal road strip (between rows)
                   return (
-                    <div key={item.key} className="relative" style={{ height: ROAD_W }}>
+                    <div key={item.key} className="relative" style={{ ...placement, height: ROAD_W }}>
                       <div className="absolute inset-0 bg-gray-800 rounded-sm" />
                       <div className="absolute inset-x-2 top-1/2 -translate-y-px border-t-2 border-dashed border-yellow-600/40" />
                     </div>
                   );
                 }
                 if (item.dir === 'v') {
-                  // Vertical road strip (between cols)
                   return (
-                    <div key={item.key} className="relative" style={{ width: ROAD_W }}>
+                    <div key={item.key} className="relative" style={{ ...placement, width: ROAD_W }}>
                       <div className="absolute inset-0 bg-gray-800 rounded-sm" />
                       <div className="absolute inset-y-2 left-1/2 -translate-x-px border-l-2 border-dashed border-yellow-600/40" />
                     </div>
                   );
                 }
-                // Intersection
                 return (
-                  <div key={item.key} className="relative" style={{ width: ROAD_W, height: ROAD_W }}>
+                  <div key={item.key} className="relative" style={{ ...placement, width: ROAD_W, height: ROAD_W }}>
                     <div className="absolute inset-0 bg-gray-800 rounded-sm" />
                   </div>
                 );
@@ -311,56 +357,69 @@ export default function CityMap() {
               // Block cell
               const cell = item.cell;
               if (!cell) {
-                return <div key={item.key} style={{ width: BLOCK_W, height: BLOCK_H }} />;
+                return <div key={item.key} style={{ ...placement, width: BLOCK_W, height: BLOCK_H }} />;
               }
               if (cell.kind === 'district-unlocked') {
-                // Special rendering for operations block
-                if (cell.id === 'operations') {
-                  return <OperationsBlock key={cell.id} />;
+                // Operations spans multiple rows — no road between halves
+                if (cell.id === OPS_DISTRICT_ID) {
+                  return (
+                    <div key={cell.id} style={{ ...placement, gridRow: `${item.gr + 1} / span ${opsGridSpan}` }}>
+                      <OperationsBlock />
+                    </div>
+                  );
                 }
                 if (cell.id === 'dealer_network') {
-                  return <DealerNetworkBlock key={cell.id} />;
+                  return (
+                    <div key={cell.id} style={placement}>
+                      <DealerNetworkBlock />
+                    </div>
+                  );
                 }
+                const dist = DISTRICT_MAP[cell.id];
                 return (
-                  <UnlockedBlock
-                    key={cell.id}
-                    districtId={cell.id}
-                    name={cell.name}
-                    color={cell.color}
-                    businesses={businesses}
-                    unlockedSlots={unlockedSlots}
-                    cleanCash={cleanCash}
-                    onUnlockLot={() => unlockLot(cell.id)}
-                  />
+                  <div key={cell.id} style={placement}>
+                    <UnlockedBlock
+                      districtId={cell.id}
+                      name={cell.name}
+                      color={cell.color}
+                      businesses={businesses}
+                      unlockedSlots={unlockedSlots}
+                      cleanCash={cleanCash}
+                      onUnlockLot={() => unlockLot(cell.id)}
+                      maxSlots={dist?.maxBusinessSlots ?? 6}
+                    />
+                  </div>
                 );
               }
               if (cell.kind === 'district-locked') {
                 return (
-                  <LockedBlock
-                    key={cell.id}
-                    name={cell.name}
-                    cost={cell.cost}
-                    color={cell.color}
-                    canAfford={cleanCash >= cell.cost}
-                    onUnlock={() => {
-                      if (unlockDistrict(cell.id)) addNotification(`Unlocked ${cell.name}!`, 'success');
-                      else addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
-                    }}
-                  />
+                  <div key={cell.id} style={placement}>
+                    <LockedBlock
+                      name={cell.name}
+                      cost={cell.cost}
+                      color={cell.color}
+                      canAfford={cleanCash >= cell.cost}
+                      onUnlock={() => {
+                        if (unlockDistrict(cell.id)) addNotification(`Unlocked ${cell.name}!`, 'success');
+                        else addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
+                      }}
+                    />
+                  </div>
                 );
               }
               return (
-                <LockedBlock
-                  key={cell.id}
-                  name={cell.name}
-                  cost={cell.cost}
-                  color="#4B5563"
-                  canAfford={cleanCash >= cell.cost}
-                  onUnlock={() => {
-                    if (unlockGeneratedBlock(cell.id)) addNotification(`Expanded into ${cell.name}!`, 'success');
-                    else addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
-                  }}
-                />
+                <div key={cell.id} style={placement}>
+                  <LockedBlock
+                    name={cell.name}
+                    cost={cell.cost}
+                    color="#4B5563"
+                    canAfford={cleanCash >= cell.cost}
+                    onUnlock={() => {
+                      if (unlockGeneratedBlock(cell.id)) addNotification(`Expanded into ${cell.name}!`, 'success');
+                      else addNotification(`Need ${formatMoney(cell.cost)} clean cash`, 'warning');
+                    }}
+                  />
+                </div>
               );
             })}
           </div>

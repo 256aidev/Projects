@@ -95,7 +95,7 @@ export const DISTRICTS: DistrictDef[] = [
     gridPosition: { col: 3, row: 1 },
   },
 
-  // ── Row 3: Operations row ────────────────────────────────────────────────
+  // ── Row 3–4: Operations row (operations spans both rows) ─────────────────
   {
     id: 'operations',
     name: 'Home Turf',
@@ -127,7 +127,54 @@ export const DISTRICTS: DistrictDef[] = [
     gridPosition: { col: 1, row: 3 },
   },
 
-  // ── Row 4–5: South side (below operations) ───────────────────────────────
+  // ── Row 3–4: Residential blocks (left side) ──────────────────────────────
+  {
+    id: 'row_houses',
+    name: 'Row Houses',
+    description: 'Affordable housing. Small block, steady rental income.',
+    themeColor: '#92400E',
+    revenueMultiplier: 0.8,
+    operatingCostMultiplier: 0.5,
+    customerTrafficMultiplier: 0.6,
+    unlockCost: 15000,
+    policePresenceMultiplier: 0.4,
+    auditChanceMultiplier: 0.2,
+    maxBusinessSlots: 4,
+    gridLayout: { rows: 2, cols: 2 },
+    gridPosition: { col: 0, row: 3 },
+  },
+  {
+    id: 'apartment_row',
+    name: 'Apartment Row',
+    description: 'Mid-rise apartments. Good rental volume, some noise complaints.',
+    themeColor: '#DC2626',
+    revenueMultiplier: 1.2,
+    operatingCostMultiplier: 1.0,
+    customerTrafficMultiplier: 1.0,
+    unlockCost: 80000,
+    policePresenceMultiplier: 0.8,
+    auditChanceMultiplier: 0.5,
+    maxBusinessSlots: 6,
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 0, row: 4 },
+  },
+  {
+    id: 'the_towers',
+    name: 'The Towers',
+    description: 'High-rise apartments. Maximum tenants, maximum problems.',
+    themeColor: '#0891B2',
+    revenueMultiplier: 1.6,
+    operatingCostMultiplier: 1.4,
+    customerTrafficMultiplier: 1.5,
+    unlockCost: 180000,
+    policePresenceMultiplier: 1.1,
+    auditChanceMultiplier: 0.9,
+    maxBusinessSlots: 8,
+    gridLayout: { rows: 4, cols: 2 },
+    gridPosition: { col: 1, row: 5 },
+  },
+
+  // ── Row 5–6: South side (below operations) ───────────────────────────────
   {
     id: 'south_side',
     name: 'South Side Sliders',
@@ -141,7 +188,7 @@ export const DISTRICTS: DistrictDef[] = [
     auditChanceMultiplier: 0.6,
     maxBusinessSlots: 6,
     gridLayout: { rows: 3, cols: 2 },
-    gridPosition: { col: 2, row: 4 },
+    gridPosition: { col: 2, row: 5 },
   },
   {
     id: 'desert_highway',
@@ -156,7 +203,7 @@ export const DISTRICTS: DistrictDef[] = [
     auditChanceMultiplier: 0.3,
     maxBusinessSlots: 6,
     gridLayout: { rows: 3, cols: 2 },
-    gridPosition: { col: 2, row: 5 },
+    gridPosition: { col: 2, row: 6 },
   },
 ];
 
