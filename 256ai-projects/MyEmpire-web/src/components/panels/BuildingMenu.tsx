@@ -4,6 +4,41 @@ import { BUSINESS_MAP } from '../../data/businesses';
 import { DISTRICT_MAP } from '../../data/districts';
 import { calculateLaunderCapacity, calculateDispensaryCapacity, calculateBusinessRevenue, calculateBusinessExpenses, formatMoney, formatUnits } from '../../engine/economy';
 
+/**
+ * Laundering heat badge — laundering dirty→clean ALWAYS reduces heat.
+ * The more you launder, the more heat you shed. Scales with slider usage.
+ * Base rate: business heatReductionPerTick (abs value), min 0.01.
+ */
+function LaunderHeatBadge({ baseHeat, usage }: { baseHeat: number; usage: number }) {
+  if (usage <= 0) return null;
+  // Use absolute value of business heat rate, minimum 0.01 for businesses with 0
+  const rate = Math.max(Math.abs(baseHeat), 0.01);
+  const heat = rate * usage * 100;
+  if (heat < 0.01) return null;
+  return (
+    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-400">
+      ❄️ -{heat.toFixed(1)} heat/s
+    </span>
+  );
+}
+
+/**
+ * Reverse flow heat badge — converting clean→dirty ALWAYS generates heat.
+ * The more you convert, the hotter you get. Scales with slider usage.
+ */
+function ReverseHeatBadge({ baseHeat, usage }: { baseHeat: number; usage: number }) {
+  if (usage <= 0) return null;
+  // Base rate: mirror of laundering rate, minimum 0.015
+  const rate = Math.max(Math.abs(baseHeat), 0.015);
+  const heat = rate * usage * 100;
+  if (heat < 0.01) return null;
+  return (
+    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-900/60 text-red-400">
+      🔥 +{heat.toFixed(1)} heat/s
+    </span>
+  );
+}
+
 export default function BuildingMenu() {
   const selectedBusinessId = useUIStore((s) => s.selectedBusinessId);
   const closeAll = useUIStore((s) => s.closeAll);
@@ -40,6 +75,13 @@ export default function BuildingMenu() {
 
   const upgradeLabel = def.isDispensary ? 'capacity' : 'launder';
 
+  // Capacity values for usage calculations
+  const launderCap = def.isDispensary ? calculateDispensaryCapacity(biz) : calculateLaunderCapacity(biz);
+  const launderUsage = launderCap > 0
+    ? (def.isDispensary ? (biz.productQueuedPerTick ?? 0) : biz.dirtyQueuedPerTick) / launderCap
+    : 0;
+  const reverseUsage = launderCap > 0 ? (biz.cleanToDirtyPerTick ?? 0) / launderCap : 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={closeAll}>
       <div
@@ -61,11 +103,7 @@ export default function BuildingMenu() {
           <div className="bg-green-900/20 border border-green-800/30 rounded-xl p-3 mb-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-green-400 text-xs font-bold uppercase tracking-wide">🌿 Product Sales</p>
-              {def.heatReductionPerTick !== 0 && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${def.heatReductionPerTick < 0 ? 'bg-red-900/60 text-red-400' : 'bg-blue-900/60 text-blue-400'}`}>
-                  {def.heatReductionPerTick < 0 ? '🔥' : '❄️'} {def.heatReductionPerTick < 0 ? '+' : ''}{(-def.heatReductionPerTick * 100).toFixed(1)} heat/s
-                </span>
-              )}
+              <LaunderHeatBadge baseHeat={def.heatReductionPerTick} usage={launderUsage} />
             </div>
             <div className="grid grid-cols-2 gap-2 text-center mb-2">
               <div>
@@ -106,11 +144,7 @@ export default function BuildingMenu() {
           <div className="bg-green-900/20 border border-green-800/30 rounded-xl p-3 mb-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-green-400 text-xs font-bold uppercase tracking-wide">💰 Laundering</p>
-              {def.heatReductionPerTick !== 0 && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${def.heatReductionPerTick < 0 ? 'bg-red-900/60 text-red-400' : 'bg-blue-900/60 text-blue-400'}`}>
-                  {def.heatReductionPerTick < 0 ? '🔥' : '❄️'} {def.heatReductionPerTick < 0 ? '+' : ''}{(-def.heatReductionPerTick * 100).toFixed(1)} heat/s
-                </span>
-              )}
+              <LaunderHeatBadge baseHeat={def.heatReductionPerTick} usage={launderUsage} />
             </div>
             <div className="grid grid-cols-2 gap-2 text-center">
               <div>
@@ -150,6 +184,7 @@ export default function BuildingMenu() {
           <div className="bg-orange-900/20 border border-orange-800/30 rounded-xl p-3 mb-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-orange-400 text-xs font-bold uppercase tracking-wide">🔄 Reverse Flow <span className="font-normal text-gray-500">(clean → dirty)</span></p>
+              <ReverseHeatBadge baseHeat={def.heatReductionPerTick} usage={reverseUsage} />
             </div>
             <div className="grid grid-cols-2 gap-2 text-center mb-2">
               <div>
