@@ -36,6 +36,7 @@ import ResourceMarketPanel from './components/panels/ResourceMarketPanel';
 import Notifications from './components/ui/Notifications';
 import LoginScreen from './components/auth/LoginScreen';
 import AccountScreen from './components/auth/AccountScreen';
+import StartGameScreen from './components/ui/StartGameScreen';
 
 // Auto-sync to Firestore every 60 ticks (≈ 1 min)
 const SYNC_INTERVAL_TICKS = 60;
@@ -52,6 +53,7 @@ export default function App() {
 
   const { user, loading, syncToCloud } = useAuthStore();
   const tickCount = useGameStore((s) => s.tickCount);
+  const gameStarted = useGameStore((s) => s.gameSettings?.gameStarted);
   const lastSyncTick = useRef(0);
 
   // Cloud auto-sync on interval
@@ -73,6 +75,10 @@ export default function App() {
 
   if (!user) {
     return <LoginScreen />;
+  }
+
+  if (!gameStarted) {
+    return <StartGameScreen />;
   }
 
   return (

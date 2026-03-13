@@ -1,9 +1,12 @@
 import { useRef, useState } from 'react';
-import type { BusinessInstance } from '../../data/types';
+import type { BusinessInstance, RivalSyndicate, RivalBusiness } from '../../data/types';
+import { RIVAL_ACTIONS } from '../../data/types';
+import { BUSINESS_MAP } from '../../data/businesses';
 import { DISTRICTS, DISTRICT_MAP } from '../../data/districts';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
+import { getPlayerHitmanCount } from '../../engine/rivals';
 import BuildingLot from './BuildingLot';
 import OperationsBlock from './OperationsBlock';
 import DealerNetworkBlock from './DealerNetworkBlock';
@@ -50,7 +53,52 @@ function LockedBlock({ name, cost, color, canAfford, onUnlock }: {
   );
 }
 
-function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cleanCash, onUnlockLot, maxSlots }: {
+function RivalLot({ rivalBiz, rival, size, onAction }: {
+  rivalBiz: RivalBusiness;
+  rival: RivalSyndicate;
+  size: 'xs' | 'sm';
+  onAction: (rivalId: string, actionType: string) => void;
+}) {
+  const [showMenu, setShowMenu] = useState(false);
+  const bizDef = BUSINESS_MAP[rivalBiz.businessDefId];
+  const rootSize = size === 'xs' ? 'w-[56px] h-[56px]' : 'w-[72px] h-[72px]';
+  const textSz = size === 'xs' ? 'text-[6px]' : 'text-[7px]';
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        className={`${rootSize} rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 transition`}
+        style={{ borderColor: rival.color + '80', backgroundColor: rival.color + '20' }}
+      >
+        <span className="text-xs">{rival.icon}</span>
+        <span className={`${textSz} font-bold text-center leading-tight`} style={{ color: rival.color }}>{bizDef?.chainName ?? '???'}</span>
+        <span className={`${textSz} text-gray-500`}>{rival.name.split(' ')[1]}</span>
+        {rivalBiz.health < 100 && (
+          <div className="absolute bottom-0.5 left-1 right-1 h-1 bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-red-500 rounded-full" style={{ width: `${rivalBiz.health}%` }} />
+          </div>
+        )}
+      </button>
+      {showMenu && (
+        <div className="absolute z-30 top-full left-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg p-1.5 shadow-xl min-w-[100px]">
+          <p className="text-[8px] text-gray-500 mb-1 px-1">{rival.icon} {rival.name}</p>
+          {RIVAL_ACTIONS.map(action => (
+            <button
+              key={action.type}
+              onClick={() => { onAction(rival.id, action.type); setShowMenu(false); }}
+              className="block w-full text-left px-1.5 py-1 rounded text-[9px] text-red-300 hover:bg-red-900/40 transition"
+            >
+              {action.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cleanCash, onUnlockLot, maxSlots, rivals, onRivalAction }: {
   districtId: string;
   name: string;
   color: string;
@@ -59,6 +107,8 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
   cleanCash: number;
   onUnlockLot: () => void;
   maxSlots: number;
+  rivals: RivalSyndicate[];
+  onRivalAction: (rivalId: string, actionType: string) => void;
 }) {
   const districtUnlocked = unlockedSlots?.[districtId] ?? 2;
   const nextLotCost = 1000 * Math.pow(2, districtUnlocked - 2);
@@ -69,6 +119,17 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
 
   const lotSize = maxSlots > 6 ? 'xs' as const : 'sm' as const;
 
+  // Build rival slot map for this district
+  const rivalSlotMap = new Map<number, { biz: RivalBusiness; rival: RivalSyndicate }>();
+  for (const rival of rivals) {
+    if (rival.isDefeated) continue;
+    for (const rb of rival.businesses) {
+      if (rb.districtId === districtId) {
+        rivalSlotMap.set(rb.slotIndex, { biz: rb, rival });
+      }
+    }
+  }
+
   return (
     <div
       style={{ width: BLOCK_W, borderColor: color + '50', backgroundColor: color + '12' }}
@@ -78,8 +139,22 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
       <div className="grid grid-cols-2 gap-1">
         {Array.from({ length: maxSlots }, (_, i) => {
           const business = slotMap.get(i) ?? null;
+          const rivalEntry = rivalSlotMap.get(i);
           const isUnlocked = i < districtUnlocked;
-          const isBuyable = i === districtUnlocked && i < maxSlots && !business;
+          const isBuyable = i === districtUnlocked && i < maxSlots && !business && !rivalEntry;
+
+          // Rival business takes this slot
+          if (rivalEntry && !business) {
+            return (
+              <RivalLot
+                key={i}
+                rivalBiz={rivalEntry.biz}
+                rival={rivalEntry.rival}
+                size={lotSize}
+                onAction={onRivalAction}
+              />
+            );
+          }
 
           if (!isUnlocked && !business && !isBuyable) {
             const sz = maxSlots > 6 ? 'w-[56px] h-[56px]' : 'w-[72px] h-[72px]';
@@ -119,7 +194,14 @@ export default function CityMap() {
   const unlockDistrict = useGameStore((s) => s.unlockDistrict);
   const unlockGeneratedBlock = useGameStore((s) => s.unlockGeneratedBlock);
   const unlockLot = useGameStore((s) => s.unlockLot);
+  const rivals = useGameStore((s) => s.rivals ?? []);
+  const attackRival = useGameStore((s) => s.attackRival);
   const addNotification = useUIStore((s) => s.addNotification);
+
+  const handleRivalAction = (rivalId: string, actionType: string) => {
+    const result = attackRival(rivalId, actionType);
+    if (result) addNotification(result.message, result.success ? 'success' : 'warning');
+  };
 
   // Pan / zoom state
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -411,6 +493,8 @@ export default function CityMap() {
                       cleanCash={cleanCash}
                       onUnlockLot={() => unlockLot(cell.id)}
                       maxSlots={dist?.maxBusinessSlots ?? 6}
+                      rivals={rivals}
+                      onRivalAction={handleRivalAction}
                     />
                   </div>
                 );

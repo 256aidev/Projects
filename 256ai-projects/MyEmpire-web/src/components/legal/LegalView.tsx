@@ -1,8 +1,10 @@
 import { useGameStore } from '../../store/gameStore';
+import { useUIStore } from '../../store/uiStore';
 import { getHeatTier, getHeatBreakdown, getRivalHeatTier, getRivalHeatBreakdown, HEAT_MAX } from '../../engine/heat';
-import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS } from '../../data/types';
+import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS, HITMAN_DEFS, HITMAN_MAP, RIVAL_ACTIONS } from '../../data/types';
 import { LAWYER_DEFS, LAWYER_MAP } from '../../data/lawyers';
 import { formatMoney } from '../../engine/economy';
+import { getPlayerHitmanCount, getHitmanUpkeep } from '../../engine/rivals';
 
 export default function LegalView() {
   const heat = useGameStore((s) => s.heat);
@@ -17,6 +19,16 @@ export default function LegalView() {
   const fireLawyer = useGameStore((s) => s.fireLawyer);
 
   const rivalHeat = useGameStore((s) => s.rivalHeat ?? 0);
+  const rivals = useGameStore((s) => s.rivals ?? []);
+  const hitmen = useGameStore((s) => s.hitmen ?? []);
+  const rivalAttackLog = useGameStore((s) => s.rivalAttackLog ?? []);
+  const hireHitman = useGameStore((s) => s.hireHitman);
+  const fireHitman = useGameStore((s) => s.fireHitman);
+  const attackRival = useGameStore((s) => s.attackRival);
+  const addNotification = useUIStore((s) => s.addNotification);
+
+  const playerHitmanCount = getPlayerHitmanCount(hitmen);
+  const hitmanUpkeep = getHitmanUpkeep(hitmen);
 
   const heatTier = getHeatTier(heat);
   const tierName = HEAT_TIER_NAMES[heatTier];
@@ -162,6 +174,138 @@ export default function LegalView() {
           </div>
         </div>
       </div>
+
+      {/* Hitmen */}
+      <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-white font-semibold">Hitmen</h3>
+            <p className="text-gray-400 text-[10px]">
+              {playerHitmanCount} hired · Upkeep: {formatMoney(hitmanUpkeep)}/tick
+            </p>
+          </div>
+          <span className="text-3xl">🔫</span>
+        </div>
+
+        <div className="space-y-2">
+          {HITMAN_DEFS.map(def => {
+            const owned = hitmen.find(h => h.defId === def.id)?.count ?? 0;
+            const canAfford = dirtyCash >= def.cost;
+            return (
+              <div key={def.id} className="flex items-center justify-between bg-gray-900/60 rounded-lg p-2.5">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-semibold text-sm">{def.name}</span>
+                    {owned > 0 && <span className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded-full">×{owned}</span>}
+                  </div>
+                  <div className="flex gap-3 text-[10px] mt-0.5">
+                    <span className="text-red-400">ATK {def.attack}</span>
+                    <span className="text-blue-400">DEF {def.defense}</span>
+                    <span className="text-yellow-400">{formatMoney(def.upkeep)}/tick</span>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  {owned > 0 && (
+                    <button
+                      onClick={() => fireHitman(def.id)}
+                      className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-red-400 text-[10px] font-semibold"
+                    >
+                      -
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (hireHitman(def.id)) addNotification(`Hired ${def.name}!`, 'success');
+                      else addNotification(`Need ${formatMoney(def.cost)} dirty cash`, 'warning');
+                    }}
+                    disabled={!canAfford}
+                    className={`px-2.5 py-1 rounded text-[10px] font-semibold transition ${
+                      canAfford ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {formatMoney(def.cost)}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Rival Syndicates */}
+      {rivals.length > 0 && (
+        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
+          <h3 className="text-white font-semibold mb-3">Rival Syndicates</h3>
+          <div className="space-y-3">
+            {rivals.map(rival => (
+              <div
+                key={rival.id}
+                className={`rounded-lg border p-3 ${rival.isDefeated ? 'border-gray-700/30 opacity-40' : 'border-gray-700'}`}
+                style={!rival.isDefeated ? { borderColor: rival.color + '50', backgroundColor: rival.color + '08' } : undefined}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{rival.icon}</span>
+                    <div>
+                      <span className="text-white font-semibold text-sm">{rival.name}</span>
+                      {rival.isDefeated && <span className="text-gray-500 text-[9px] ml-2">DEFEATED</span>}
+                    </div>
+                  </div>
+                  <div className="text-right text-[10px]">
+                    <p className="text-red-400">{rival.hitmen} hitmen</p>
+                    <p className="text-gray-500">{rival.businesses.length} biz</p>
+                  </div>
+                </div>
+
+                {!rival.isDefeated && (
+                  <div className="grid grid-cols-2 gap-1 text-[10px] mb-2">
+                    <span className="text-gray-500">Cash: <span className="text-yellow-400">{formatMoney(rival.dirtyCash)}</span></span>
+                    <span className="text-gray-500">Product: <span className="text-green-400">{rival.productOz} oz</span></span>
+                    <span className="text-gray-500">Power: <span className="text-orange-400">×{rival.power.toFixed(1)}</span></span>
+                    <span className="text-gray-500">Aggro: <span style={{ color: rival.aggression > 0.5 ? '#ef4444' : '#a3a3a3' }}>{Math.round(rival.aggression * 100)}%</span></span>
+                  </div>
+                )}
+
+                {!rival.isDefeated && (
+                  <div className="flex gap-1 flex-wrap">
+                    {RIVAL_ACTIONS.map(action => {
+                      const hasEnough = playerHitmanCount >= action.hitmenRequired;
+                      return (
+                        <button
+                          key={action.type}
+                          onClick={() => {
+                            const result = attackRival(rival.id, action.type);
+                            if (result) addNotification(result.message, result.success ? 'success' : 'warning');
+                          }}
+                          disabled={!hasEnough}
+                          title={`${action.description} (need ${action.hitmenRequired}+ hitmen)`}
+                          className={`px-2 py-1 rounded text-[9px] font-semibold transition ${
+                            hasEnough ? 'bg-red-900/60 hover:bg-red-800/60 text-red-300' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                          }`}
+                        >
+                          {action.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Attack Log */}
+      {rivalAttackLog.length > 0 && (
+        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
+          <h3 className="text-white font-semibold mb-2">Recent Events</h3>
+          <div className="space-y-1">
+            {[...rivalAttackLog].reverse().map((msg, i) => (
+              <p key={i} className="text-[10px] text-gray-400">{msg}</p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Active Lawyer */}
       {activeLawyer && (
