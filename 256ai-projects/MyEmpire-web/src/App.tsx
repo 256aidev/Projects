@@ -1,4 +1,23 @@
-import { useEffect, useRef } from 'react';
+import { Component, useEffect, useRef } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+
+class ViewErrorBoundary extends Component<{ children: ReactNode; name: string }, { hasError: boolean; error?: Error }> {
+  state = { hasError: false, error: undefined as Error | undefined };
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error(`[${(this.props as { name: string }).name}] Render error:`, error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center bg-gray-950 text-white p-4">
+          <p className="text-red-400 font-bold mb-2">Something went wrong in {(this.props as { name: string }).name}</p>
+          <p className="text-gray-500 text-xs mb-3">{this.state.error?.message}</p>
+          <button onClick={() => this.setState({ hasError: false })} className="px-3 py-1 rounded bg-gray-800 text-sm hover:bg-gray-700">Retry</button>
+        </div>
+      );
+    }
+    return (this.props as { children: ReactNode }).children;
+  }
+}
 import { sound } from './engine/sound';
 import { useGameTick } from './hooks/useGameTick';
 import { useUIStore } from './store/uiStore';
@@ -66,15 +85,17 @@ export default function App() {
         {activeView === 'operation' && <OperationView />}
 
         {activeView === 'city' && (
-          <div className="flex-1 flex flex-col overflow-hidden relative">
-            <button
-              onClick={() => setPanel(activePanel === 'market' ? null : 'market')}
-              className="absolute top-2 right-2 z-10 px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-semibold transition whitespace-nowrap shadow-lg"
-            >
-              🛒 Market
-            </button>
-            <CityMap />
-          </div>
+          <ViewErrorBoundary name="City">
+            <div className="flex-1 flex flex-col overflow-hidden relative">
+              <button
+                onClick={() => setPanel(activePanel === 'market' ? null : 'market')}
+                className="absolute top-2 right-2 z-10 px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-semibold transition whitespace-nowrap shadow-lg"
+              >
+                🛒 Market
+              </button>
+              <CityMap />
+            </div>
+          </ViewErrorBoundary>
         )}
 
         {activeView === 'legal' && <LegalView />}

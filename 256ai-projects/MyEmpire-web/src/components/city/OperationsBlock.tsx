@@ -16,8 +16,7 @@ const ROOM_VISUALS: Record<string, { emoji: string; label: string; bg: string; b
 
 function RoomBuilding({ roomTypeId, isOwned }: { roomTypeId: string; isOwned: boolean }) {
   const vis = ROOM_VISUALS[roomTypeId] ?? { emoji: '🏠', label: roomTypeId, bg: '#33333330', border: '#555' };
-  const def = GROW_ROOM_TYPE_DEFS.find(d => d.id === roomTypeId);
-  const rooms = useGameStore(s => s.operation.growRooms.filter(r => r.typeId === roomTypeId));
+  const rooms = useGameStore(s => s.operation?.growRooms?.filter(r => r.typeId === roomTypeId) ?? []);
   const room = rooms[0];
 
   if (!isOwned) {
@@ -34,11 +33,9 @@ function RoomBuilding({ roomTypeId, isOwned }: { roomTypeId: string; isOwned: bo
   }
 
   // Owned — show active room
-  const activeSlots = room?.slots.filter(s => s.isHarvesting).length ?? 0;
-  const totalSlots = room?.slots.length ?? 0;
-  const readySlots = room?.slots.filter(s => s.isHarvesting && s.ticksRemaining === 0).length ?? 0;
-  const totalOz = Object.values(useGameStore.getState().operation.productInventory)
-    .reduce((sum, e) => sum + e.oz, 0);
+  const activeSlots = room?.slots?.filter(s => s.isHarvesting).length ?? 0;
+  const totalSlots = room?.slots?.length ?? 0;
+  const readySlots = room?.slots?.filter(s => s.isHarvesting && s.ticksRemaining === 0).length ?? 0;
 
   return (
     <div
@@ -70,11 +67,11 @@ function RoomBuilding({ roomTypeId, isOwned }: { roomTypeId: string; isOwned: bo
 }
 
 export default function OperationsBlock() {
-  const growRooms = useGameStore(s => s.operation.growRooms);
-  const seedStock = useGameStore(s => s.operation.seedStock);
-  const dealerCount = useGameStore(s => s.operation.dealerCount);
-  const productInventory = useGameStore(s => s.operation.productInventory);
-  const totalOz = Object.values(productInventory).reduce((sum, e) => sum + e.oz, 0);
+  const growRooms = useGameStore(s => s.operation?.growRooms ?? []);
+  const seedStock = useGameStore(s => s.operation?.seedStock ?? 0);
+  const dealerCount = useGameStore(s => s.operation?.dealerCount ?? 0);
+  const productInventory = useGameStore(s => s.operation?.productInventory ?? {});
+  const totalOz = Object.values(productInventory).reduce((sum, e) => sum + (e?.oz ?? 0), 0);
 
   const ownedTypeIds = new Set(growRooms.map(r => r.typeId));
 
