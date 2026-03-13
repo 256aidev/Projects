@@ -24,15 +24,17 @@ Each building type can be purchased once. Prices increase with each tier.
 
 Each room starts with 1 strain slot (free). Additional strain slots cost progressively more using a doubling formula.
 
+**Rule:** `strainUnlockBase = purchaseCost × 2` (buying the building = getting the first strain free, unlocks start at 2× building cost)
+
 **Formula:** `strainUnlockBase × 2^(slotIndex - 1)`
 
-| Room | strainUnlockBase | Slot 1 (free) | Slot 2 | Slot 3 | Slot 4 |
-|------|-----------------|---------------|--------|--------|--------|
-| Closet | $0 | Basic Bud | — | — | — |
-| Shed | $2,500 | OG Kush | $2,500 | $5,000 | $10,000 |
-| Garage | $25,000 | Sour Diesel | $25,000 | $50,000 | $100,000 |
-| Small Grow | $50,000 | Durban Poison | $50,000 | $100,000 | $200,000 |
-| Grow Facility | $100,000 | Gelato | $100,000 | $200,000 | $400,000 |
+| Room | purchaseCost | strainUnlockBase | Slot 1 (free) | Slot 2 | Slot 3 | Slot 4 |
+|------|-------------|-----------------|---------------|--------|--------|--------|
+| Closet | $0 | $0 | Basic Bud | — | — | — |
+| Shed | $1,500 | $3,000 | OG Kush | $3,000 | $6,000 | $12,000 |
+| Garage | $16,000 | $32,000 | Sour Diesel | $32,000 | $64,000 | $128,000 |
+| Small Grow | $100,000 | $200,000 | Durban Poison | $200,000 | $400,000 | $800,000 |
+| Grow Facility | $250,000 | $500,000 | Gelato | $500,000 | $1,000,000 | $2,000,000 |
 
 **Code:** `getStrainUnlockCost(def, slotIndex)` in `src/data/types.ts`
 
