@@ -14,6 +14,8 @@ const NATURAL_DECAY = 0.01;
 // Maximum heat value
 export const HEAT_MAX = 1000;
 
+// ─── POLICE HEAT ─────────────────────────────────
+
 export function getHeatTier(heat: number): HeatTier {
   if (heat >= 900) return 4;
   if (heat >= 750) return 3;
@@ -101,4 +103,57 @@ export function calculateHeatTick(
   const breakdown = getHeatBreakdown(dirtyCash, dealerCount, dealerTierIndex, businesses, activeLawyerId);
   const newHeat = Math.max(0, Math.min(HEAT_MAX, currentHeat + breakdown.netPerTick));
   return newHeat - currentHeat;
+}
+
+// ─── RIVAL HEAT ──────────────────────────────────
+
+const RIVAL_NATURAL_DECAY = 0.005;
+
+export function getRivalHeatTier(heat: number): HeatTier {
+  if (heat >= 900) return 4;
+  if (heat >= 750) return 3;
+  if (heat >= 500) return 2;
+  if (heat >= 250) return 1;
+  return 0;
+}
+
+export interface RivalHeatBreakdown {
+  dealerHeat: number;
+  territoryHeat: number;
+  totalGain: number;
+  naturalDecay: number;
+  totalLoss: number;
+  netPerTick: number;
+}
+
+export function getRivalHeatBreakdown(
+  dealerCount: number,
+  dealerTierIndex: number,
+  businesses: BusinessInstance[],
+): RivalHeatBreakdown {
+  // Rival gangs notice your dealer presence
+  const tier = DEALER_TIERS[dealerTierIndex];
+  const dealerHeat = tier ? dealerCount * (tier.heatPerTick * 0.5) : 0;
+
+  // Expanding into districts draws rival attention
+  const operatingBizCount = businesses.filter(b => b.isOperating).length;
+  const territoryHeat = operatingBizCount * 0.002;
+
+  const totalGain = dealerHeat + territoryHeat;
+  const naturalDecay = RIVAL_NATURAL_DECAY;
+  const totalLoss = naturalDecay;
+  const netPerTick = totalGain - totalLoss;
+
+  return { dealerHeat, territoryHeat, totalGain, naturalDecay, totalLoss, netPerTick };
+}
+
+export function calculateRivalHeatTick(
+  currentRivalHeat: number,
+  dealerCount: number,
+  dealerTierIndex: number,
+  businesses: BusinessInstance[],
+): number {
+  const breakdown = getRivalHeatBreakdown(dealerCount, dealerTierIndex, businesses);
+  const newHeat = Math.max(0, Math.min(HEAT_MAX, currentRivalHeat + breakdown.netPerTick));
+  return newHeat - currentRivalHeat;
 }

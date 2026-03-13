@@ -49,7 +49,7 @@ import {
   calculateLaunderTick,
   calculateDispensaryTick,
 } from '../engine/economy';
-import { calculateHeatTick, getHeatTier, HEAT_MAX } from '../engine/heat';
+import { calculateHeatTick, calculateRivalHeatTick, getHeatTier, HEAT_MAX } from '../engine/heat';
 
 interface GameActions {
   tick: () => void;
@@ -188,6 +188,14 @@ export const useGameStore = create<GameStore>()(
           );
           const newHeat = Math.max(0, Math.min(HEAT_MAX, state.heat + heatDelta));
 
+          // Rival heat calculation
+          const rivalHeatDelta = calculateRivalHeatTick(
+            state.rivalHeat ?? 0,
+            state.operation.dealerCount, state.operation.dealerTierIndex,
+            state.businesses,
+          );
+          const newRivalHeat = Math.max(0, Math.min(HEAT_MAX, (state.rivalHeat ?? 0) + rivalHeatDelta));
+
           // Job income (clean cash) + heat-based firing
           let jobIncome = 0;
           let currentJobId = state.currentJobId;
@@ -208,6 +216,7 @@ export const useGameStore = create<GameStore>()(
             dirtyCash,
             cleanCash,
             heat: newHeat,
+            rivalHeat: newRivalHeat,
             activeLawyerId,
             operation: finalOp,
             totalDirtyEarned: totalEarned,
@@ -471,7 +480,7 @@ export const useGameStore = create<GameStore>()(
         if (!district && !isGenBlock) return false;
         if (state.cleanCash < def.purchaseCost) return false;
         if (!state.unlockedDistricts.includes(districtId)) return false;
-        if (!def.isRental && !def.allowedDistrictIds.includes(districtId)) return false;
+        if (!def.isRental && !isGenBlock && !def.allowedDistrictIds.includes(districtId)) return false;
         const maxSlots = district?.maxBusinessSlots ?? 6;
         const occupied = state.businesses.filter((b) => b.districtId === districtId);
         if (occupied.length >= maxSlots) return false;
@@ -707,7 +716,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 18,
+      version: 19,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -807,6 +816,9 @@ export const useGameStore = create<GameStore>()(
         if (_version < 18 && merged.heat > 0 && merged.heat <= 100) {
           merged.heat = merged.heat * 10;
         }
+
+        // Rival heat (v19)
+        if (merged.rivalHeat === undefined) merged.rivalHeat = 0;
 
         // Bootstrap unlocked slots for existing saves
         if (!merged.unlockedSlots) {

@@ -25,7 +25,7 @@ export default function BuyBusinessPanel() {
   const available = BUSINESSES.filter((b) =>
     b.isRental
       ? true  // rentals allowed everywhere
-      : b.allowedDistrictIds.includes(selectedSlot.districtId),
+      : isGenBlock || b.allowedDistrictIds.includes(selectedSlot.districtId),
   );
 
   return (

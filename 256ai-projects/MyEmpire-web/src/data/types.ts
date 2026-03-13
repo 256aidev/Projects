@@ -391,6 +391,23 @@ export const HEAT_TIER_COLORS: Record<HeatTier, string> = {
   4: '#991b1b',
 };
 
+// Rival heat (gang rivalry)
+export const RIVAL_TIER_NAMES: Record<HeatTier, string> = {
+  0: 'Off Radar',
+  1: 'On Their Radar',
+  2: 'Rival Territory',
+  3: 'Turf War',
+  4: 'All-Out War',
+};
+
+export const RIVAL_TIER_COLORS: Record<HeatTier, string> = {
+  0: '#22c55e',
+  1: '#a855f7',
+  2: '#c026d3',
+  3: '#e11d48',
+  4: '#7f1d1d',
+};
+
 // ─────────────────────────────────────────
 // LAWYERS
 // ─────────────────────────────────────────
@@ -468,6 +485,7 @@ export interface GameState {
   totalCleanEarned: number;
   totalSpent: number;
   heat: number;
+  rivalHeat: number;
   heatNoticeShown: boolean;
   operation: CriminalOperation;
   businesses: BusinessInstance[];
@@ -639,6 +657,7 @@ export const INITIAL_GAME_STATE: GameState = {
   totalCleanEarned: 0,
   totalSpent: 0,
   heat: 0,
+  rivalHeat: 0,
   heatNoticeShown: false,
   operation: INITIAL_OPERATION,
   businesses: [],
