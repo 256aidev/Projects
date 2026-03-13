@@ -7,6 +7,7 @@ import { formatMoney } from '../../engine/economy';
 import BuildingLot from './BuildingLot';
 import OperationsBlock from './OperationsBlock';
 import DealerNetworkBlock from './DealerNetworkBlock';
+import JobDistrictBlock from './JobDistrictBlock';
 
 const BLOCK_W = 164;
 const BLOCK_H = 258;
@@ -372,6 +373,13 @@ export default function CityMap() {
                   return (
                     <div key={cell.id} style={placement}>
                       <DealerNetworkBlock />
+                    </div>
+                  );
+                }
+                if (cell.id === 'job_district') {
+                  return (
+                    <div key={cell.id} style={placement}>
+                      <JobDistrictBlock />
                     </div>
                   );
                 }

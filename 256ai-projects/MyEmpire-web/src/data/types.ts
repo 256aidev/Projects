@@ -413,6 +413,31 @@ export interface EventDef {
 }
 
 // ─────────────────────────────────────────
+// JOBS (clean cash bootstrap)
+// ─────────────────────────────────────────
+
+export interface JobDef {
+  id: string;
+  name: string;
+  bribeCost: number;       // dirty cash to get hired
+  cleanPerTick: number;    // clean cash earned per tick
+  maxHeat: number;         // auto-fired if heat exceeds this
+  icon: string;
+  description: string;
+}
+
+export const JOB_DEFS: JobDef[] = [
+  { id: 'fast_food',    name: 'Fast Food',          bribeCost: 1000,    cleanPerTick: 3,   maxHeat: 75, icon: '🍔', description: 'Flipping burgers, no questions asked' },
+  { id: 'retail',       name: 'Retail',             bribeCost: 5000,    cleanPerTick: 8,   maxHeat: 60, icon: '👔', description: 'Folding shirts at the mall' },
+  { id: 'clerk',        name: 'Office Clerk',       bribeCost: 25000,   cleanPerTick: 20,  maxHeat: 45, icon: '📋', description: 'Pushing papers downtown' },
+  { id: 'warehouse',    name: 'Warehouse Manager',  bribeCost: 100000,  cleanPerTick: 50,  maxHeat: 30, icon: '📦', description: 'Moving boxes, no background check' },
+  { id: 'finance',      name: 'Finance Bro',        bribeCost: 400000,  cleanPerTick: 120, maxHeat: 20, icon: '📊', description: 'Cooking the books on Wall Street' },
+  { id: 'corporate',    name: 'Corporate Exec',     bribeCost: 1000000, cleanPerTick: 250, maxHeat: 10, icon: '💼', description: 'Corner office, one slip and you\'re done' },
+];
+
+export const JOB_MAP = Object.fromEntries(JOB_DEFS.map(j => [j.id, j]));
+
+// ─────────────────────────────────────────
 // GAME STATE
 // ─────────────────────────────────────────
 
@@ -442,6 +467,8 @@ export interface GameState {
   streetSellCooldownTicks: number; // ticks until quota refills (600 = 10 min)
   generatedBlocks: Record<string, GeneratedBlock>; // dynamically discovered city blocks
   nextBlockCost: number;           // cost of next generated block (doubles each purchase)
+  currentJobId: string | null;     // current job ID or null (from JOB_DEFS)
+  jobFiredCooldown: number;        // ticks remaining before can get new job (0 = ready)
 }
 
 // Prestige thresholds and reward
@@ -578,7 +605,7 @@ export const INITIAL_GAME_STATE: GameState = {
   heatNoticeShown: false,
   operation: INITIAL_OPERATION,
   businesses: [],
-  unlockedDistricts: ['starter', 'operations', 'dealer_network'],
+  unlockedDistricts: ['starter', 'operations', 'dealer_network', 'job_district'],
   unlockedSlots: { starter: 2 },
   inventory: {},
   storageCapacity: 500,
@@ -594,4 +621,6 @@ export const INITIAL_GAME_STATE: GameState = {
   streetSellCooldownTicks: 0,
   generatedBlocks: {},
   nextBlockCost: 2000,
+  currentJobId: null,
+  jobFiredCooldown: 0,
 };

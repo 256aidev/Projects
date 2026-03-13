@@ -127,6 +127,23 @@ export const DISTRICTS: DistrictDef[] = [
     gridPosition: { col: 1, row: 3 },
   },
 
+  // ── Row 4: Jobs (below dealer network) ───────────────────────────────────
+  {
+    id: 'job_district',
+    name: 'Dirty Jobs',
+    description: 'Bribe your way into a legit paycheck. Higher heat = fewer options.',
+    themeColor: '#10B981',
+    revenueMultiplier: 0,
+    operatingCostMultiplier: 0,
+    customerTrafficMultiplier: 0,
+    unlockCost: 0,
+    policePresenceMultiplier: 0,
+    auditChanceMultiplier: 0,
+    maxBusinessSlots: 0,
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 1, row: 4 },
+  },
+
   // ── Row 3–4: Residential blocks (left side) ──────────────────────────────
   {
     id: 'row_houses',

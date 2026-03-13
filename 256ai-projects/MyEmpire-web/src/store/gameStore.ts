@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BusinessInstance, GameState, GeneratedBlock } from '../data/types';
-import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL, getStrainUnlockCost, getDealerHireCost } from '../data/types';
+import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL, getStrainUnlockCost, getDealerHireCost, JOB_MAP } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
 
@@ -72,6 +72,8 @@ interface GameActions {
   purchaseResource: (resourceId: string, quantity: number) => boolean;
   unlockDistrict: (districtId: string) => boolean;
   fireDealers: (count: number) => void;
+  applyForJob: (jobId: string) => boolean;
+  quitJob: () => void;
   prestige: () => boolean;
   resetGame: () => void;
 }
@@ -161,17 +163,35 @@ export const useGameStore = create<GameStore>()(
           // Street sell quota: drip refill at 1 lb (16 oz) per minute = 16/60 oz per tick
           const streetSellQuotaOz = Math.min(160, (state.streetSellQuotaOz ?? 160) + 16 / 60);
 
+          // Job income (clean cash) + heat-based firing
+          let jobIncome = 0;
+          let currentJobId = state.currentJobId;
+          let jobFiredCooldown = Math.max(0, (state.jobFiredCooldown ?? 0) - 1);
+          if (currentJobId) {
+            const jobDef = JOB_MAP[currentJobId];
+            if (jobDef && state.heat > jobDef.maxHeat) {
+              // FIRED — heat too high
+              currentJobId = null;
+              jobFiredCooldown = 60; // 1 minute cooldown
+            } else if (jobDef) {
+              jobIncome = jobDef.cleanPerTick;
+            }
+          }
+          cleanCash += jobIncome;
+
           return {
             dirtyCash,
             cleanCash,
             operation: finalOp,
             totalDirtyEarned: totalEarned,
-            totalCleanEarned: state.totalCleanEarned + Math.max(0, totalCleanProduced + legitProfit),
+            totalCleanEarned: state.totalCleanEarned + Math.max(0, totalCleanProduced + legitProfit + jobIncome),
             lastTickDirtyProfit: dirtyEarned - maintenanceCost,
-            lastTickCleanProfit: totalCleanProduced + legitProfit,
+            lastTickCleanProfit: totalCleanProduced + legitProfit + jobIncome,
             tickCount: state.tickCount + 1,
             heatNoticeShown: state.heatNoticeShown || shouldShowNotice,
             streetSellQuotaOz,
+            currentJobId,
+            jobFiredCooldown,
           };
         });
       },
@@ -591,6 +611,25 @@ export const useGameStore = create<GameStore>()(
         set({ operation: { ...state.operation, dealerCount: state.operation.dealerCount - remove } });
       },
 
+      applyForJob: (jobId) => {
+        const state = get();
+        const jobDef = JOB_MAP[jobId];
+        if (!jobDef) return false;
+        if ((state.jobFiredCooldown ?? 0) > 0) return false;
+        if (state.heat > jobDef.maxHeat) return false;
+        if (state.dirtyCash < jobDef.bribeCost) return false;
+        set({
+          dirtyCash: state.dirtyCash - jobDef.bribeCost,
+          totalSpent: state.totalSpent + jobDef.bribeCost,
+          currentJobId: jobId,
+        });
+        return true;
+      },
+
+      quitJob: () => {
+        set({ currentJobId: null });
+      },
+
       prestige: () => {
         const state = get();
         if (state.totalDirtyEarned < PRESTIGE_THRESHOLD) return false;
@@ -614,7 +653,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 14,
+      version: 15,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -687,6 +726,13 @@ export const useGameStore = create<GameStore>()(
         if (!merged.unlockedDistricts.includes('dealer_network')) {
           merged.unlockedDistricts = [...merged.unlockedDistricts, 'dealer_network'];
         }
+        if (!merged.unlockedDistricts.includes('job_district')) {
+          merged.unlockedDistricts = [...merged.unlockedDistricts, 'job_district'];
+        }
+
+        // Backfill job fields for old saves
+        if (merged.currentJobId === undefined) merged.currentJobId = null;
+        if (merged.jobFiredCooldown === undefined) merged.jobFiredCooldown = 0;
 
         // Backfill cleanToDirtyPerTick for old saves
         for (const biz of merged.businesses) {
