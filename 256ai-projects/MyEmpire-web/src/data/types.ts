@@ -592,10 +592,10 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     autoHarvestCost: 25000000,      // = purchaseCost
     upgradeCostMultiplier: 4096,    // ×4⁶
     strainSlots: [
-      { strainName: 'Royal Gold',       pricePerUnit: 400, plantsCapacity: 100, growTimerTicks: 20, harvestYield: 1200 },
-      { strainName: 'Crown Jewel',      pricePerUnit: 500, plantsCapacity: 100, growTimerTicks: 18, harvestYield: 1200 },
-      { strainName: 'Sovereign Kush',   pricePerUnit: 650, plantsCapacity: 100, growTimerTicks: 16, harvestYield: 1200 },
-      { strainName: 'Empire Reserve',   pricePerUnit: 800, plantsCapacity: 100, growTimerTicks: 14, harvestYield: 1200 },
+      { strainName: 'Royal Gold',       pricePerUnit: 38,  plantsCapacity: 100, growTimerTicks: 20, harvestYield: 1200 },
+      { strainName: 'Crown Jewel',      pricePerUnit: 50,  plantsCapacity: 100, growTimerTicks: 18, harvestYield: 1200 },
+      { strainName: 'Sovereign Kush',   pricePerUnit: 65,  plantsCapacity: 100, growTimerTicks: 16, harvestYield: 1200 },
+      { strainName: 'Empire Reserve',   pricePerUnit: 85,  plantsCapacity: 100, growTimerTicks: 14, harvestYield: 1200 },
     ],
   },
 ];

@@ -24,7 +24,13 @@ Each building type can be purchased once. Prices follow a x4 progression per tie
 | Large Grow | $512,000 | dirty | 50 | 600 oz (37.5 lbs) | 1,024x |
 | **Legal Distribution** | **$25,000,000** | **CLEAN** | **100** | **1,200 oz (75 lbs)** | **4,096x** |
 
-**Legal Distribution** is the endgame capstone — the only grow building purchased with clean cash. It has a golden theme and its product sells for clean cash directly (no laundering). See strains: Royal Gold, Crown Jewel, Sovereign Kush, Empire Reserve.
+**Legal Distribution** is the endgame capstone — the only grow building purchased with clean cash. Golden UI theme.
+
+**Legal pricing rule:** Legal weed sells for **1/4 of street price** (after taxes/regulation). Strains: Royal Gold ($38/oz), Crown Jewel ($50/oz), Sovereign Kush ($65/oz), Empire Reserve ($85/oz). Compare to illegal top-tier: Exotic Kush $150/oz, Golden Leaf $340/oz.
+
+**Two functions:**
+1. **Grow legal weed** — grows its own strains, sells for clean cash directly (no dealers/laundering needed)
+2. **Product laundering** (TODO) — convert dirty inventory into legal product at 25% street value. Feed illegal weed in → get clean cash out. Similar to business launder rate mechanic.
 
 **`upgradeCostMultiplier`** scales all equipment upgrade costs within that room. Example: a $600 FloraGro I upgrade costs $600 x 256 = $153,600 in the Grow Facility.
 
