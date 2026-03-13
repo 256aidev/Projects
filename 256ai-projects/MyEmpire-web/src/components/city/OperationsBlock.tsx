@@ -108,7 +108,19 @@ export default function OperationsBlock() {
           />
         ))}
 
-        {/* Warehouse — same size as grow room buildings */}
+        {/* Vacant lots — future expansion space */}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={`vacant-${i}`}
+            className="w-[72px] h-[88px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 opacity-25"
+            style={{ borderColor: '#22c55e30' }}
+          >
+            <span className="text-lg text-gray-600">🏗️</span>
+            <span className="text-[8px] text-gray-500 text-center leading-tight">Vacant Lot</span>
+          </div>
+        ))}
+
+        {/* Warehouse — last building in the block */}
         <button
           onClick={() => setPanel('warehouse')}
           className="w-[72px] h-[88px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-amber-900/20 transition relative overflow-hidden"
@@ -120,18 +132,6 @@ export default function OperationsBlock() {
             {totalOz > 0 ? `${formatUnits(totalOz)} stored` : 'Empty'}
           </span>
         </button>
-
-        {/* Vacant lots — future expansion space */}
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={`vacant-${i}`}
-            className="w-[72px] h-[88px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 opacity-25"
-            style={{ borderColor: '#22c55e30' }}
-          >
-            <span className="text-lg text-gray-600">🏗️</span>
-            <span className="text-[8px] text-gray-500 text-center leading-tight">Vacant Lot</span>
-          </div>
-        ))}
       </div>
     </div>
   );
