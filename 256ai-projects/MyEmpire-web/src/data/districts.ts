@@ -193,6 +193,21 @@ export const DISTRICTS: DistrictDef[] = [
 
   // ── Row 5–6: South side (below operations) ───────────────────────────────
   {
+    id: 'bear_belly_blvd',
+    name: 'Bear Belly Boulevard',
+    description: 'BBB — the finest dining in the city. Michelin stars and money laundering.',
+    themeColor: '#D97706',
+    revenueMultiplier: 3.5,
+    operatingCostMultiplier: 4.0,
+    customerTrafficMultiplier: 1.2,
+    unlockCost: 350000,
+    policePresenceMultiplier: 0.6,
+    auditChanceMultiplier: 1.8,
+    maxBusinessSlots: 6,
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 3, row: 5 },
+  },
+  {
     id: 'south_side',
     name: 'South Side Sliders',
     description: 'Rough streets, cheap rent. Fast food and fast money.',
