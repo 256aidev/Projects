@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { GROW_ROOM_TYPE_DEFS, DEALER_TIERS, ROOM_UPGRADE_DEFS, INITIAL_OPERATION, getStrainUnlockCost, getDealerHireCost } from '../../data/types';
-import { getRoomBonus, getRoomCycleCost } from '../../engine/economy';
+import { getRoomBonus, getRoomCycleCost, getMaxStreetDemand, getStreetRefillRate } from '../../engine/economy';
 import { formatMoney, formatUnits } from '../../engine/economy';
+import { JOB_MAP } from '../../data/types';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
 
@@ -29,6 +30,11 @@ export default function OperationView() {
   const plantSeeds = useGameStore((s) => s.plantSeeds);
   const sellProduct = useGameStore((s) => s.sellProduct);
   const streetSellQuotaOz = useGameStore((s) => s.streetSellQuotaOz ?? 160);
+  const currentJobId = useGameStore((s) => s.currentJobId);
+  const businesses = useGameStore((s) => s.businesses);
+  const currentJobDef = currentJobId ? JOB_MAP[currentJobId] ?? null : null;
+  const maxDemandOz = getMaxStreetDemand(currentJobDef, businesses);
+  const refillRate = getStreetRefillRate(maxDemandOz);
   const prestigeBonus = useGameStore((s) => s.prestigeBonus ?? 0);
   const addNotification = useUIStore((s) => s.addNotification);
 
@@ -77,23 +83,23 @@ export default function OperationView() {
           <div className="flex items-center justify-between mb-0.5">
             <span className="text-gray-500 text-[10px]">Street demand</span>
             <span className="text-gray-400 text-[10px] font-semibold">
-              {formatUnits(streetSellQuotaOz)} / 10lb · +1lb/min
+              {formatUnits(streetSellQuotaOz)} / {formatUnits(maxDemandOz)} · +{formatUnits(Math.round(refillRate * 60))}/min
             </span>
           </div>
           <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${streetSellQuotaOz < 32 ? 'bg-orange-500' : 'bg-green-600'}`}
-              style={{ width: `${(streetSellQuotaOz / 160) * 100}%` }}
+              style={{ width: `${(streetSellQuotaOz / maxDemandOz) * 100}%` }}
             />
           </div>
         </div>
 
         {totalInventoryOz > 0 && streetSellQuotaOz > 0 ? (
           <div className="flex gap-2">
-            {([16, 160] as const).map((qty) => {
+            {([16, maxDemandOz] as const).map((qty) => {
               const units = Math.min(qty, Math.floor(totalInventoryOz), Math.floor(streetSellQuotaOz));
               const earned = Math.floor(units * weightedAvgPrice * 0.7);
-              const label = qty === 16 ? '1lb' : '10lb';
+              const label = qty === 16 ? '1lb' : 'All';
               const canSell = units > 0;
               return (
                 <button

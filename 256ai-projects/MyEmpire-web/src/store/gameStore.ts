@@ -52,6 +52,9 @@ import {
   calculateBusinessExpenses,
   calculateLaunderTick,
   calculateDispensaryTick,
+  getMaxStreetDemand,
+  getStreetRefillRate,
+  getStreetSellHeat,
 } from '../engine/economy';
 import { calculateHeatTick, calculateRivalHeatTick, getHeatTier, HEAT_MAX } from '../engine/heat';
 import { tickRivals, getPlayerDefense, getHitmanUpkeep, RIVAL_TICK_INTERVAL } from '../engine/rivals';
@@ -177,8 +180,11 @@ export const useGameStore = create<GameStore>()(
           const totalEarned = state.totalDirtyEarned + dirtyEarned;
           const shouldShowNotice = !state.heatNoticeShown && totalEarned >= 100_000;
 
-          // Street sell quota: drip refill at 1 lb (16 oz) per minute = 16/60 oz per tick
-          const streetSellQuotaOz = Math.min(160, (state.streetSellQuotaOz ?? 160) + 16 / 60);
+          // Street sell quota: dynamic max based on job + businesses
+          const currentJobDef = state.currentJobId ? JOB_MAP[state.currentJobId] ?? null : null;
+          const maxDemand = getMaxStreetDemand(currentJobDef, state.businesses);
+          const refillRate = getStreetRefillRate(maxDemand);
+          const streetSellQuotaOz = Math.min(maxDemand, (state.streetSellQuotaOz ?? maxDemand) + refillRate);
 
           // Lawyer retainer (deducted from clean cash each tick)
           let activeLawyerId = state.activeLawyerId;
@@ -307,7 +313,9 @@ export const useGameStore = create<GameStore>()(
 
       sellProduct: (units) => {
         const state = get();
-        const quotaOz = state.streetSellQuotaOz ?? 160;
+        const currentJobDef = state.currentJobId ? JOB_MAP[state.currentJobId] ?? null : null;
+        const maxDemand = getMaxStreetDemand(currentJobDef, state.businesses);
+        const quotaOz = Math.min(state.streetSellQuotaOz ?? maxDemand, maxDemand);
         if (quotaOz <= 0) return 0;
         const inventoryEntries = Object.entries(state.operation.productInventory);
         const totalOz = inventoryEntries.reduce((sum, [, e]) => sum + e.oz, 0);
@@ -324,12 +332,15 @@ export const useGameStore = create<GameStore>()(
         }
         dirtyEarned = Math.floor(dirtyEarned);
         const newQuota = quotaOz - toSell;
+        // Tiny heat from street selling
+        const sellHeat = getStreetSellHeat(toSell, currentJobDef);
         set({
           dirtyCash: state.dirtyCash + dirtyEarned,
           totalDirtyEarned: state.totalDirtyEarned + dirtyEarned,
           lastTickDirtyProfit: state.lastTickDirtyProfit + dirtyEarned,
           operation: { ...state.operation, productInventory: newInventory },
           streetSellQuotaOz: newQuota,
+          heat: Math.min(HEAT_MAX, state.heat + sellHeat),
         });
         return dirtyEarned;
       },

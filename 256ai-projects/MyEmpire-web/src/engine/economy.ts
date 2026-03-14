@@ -1,8 +1,37 @@
-import type { BusinessInstance, CriminalOperation, GrowRoom } from '../data/types';
+import type { BusinessInstance, CriminalOperation, GrowRoom, JobDef } from '../data/types';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
 import { DEALER_TIERS, ROOM_UPGRADE_DEFS, GROW_ROOM_TYPE_MAP } from '../data/types';
 import type { TechBonuses } from './tech';
+
+// ─── DYNAMIC STREET DEMAND ──────────────────────────
+
+const BASE_STREET_DEMAND_OZ = 160;  // 10 lbs
+const BASE_REFILL_PER_MIN = 16;     // 1 lb per minute = 16 oz
+
+/** Calculate max street sell quota (oz) based on job + owned businesses */
+export function getMaxStreetDemand(currentJob: JobDef | null, businesses: BusinessInstance[]): number {
+  let max = BASE_STREET_DEMAND_OZ;
+  if (currentJob) max += currentJob.streetDemandBonus;
+  for (const biz of businesses) {
+    const def = BUSINESS_MAP[biz.businessDefId];
+    if (def?.streetDemandBonus) max += def.streetDemandBonus;
+  }
+  return max;
+}
+
+/** Calculate refill rate (oz per tick). Scales slightly with max demand. */
+export function getStreetRefillRate(maxDemand: number): number {
+  // Base: 16 oz/min (16/60 per tick). Bonus refill proportional to extra demand.
+  return (BASE_REFILL_PER_MIN + (maxDemand - BASE_STREET_DEMAND_OZ) * 0.08) / 60;
+}
+
+/** Tiny heat from street selling, scaled by job tier and volume sold */
+export function getStreetSellHeat(ozSold: number, currentJob: JobDef | null): number {
+  // Base: 0.0002 heat per oz sold. Job tier multiplier (higher tier = more exposure).
+  const jobTierMult = currentJob ? 1 + currentJob.streetDemandBonus * 0.005 : 1;
+  return ozSold * 0.0002 * jobTierMult;
+}
 
 // ─── ROOM UPGRADE HELPERS ────────────────────────
 

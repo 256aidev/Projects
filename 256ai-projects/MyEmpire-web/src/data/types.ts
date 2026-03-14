@@ -327,6 +327,7 @@ export interface BusinessDef {
   isWholesale?: boolean;            // if true: buys resources from inventory → clean cash
   consumesResourceId?: string;      // resource ID this business buys (or 'any' for general stores)
   buyPricePerUnit?: number;         // clean cash paid per unit consumed
+  streetDemandBonus?: number;       // extra oz added to max street demand when owned (e.g. car_wash = 24, burger = 4)
   consumptionPerTick?: number;      // units consumed per tick (base, before upgrades)
 }
 
@@ -464,15 +465,16 @@ export interface JobDef {
   maxHeat: number;         // auto-fired if heat exceeds this
   icon: string;
   description: string;
+  streetDemandBonus: number; // extra oz added to max street demand when employed
 }
 
 export const JOB_DEFS: JobDef[] = [
-  { id: 'fast_food',    name: 'Fast Food',          bribeCost: 1000,    cleanPerTick: 3,   maxHeat: 750, icon: '🍔', description: 'Flipping burgers, no questions asked' },
-  { id: 'retail',       name: 'Retail',             bribeCost: 5000,    cleanPerTick: 8,   maxHeat: 600, icon: '👔', description: 'Folding shirts at the mall' },
-  { id: 'clerk',        name: 'Office Clerk',       bribeCost: 25000,   cleanPerTick: 20,  maxHeat: 450, icon: '📋', description: 'Pushing papers downtown' },
-  { id: 'warehouse',    name: 'Warehouse Manager',  bribeCost: 100000,  cleanPerTick: 50,  maxHeat: 300, icon: '📦', description: 'Moving boxes, no background check' },
-  { id: 'finance',      name: 'Finance Bro',        bribeCost: 400000,  cleanPerTick: 120, maxHeat: 200, icon: '📊', description: 'Cooking the books on Wall Street' },
-  { id: 'corporate',    name: 'Corporate Exec',     bribeCost: 1000000, cleanPerTick: 250, maxHeat: 100, icon: '💼', description: 'Corner office, one slip and you\'re done' },
+  { id: 'fast_food',    name: 'Fast Food',          bribeCost: 1000,    cleanPerTick: 3,   maxHeat: 750, icon: '🍔', description: 'Flipping burgers, no questions asked', streetDemandBonus: 8 },
+  { id: 'retail',       name: 'Retail',             bribeCost: 5000,    cleanPerTick: 8,   maxHeat: 600, icon: '👔', description: 'Folding shirts at the mall', streetDemandBonus: 16 },
+  { id: 'clerk',        name: 'Office Clerk',       bribeCost: 25000,   cleanPerTick: 20,  maxHeat: 450, icon: '📋', description: 'Pushing papers downtown', streetDemandBonus: 24 },
+  { id: 'warehouse',    name: 'Warehouse Manager',  bribeCost: 100000,  cleanPerTick: 50,  maxHeat: 300, icon: '📦', description: 'Moving boxes, no background check', streetDemandBonus: 32 },
+  { id: 'finance',      name: 'Finance Bro',        bribeCost: 400000,  cleanPerTick: 120, maxHeat: 200, icon: '📊', description: 'Cooking the books on Wall Street', streetDemandBonus: 48 },
+  { id: 'corporate',    name: 'Corporate Exec',     bribeCost: 1000000, cleanPerTick: 250, maxHeat: 100, icon: '💼', description: 'Corner office, one slip and you\'re done', streetDemandBonus: 64 },
 ];
 
 export const JOB_MAP = Object.fromEntries(JOB_DEFS.map(j => [j.id, j]));

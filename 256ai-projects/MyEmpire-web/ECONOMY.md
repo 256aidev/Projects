@@ -250,14 +250,32 @@ Rental properties generate 100% clean cash passively -- no laundering, no produc
 
 ## 12. Street Selling
 
-Direct street sales at 70% of average product price, with a quota system.
+Direct street sales at 70% of average product price, with a **dynamic demand** system.
 
-- **Max quota:** 160 oz (10 lbs)
-- **Refill rate:** 16 oz/min (1 lb/min) = 16/60 oz per tick
-- **Price:** `weightedAvgPrice x 0.7`
+### Dynamic Street Demand
+
+The max street sell quota grows as you gain jobs and businesses — you know more people, have more cover.
+
+- **Base quota:** 160 oz (10 lbs)
+- **Job bonus:** Each job adds to max demand (fast food +8oz → corporate +64oz)
+- **Business bonus:** Each owned business adds demand based on concealment suitability:
+  - **High** (24-40 oz): Dispensaries, nightclubs, car washes, strip clubs, smoke shops
+  - **Medium** (10-20 oz): Bars, motels, barbershops, pawn shops, tattoo parlors
+  - **Low** (2-8 oz): Food joints (families in lobby), legit corps, accounting firms
+  - **Zero:** Passive rentals (no foot traffic), production/industrial businesses
+- **Formula:** `maxDemand = 160 + jobBonus + sum(businessBonuses)`
+- **Refill rate:** `(16 + (maxDemand - 160) × 0.08) / 60` oz per tick — scales slightly with max demand
+- **Price:** `weightedAvgPrice × 0.7`
 - **Produces:** Dirty cash
 
-**Code:** `sellProduct()` in `src/store/gameStore.ts`
+### Street Selling Heat
+
+Selling on the street generates a tiny amount of heat, scaled by volume and job exposure:
+- **Base:** 0.0002 heat per oz sold
+- **Job multiplier:** `1 + (jobDemandBonus × 0.005)` — higher-tier jobs = more exposure
+- **Example:** Selling 16 oz with a corporate job (bonus 64): `16 × 0.0002 × 1.32 = 0.0042 heat`
+
+**Code:** `sellProduct()` in `src/store/gameStore.ts`, `getMaxStreetDemand()` / `getStreetRefillRate()` / `getStreetSellHeat()` in `src/engine/economy.ts`
 
 ---
 
@@ -516,7 +534,7 @@ Every tick (1 second):
 5. **Lawyer retainer:** Deduct lawyer retainer from clean cash; auto-fire if can't afford
 6. **Heat calculation:** `calculateHeatTick()` computes heat gain (dirty cash + dealers) vs decay (natural + lawyer + businesses)
 7. **Job income:** If employed, add `cleanPerTick`; check heat->fire (uses new heat value)
-8. **Street sell quota:** Refill 16/60 oz per tick (max 160)
+8. **Street sell quota:** Dynamic max from `getMaxStreetDemand(job, businesses)`, refill via `getStreetRefillRate(maxDemand)`
 9. **State update:** Update all cash totals, heat, tick count, cooldowns
 
 **Code:** `tick()` in `src/store/gameStore.ts`, `tickCriminalOperation()` in `src/engine/economy.ts`
