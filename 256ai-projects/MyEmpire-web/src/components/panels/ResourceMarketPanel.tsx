@@ -3,6 +3,7 @@ import { RESOURCES } from '../../data/resources';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
+import { sound } from '../../engine/sound';
 
 export default function ResourceMarketPanel() {
   const closeAll = useUIStore((s) => s.closeAll);
@@ -54,6 +55,7 @@ export default function ResourceMarketPanel() {
                   <button
                     onClick={() => {
                       if (purchaseResource(r.id, qty)) {
+                        sound.play('buy');
                         addNotification(`Bought ${qty} ${r.name}`, 'success');
                       } else {
                         addNotification('Not enough cleanCash or storage', 'warning');

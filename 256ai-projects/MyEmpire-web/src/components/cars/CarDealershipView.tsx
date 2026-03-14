@@ -2,6 +2,7 @@ import { useUIStore } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
 import { formatMoney } from '../../engine/economy';
 import { CAR_DEFS, CAR_TIER_COLORS, CAR_TIER_ORDER } from '../../data/carDefs';
+import { sound } from '../../engine/sound';
 
 export default function CarDealershipView() {
   const close = useUIStore(s => s.setShowCarDealership);
@@ -17,7 +18,7 @@ export default function CarDealershipView() {
   }, 0);
 
   const handleBuy = (defId: string) => {
-    if (buyCar(defId)) addNotification('New ride acquired!', 'success');
+    if (buyCar(defId)) { sound.play('buy'); addNotification('New ride acquired!', 'success'); }
     else addNotification('Cannot afford this car', 'warning');
   };
 

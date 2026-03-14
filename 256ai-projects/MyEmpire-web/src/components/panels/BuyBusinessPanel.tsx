@@ -3,6 +3,7 @@ import { DISTRICT_MAP } from '../../data/districts';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
+import { sound } from '../../engine/sound';
 
 export default function BuyBusinessPanel() {
   const selectedSlot = useUIStore((s) => s.selectedSlot);
@@ -49,6 +50,7 @@ export default function BuyBusinessPanel() {
                 key={def.id}
                 onClick={() => {
                   if (purchaseBusiness(def.id, selectedSlot.districtId, selectedSlot.slotIndex)) {
+                    sound.play('buy');
                     addNotification(`Built ${def.displayName}!`, 'success');
                     closeAll();
                   } else {

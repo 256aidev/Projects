@@ -1,6 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
 import { JOB_DEFS } from '../../data/types';
 import { formatMoney } from '../../engine/economy';
+import { sound } from '../../engine/sound';
 
 const BLOCK_W = 164;
 
@@ -50,8 +51,10 @@ export default function JobDistrictBlock() {
               onClick={() => {
                 if (isCurrentJob) {
                   quitJob();
+                  sound.play('fire');
                 } else if (canApply) {
                   applyForJob(job.id);
+                  sound.play('dealer_hire');
                 }
               }}
               className={`w-[72px] h-[72px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden transition-all ${

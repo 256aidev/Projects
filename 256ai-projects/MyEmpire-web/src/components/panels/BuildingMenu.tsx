@@ -3,6 +3,7 @@ import { useUIStore } from '../../store/uiStore';
 import { BUSINESS_MAP } from '../../data/businesses';
 import { DISTRICT_MAP } from '../../data/districts';
 import { calculateLaunderCapacity, calculateDispensaryCapacity, calculateBusinessRevenue, calculateBusinessExpenses, formatMoney, formatUnits } from '../../engine/economy';
+import { sound } from '../../engine/sound';
 
 /**
  * Laundering heat badge — laundering dirty→clean ALWAYS reduces heat.
@@ -231,6 +232,7 @@ export default function BuildingMenu() {
             <button
               onClick={() => {
                 if (upgradeBusiness(biz.instanceId)) {
+                  sound.play('upgrade');
                   addNotification(`Upgraded to ${nextTier.name}!`, 'success');
                   closeAll();
                 } else {
@@ -255,6 +257,7 @@ export default function BuildingMenu() {
           <button
             onClick={() => {
               sellBusiness(biz.instanceId);
+              sound.play('sell');
               addNotification(`Sold for ${formatMoney(sellValue)} 🏦`, 'success');
               closeAll();
             }}

@@ -4,6 +4,7 @@ import { formatMoney } from '../../engine/economy';
 import { JEWELRY_DEFS, JEWELRY_DEF_MAP, JEWELRY_TIERS, JEWELRY_SLOT_LIMITS } from '../../data/jewelryDefs';
 import { getJewelryBonuses } from '../../engine/jewelry';
 import type { JewelrySlotType } from '../../data/types';
+import { sound } from '../../engine/sound';
 
 const BONUS_LABELS: Record<string, string> = {
   yield_boost: 'Yield',
@@ -33,12 +34,12 @@ export default function JewelryStoreView() {
   for (const j of jewelry) slotCounts[j.slotType]++;
 
   const handleBuy = (defId: string) => {
-    if (buyJewelry(defId)) addNotification('Purchased jewelry!', 'success');
+    if (buyJewelry(defId)) { sound.play('buy'); addNotification('Purchased jewelry!', 'success'); }
     else addNotification('Cannot buy — check funds or slot limits', 'warning');
   };
 
   const handleUpgrade = (idx: number) => {
-    if (upgradeJewelry(idx)) addNotification('Jewelry upgraded!', 'success');
+    if (upgradeJewelry(idx)) { sound.play('upgrade'); addNotification('Jewelry upgraded!', 'success'); }
     else addNotification('Cannot upgrade — check funds or max tier', 'warning');
   };
 

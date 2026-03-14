@@ -2,7 +2,8 @@ import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { getEventDef } from '../../engine/events';
 import { formatMoney } from '../../engine/economy';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { sound } from '../../engine/sound';
 
 const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
   life:     { bg: 'from-blue-900/80 to-blue-950/90',   border: 'border-blue-500/40',   text: 'text-blue-300',   badge: 'bg-blue-800/60 text-blue-300' },
@@ -35,6 +36,11 @@ export default function EventPopup() {
   const addNotification = useUIStore((s) => s.addNotification);
 
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Play sound when event popup appears
+  useEffect(() => {
+    if (eventSystem?.activeEvent) sound.play('event_popup');
+  }, [eventSystem?.activeEvent?.eventId]);
 
   if (!eventSystem?.activeEvent && !result) return null;
 
@@ -77,6 +83,7 @@ export default function EventPopup() {
     }
     const res = resolveEvent(index);
     if (res) {
+      sound.play('click');
       setResult(res);
       addNotification(
         `${eventDef.icon} ${eventDef.name}: ${res.success ? 'Success' : 'Failed'}`,

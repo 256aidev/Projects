@@ -3,6 +3,7 @@ import { useUIStore } from '../../store/uiStore';
 import { TECH_UPGRADE_DEFS } from '../../data/techDefs';
 import type { TechUpgradeId } from '../../data/techDefs';
 import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
+import { sound } from '../../engine/sound';
 
 export default function TechMenu() {
   const techPoints = useGameStore((s) => s.techPoints ?? 0);
@@ -82,7 +83,7 @@ export default function TechMenu() {
                   <div className="text-center text-[10px] text-yellow-500 font-bold py-1.5">MAX</div>
                 ) : (
                   <button
-                    onClick={() => purchaseTechUpgrade(def.id as TechUpgradeId)}
+                    onClick={() => { purchaseTechUpgrade(def.id as TechUpgradeId); sound.play('upgrade'); }}
                     disabled={!canAfford}
                     className={`w-full py-1.5 rounded-lg text-xs font-bold transition ${
                       canAfford

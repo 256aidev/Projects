@@ -13,7 +13,17 @@ export type SoundKey =
   | 'harvest'
   | 'cash'
   | 'buy'
+  | 'sell'
   | 'dealer_hire'
+  | 'upgrade'
+  | 'click'
+  | 'fire'
+  | 'casino_bet'
+  | 'casino_win'
+  | 'casino_lose'
+  | 'attack'
+  | 'event_popup'
+  | 'prestige'
   | 'bg_lofi';
 
 const SOUND_PATHS: Record<SoundKey, string> = {
@@ -23,7 +33,17 @@ const SOUND_PATHS: Record<SoundKey, string> = {
   harvest:        '/sounds/harvest.wav',
   cash:           '/sounds/cash.wav',
   buy:            '/sounds/buy.wav',
+  sell:           '/sounds/sell.wav',
   dealer_hire:    '/sounds/dealer_hire.wav',
+  upgrade:        '/sounds/upgrade.wav',
+  click:          '/sounds/click.wav',
+  fire:           '/sounds/fire.wav',
+  casino_bet:     '/sounds/casino_bet.wav',
+  casino_win:     '/sounds/casino_win.wav',
+  casino_lose:    '/sounds/casino_lose.wav',
+  attack:         '/sounds/attack.wav',
+  event_popup:    '/sounds/event_popup.wav',
+  prestige:       '/sounds/prestige.wav',
   bg_lofi:        '/sounds/bg_lofi.wav',
 };
 

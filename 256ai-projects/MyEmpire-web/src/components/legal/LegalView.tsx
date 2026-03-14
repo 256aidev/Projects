@@ -5,6 +5,7 @@ import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS,
 import { LAWYER_DEFS, LAWYER_MAP } from '../../data/lawyers';
 import { formatMoney } from '../../engine/economy';
 import { getPlayerHitmanCount, getHitmanUpkeep } from '../../engine/rivals';
+import { sound } from '../../engine/sound';
 
 export default function LegalView() {
   const heat = useGameStore((s) => s.heat);
@@ -209,7 +210,7 @@ export default function LegalView() {
                 <div className="flex gap-2">
                   {owned > 0 && (
                     <button
-                      onClick={() => fireHitman(def.id)}
+                      onClick={() => { fireHitman(def.id); sound.play('fire'); }}
                       className="flex-1 py-2 rounded-lg border border-white/30 bg-gray-700 hover:bg-gray-600 text-red-400 text-xs font-bold transition"
                     >
                       Fire
@@ -217,7 +218,7 @@ export default function LegalView() {
                   )}
                   <button
                     onClick={() => {
-                      if (hireHitman(def.id)) addNotification(`Hired ${def.name}!`, 'success');
+                      if (hireHitman(def.id)) { sound.play('dealer_hire'); addNotification(`Hired ${def.name}!`, 'success'); }
                       else addNotification(`Need ${formatMoney(def.cost)} dirty cash`, 'warning');
                     }}
                     disabled={!canAfford}
@@ -279,7 +280,7 @@ export default function LegalView() {
                           key={action.type}
                           onClick={() => {
                             const result = attackRival(rival.id, action.type);
-                            if (result) addNotification(result.message, result.success ? 'success' : 'warning');
+                            if (result) { sound.play('attack'); addNotification(result.message, result.success ? 'success' : 'warning'); }
                           }}
                           disabled={!canDo}
                           title={`${action.description} · ${formatMoney(action.cost)} · need ${action.hitmenRequired}+ hitmen`}
@@ -325,7 +326,7 @@ export default function LegalView() {
               </p>
             </div>
             <button
-              onClick={() => fireLawyer()}
+              onClick={() => { fireLawyer(); sound.play('fire'); }}
               className="px-6 py-2 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-xs font-bold hover:bg-red-900/80 transition"
             >
               Fire
@@ -372,7 +373,7 @@ export default function LegalView() {
                   {meetsHeatTier && !isActive && (
                     <button
                       disabled={!canHire}
-                      onClick={() => hireLawyer(lawyer.id)}
+                      onClick={() => { hireLawyer(lawyer.id); sound.play('dealer_hire'); }}
                       className={`w-full py-2 rounded-lg border border-white/30 text-xs font-bold transition ${
                         canHire
                           ? 'bg-indigo-600 hover:bg-indigo-500 text-white'

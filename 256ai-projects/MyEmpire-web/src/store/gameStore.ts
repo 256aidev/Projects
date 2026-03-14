@@ -350,7 +350,7 @@ export const useGameStore = create<GameStore>()(
         const es = state.eventSystem ?? INITIAL_EVENT_STATE;
         if (!es.activeEvent) return null;
         const eventDef = getEventDef(es.activeEvent.eventId);
-        if (!eventDef) { set({ eventSystem: { ...es, activeEvent: null } }); return null; }
+        if (!eventDef) { set({ eventSystem: { ...es, activeEvent: null, lastEventTick: state.tickCount } }); return null; }
         const { outcome, eventState, success } = resolveChoice(eventDef, choiceIndex, es, state.tickCount);
         const updates: Partial<GameState> = { eventSystem: eventState };
         if (outcome.dirtyCashDelta) updates.dirtyCash = Math.max(0, state.dirtyCash + outcome.dirtyCashDelta);
@@ -369,8 +369,9 @@ export const useGameStore = create<GameStore>()(
       },
 
       dismissEvent: () => {
-        const es = get().eventSystem ?? INITIAL_EVENT_STATE;
-        set({ eventSystem: { ...es, activeEvent: null } });
+        const state = get();
+        const es = state.eventSystem ?? INITIAL_EVENT_STATE;
+        set({ eventSystem: { ...es, activeEvent: null, lastEventTick: state.tickCount } });
       },
 
       harvestGrowRoom: (roomId, slotIndex) => {

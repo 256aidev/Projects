@@ -1,8 +1,9 @@
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
-import { PRESTIGE_MILESTONES, calculatePrestigeTP } from '../../data/techDefs';
+import { calculatePrestigeTP } from '../../data/techDefs';
 import { PRESTIGE_THRESHOLD } from '../../data/types';
 import { formatMoney } from '../../engine/economy';
+import { sound } from '../../engine/sound';
 
 export default function PrestigeConfirmModal() {
   const state = useGameStore();
@@ -15,6 +16,7 @@ export default function PrestigeConfirmModal() {
   const handlePrestige = () => {
     const success = state.prestige();
     if (success) {
+      sound.play('prestige');
       setShowPrestigeConfirm(false);
     }
   };

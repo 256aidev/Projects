@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useUIStore } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
 import { formatMoney } from '../../engine/economy';
+import { sound } from '../../engine/sound';
 import { MIN_BET, MAX_BET, CASINO_TAX_RATE, ROULETTE_PAYOUTS, POKER_HAND_NAMES } from '../../data/casinoDefs';
 import type { RouletteBetType } from '../../data/casinoDefs';
 import {
@@ -30,6 +31,7 @@ function RouletteGame() {
 
   const spin = () => {
     if (dirtyCash < bet || spinning) return;
+    sound.play('casino_bet');
     setSpinning(true);
     setTimeout(() => {
       const num = spinRoulette();
@@ -39,6 +41,7 @@ function RouletteGame() {
       settle(bet, grossPayout);
       setResult(num);
       setLastWin({ won: res.won, payout: res.cleanCashWon });
+      sound.play(res.won ? 'casino_win' : 'casino_lose');
       setSpinning(false);
     }, 800);
   };
@@ -136,6 +139,7 @@ function BlackjackGame() {
 
   const deal = () => {
     if (dirtyCash < bet) return;
+    sound.play('casino_bet');
     const d = shuffleDeck();
     const pCards = [d[0], d[2]];
     const dCards = [d[1], d[3]];
@@ -189,6 +193,7 @@ function BlackjackGame() {
 
     const res = settleBet(bet, grossPayout);
     settle(bet, grossPayout);
+    sound.play(res.won ? 'casino_win' : 'casino_lose');
     setResultMsg(msg);
     setResultPayout(res.cleanCashWon);
     setPhase('result');
@@ -281,6 +286,7 @@ function PokerGame() {
 
   const deal = () => {
     if (dirtyCash < bet) return;
+    sound.play('casino_bet');
     const d = shuffleDeck();
     setHand(d.slice(0, 5));
     setDeck(d.slice(5));
@@ -303,6 +309,7 @@ function PokerGame() {
     const grossPayout = mult > 0 ? bet * (1 + mult) : 0;
     const res = settleBet(bet, grossPayout);
     settle(bet, grossPayout);
+    sound.play(res.won ? 'casino_win' : 'casino_lose');
     setHandName(displayName);
     setPayout(res.cleanCashWon);
     setPhase('result');

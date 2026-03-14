@@ -107,7 +107,7 @@ export default function OperationView() {
                   data-tutorial={qty === 16 ? 'sell-btn' : undefined}
                   onClick={() => {
                     const cash = sellProduct(units);
-                    if (cash > 0) addNotification(`Sold ${formatUnits(units)} for ${formatMoney(cash)} 💵`, 'success');
+                    if (cash > 0) { sound.play('sell'); addNotification(`Sold ${formatUnits(units)} for ${formatMoney(cash)} 💵`, 'success'); }
                     else addNotification('Street demand exhausted — use dealers!', 'warning');
                   }}
                   disabled={!canSell}
@@ -174,7 +174,7 @@ export default function OperationView() {
               return (
                 <button
                   key={`fire-${qty}`}
-                  onClick={() => { fireDealers(qty); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
+                  onClick={() => { fireDealers(qty); sound.play('fire'); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
                   disabled={!canFire}
                   className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
                     canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-gray-600 cursor-not-allowed'
@@ -194,7 +194,7 @@ export default function OperationView() {
               return prevTier ? (
                 <button
                   onClick={() => {
-                    if (downgradeDealerTier()) addNotification(`Downgraded to ${prevTier.name} (+${formatMoney(refund)} refund)`, 'warning');
+                    if (downgradeDealerTier()) { sound.play('fire'); addNotification(`Downgraded to ${prevTier.name} (+${formatMoney(refund)} refund)`, 'warning'); }
                   }}
                   className="flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition bg-red-900/60 hover:bg-red-800/70 text-red-300"
                 >
@@ -211,7 +211,7 @@ export default function OperationView() {
               return (
                 <button
                   onClick={() => {
-                    if (upgradeDealerTier()) addNotification(`Upgraded to ${nextDealerTier.name}!`, 'success');
+                    if (upgradeDealerTier()) { sound.play('upgrade'); addNotification(`Upgraded to ${nextDealerTier.name}!`, 'success'); }
                     else addNotification(`Need ${formatMoney(nextDealerTier.hireCost * 3)} dirty cash`, 'warning');
                   }}
                   disabled={!canUpgrade}
@@ -265,6 +265,7 @@ export default function OperationView() {
                     <button
                       onClick={() => {
                         if (upgradeRoom(room.id)) {
+                          sound.play('upgrade');
                           const newSlotName = def?.strainSlots[room.upgradeLevel + 1]?.strainName;
                           addNotification(`Unlocked ${newSlotName} slot!`, 'success');
                         } else {
@@ -365,7 +366,7 @@ export default function OperationView() {
                           ) : nextLvl ? (
                             <button
                               onClick={() => {
-                                if (buyRoomUpgrade(room.id, upgDef.id)) addNotification(`${nextLvl.name} applied!`, 'success');
+                                if (buyRoomUpgrade(room.id, upgDef.id)) { sound.play('upgrade'); addNotification(`${nextLvl.name} applied!`, 'success'); }
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
@@ -398,6 +399,7 @@ export default function OperationView() {
                 key={def.id}
                 onClick={() => {
                   if (buyGrowRoom(def.id)) {
+                    sound.play('buy');
                     addNotification(`Built ${def.name}!`, 'success');
                   } else {
                     addNotification(`Need ${formatMoney(def.purchaseCost)} ${useClean ? 'clean' : 'dirty'} cash`, 'warning');
