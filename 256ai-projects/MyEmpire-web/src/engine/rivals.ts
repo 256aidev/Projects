@@ -58,12 +58,13 @@ export function tickRivals(
   const updatedRivals = rivals.map(rival => {
     if (rival.isDefeated) return rival;
 
-    // ── Passive growth ──────────────────────────────────────────────────
+    // ── Passive growth — scales with power² so early game is slow ──────
     let r = { ...rival };
-    r.dirtyCash += 500 + Math.floor(r.power * 200);
-    r.cleanCash += 100 + Math.floor(r.power * 50);
-    r.productOz += 2 + Math.floor(r.power * 0.5);
-    r.power = Math.min(20, r.power + 0.02); // slow power creep
+    // Power 1 = $50/tick, Power 5 = $550, Power 10 = $2050, Power 20 = $8050
+    r.dirtyCash += Math.floor(50 + r.power * r.power * 20);
+    r.cleanCash += Math.floor(10 + r.power * r.power * 5);
+    r.productOz += Math.floor(r.power * 0.3);
+    r.power = Math.min(20, r.power + 0.005); // very slow power creep
 
     // ── Process burned businesses — fire clears after ARSON_DURATION ticks ──
     const stillBurning: typeof r.businesses = [];
@@ -93,12 +94,17 @@ export function tickRivals(
     }
 
     // Rival buys a business occasionally (every ~50 ticks when they have money)
-    // Skip slots that are still burning
-    if (r.dirtyCash > 15000 && Math.random() < 0.08) {
-      const bizDef = BUSINESSES[Math.floor(Math.random() * BUSINESSES.length)];
-      const district = DISTRICTS.filter(d => d.maxBusinessSlots > 0)[
-        Math.floor(Math.random() * DISTRICTS.filter(d => d.maxBusinessSlots > 0).length)
-      ];
+    // Budget scales with power: early rivals can only afford cheap businesses
+    const maxBudget = Math.floor(r.power * 15000); // power 1 = $15K max, power 5 = $75K, power 10 = $150K
+    const affordableBiz = BUSINESSES.filter(b => b.purchaseCost <= maxBudget && b.purchaseCost <= r.dirtyCash);
+    if (affordableBiz.length > 0 && Math.random() < 0.04) {
+      const bizDef = affordableBiz[Math.floor(Math.random() * affordableBiz.length)];
+      // Rivals only buy in starter/cheap districts until they're powerful
+      const maxDistrictCost = r.power * 25000; // power 1 = $25K districts, power 4+ = $100K+
+      const availableDistricts = DISTRICTS.filter(d =>
+        d.maxBusinessSlots > 0 && (d.unlockCost ?? 0) <= maxDistrictCost
+      );
+      const district = availableDistricts[Math.floor(Math.random() * availableDistricts.length)];
       if (bizDef && district) {
         const slot = Math.floor(Math.random() * district.maxBusinessSlots);
         const slotKey = `${district.id}:${slot}`;
@@ -111,7 +117,7 @@ export function tickRivals(
             businessDefId: bizDef.id,
             health: 100,
           }];
-          r.dirtyCash -= 10000;
+          r.dirtyCash -= bizDef.purchaseCost;
         }
       }
     }

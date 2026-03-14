@@ -504,6 +504,106 @@ Every tick (1 second):
 
 ---
 
+## 19. Rival Syndicates — ACTIVE
+
+Rival gangs operate autonomously in the city. They grow in power over time, buy businesses, hire hitmen, and attack the player.
+
+### Rival Generation
+
+Rivals are procedurally generated at game start with random names, icons, and colors.
+
+**Starting stats:**
+| Stat | Range |
+|------|-------|
+| Dirty Cash | $500 - $2,500 |
+| Clean Cash | $100 - $600 |
+| Product | 2 - 12 oz |
+| Hitmen | 1 - 3 |
+| Aggression | 0.1 - 0.5 |
+| Power | 1.0 (grows over time, max 20) |
+
+**Code:** `generateRivals()` in `src/data/rivals.ts`
+
+### Rival Passive Income (per rival tick, every 10 game ticks)
+
+Income scales with power² so early game is slow:
+
+```
+dirtyCash += 50 + power² × 20
+cleanCash += 10 + power² × 5
+productOz += floor(power × 0.3)
+power     += 0.005 (very slow creep, max 20)
+```
+
+| Power | Dirty Cash/tick | Time to $15K |
+|-------|----------------|-------------|
+| 1 | $70 | ~3.5 min |
+| 5 | $550 | ~27s |
+| 10 | $2,050 | ~7s |
+| 20 | $8,050 | ~2s |
+
+### Rival Business Buying
+
+Rivals buy businesses they can afford, limited by power level:
+- **Max budget:** `power × $15,000` (power 1 = $15K max, power 10 = $150K)
+- **Must have enough dirty cash** to pay the actual `purchaseCost`
+- **District restriction:** Only districts with `unlockCost ≤ power × $25,000`
+- **Buy chance:** 4% per rival tick (was 8%)
+- **Blacklisted slots** are skipped (see Arson below)
+
+**Code:** `tickRivals()` in `src/engine/rivals.ts`
+
+### Player Attacks on Rivals
+
+All attacks cost dirty cash (paid win or lose) to prevent spam. Higher success rates compensate for the cost.
+
+| Attack | Cost (dirty) | Success Rate | Effect on Success |
+|--------|-------------|-------------|-------------------|
+| Rob | $2,000 | 80% | Steal 10-30% of rival's dirty cash |
+| Raid | $5,000 | 70% | Steal 20-50% of rival's product |
+| Sabotage | $8,000 | 75% | Damage a random rival business (−30 health) |
+| Arson | $20,000 | 65% | Burn a rival business (fire → rubble → cleared) |
+
+**Code:** `attackRival()` in `src/store/gameStore.ts`, `RIVAL_ACTIONS` in `src/data/types.ts`
+
+### Arson Fire & Insurance System
+
+When arson succeeds:
+1. Target business gets `burnedAtTick = currentTick`, `health = 0`
+2. City map shows animated fire/rubble graphic (🔥 + 🧱🪨)
+3. After **100 ticks** (~10 seconds), fire clears:
+   - Business is removed from rival's inventory
+   - Rival collects **$5,000 insurance** per cleared building
+   - The slot (`districtId:slotIndex`) is added to rival's `blacklistedSlots`
+4. **Blacklisted slots** — that rival can never buy that slot again until a player purchases a business there (clearing the title)
+
+**Constants:**
+- `ARSON_DURATION = 100` ticks
+- `ARSON_INSURANCE = 5,000` dirty cash
+
+**Blacklist clearing:** When a player buys any business, all rivals' blacklist entries for that slot are removed.
+
+**Code:** Fire cleanup in `tickRivals()` (`src/engine/rivals.ts`), visual in `RivalLot` component (`src/components/city/CityMap.tsx`), blacklist clear in `purchaseBusiness()` (`src/store/gameStore.ts`)
+
+### Rival Attacks on Player
+
+Rivals attack based on rival heat and their aggression stat:
+- **Attack chance:** `(rivalHeat / 1000) × aggression × 0.15` per rival tick
+- **Defense:** Player hitmen reduce attack success (`defenseRatio = playerDefense / rivalAttack`)
+- **Attack types:** 40% steal dirty cash, 30% steal product, 30% damage player business
+
+### Hitmen (Player Defense)
+
+Players hire hitmen from the Legal view to defend against rival attacks.
+
+| Hitman | Cost (dirty) | Defense | Upkeep/tick |
+|--------|-------------|---------|-------------|
+| (defined in HITMAN_DEFS) | varies | varies | varies |
+
+**Code:** `getPlayerDefense()`, `getHitmanUpkeep()` in `src/engine/rivals.ts`, `HITMAN_MAP` in `src/data/types.ts`
+
+---
+
 ## Persist Version History
 
 | Version | Changes |
