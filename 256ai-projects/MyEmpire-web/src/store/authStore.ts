@@ -83,7 +83,13 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     try {
       const snapshot = getGameSnapshot();
       await saveToCloud(user.uid, snapshot);
-      await updateLeaderboardEntry(user.uid, user.displayName ?? 'Anonymous', snapshot);
+      try {
+        await updateLeaderboardEntry(user.uid, user.displayName ?? 'Anonymous', snapshot);
+      } catch (lbErr) {
+        console.error('[CloudSync] Leaderboard update failed:', lbErr);
+      }
+    } catch (err) {
+      console.error('[CloudSync] Save failed:', err);
     } finally {
       set({ syncing: false });
     }

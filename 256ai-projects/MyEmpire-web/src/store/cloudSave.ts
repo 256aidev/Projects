@@ -5,17 +5,11 @@ import { INITIAL_GAME_STATE } from '../data/types';
 
 const SAVE_VERSION = 4;
 
-const ACTION_KEYS = new Set([
-  'tick', 'harvestGrowRoom', 'buyGrowRoom', 'upgradeRoom', 'hireDealers', 'upgradeDealerTier',
-  'buySeed', 'plantSeeds', 'sellProduct', 'purchaseBusiness', 'sellBusiness', 'upgradeBusiness',
-  'setLaunderRate', 'purchaseResource', 'unlockDistrict', 'resetGame',
-]);
-
-// Strip Zustand action functions before saving
+// Strip Zustand action functions before saving — filters by typeof instead of hardcoded list
 function serializeState(state: Record<string, unknown>): GameState {
   const gameData: Record<string, unknown> = {};
   for (const key of Object.keys(state)) {
-    if (!ACTION_KEYS.has(key)) gameData[key] = state[key];
+    if (typeof state[key] !== 'function') gameData[key] = state[key];
   }
   return gameData as unknown as GameState;
 }
