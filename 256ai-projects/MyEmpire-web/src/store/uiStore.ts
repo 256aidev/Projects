@@ -12,6 +12,8 @@ interface UIState {
   activePanel: PanelName;
   showAccountScreen: boolean;
   showLeaderboard: boolean;
+  showTechMenu: boolean;
+  showPrestigeConfirm: boolean;
   notifications: { id: number; message: string; type: 'success' | 'warning' | 'error' }[];
 }
 
@@ -23,6 +25,8 @@ interface UIActions {
   setPanel: (panel: PanelName) => void;
   setShowAccountScreen: (show: boolean) => void;
   setShowLeaderboard: (show: boolean) => void;
+  setShowTechMenu: (show: boolean) => void;
+  setShowPrestigeConfirm: (show: boolean) => void;
   closeAll: () => void;
   addNotification: (message: string, type: 'success' | 'warning' | 'error') => void;
   removeNotification: (id: number) => void;
@@ -38,6 +42,8 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   activePanel: null,
   showAccountScreen: false,
   showLeaderboard: false,
+  showTechMenu: false,
+  showPrestigeConfirm: false,
   notifications: [],
 
   setActiveView: (view) => set({ activeView: view, selectedSlot: null, selectedBusinessId: null, activePanel: null }),
@@ -47,6 +53,8 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   setPanel: (panel) => set({ activePanel: panel, selectedSlot: null, selectedBusinessId: null }),
   setShowAccountScreen: (show) => set({ showAccountScreen: show }),
   setShowLeaderboard: (show) => set({ showLeaderboard: show }),
+  setShowTechMenu: (show) => set({ showTechMenu: show }),
+  setShowPrestigeConfirm: (show) => set({ showPrestigeConfirm: show }),
   closeAll: () => set({ selectedSlot: null, selectedBusinessId: null, activePanel: null }),
 
   addNotification: (message, type) => {

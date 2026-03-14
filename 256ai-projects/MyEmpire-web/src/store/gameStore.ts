@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BusinessInstance, GameState, GeneratedBlock, RivalActionType } from '../data/types';
-import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP, PRESTIGE_THRESHOLD, PRESTIGE_BONUS_PER_LEVEL, getStrainUnlockCost, getDealerHireCost, JOB_MAP, JOB_DEFS, HITMAN_MAP, RIVAL_ACTIONS } from '../data/types';
+import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP, PRESTIGE_THRESHOLD, getStrainUnlockCost, getDealerHireCost, JOB_MAP, JOB_DEFS, HITMAN_MAP, RIVAL_ACTIONS } from '../data/types';
+import type { TechUpgradeId } from '../data/techDefs';
+import { TECH_UPGRADE_MAP, INITIAL_TECH_UPGRADES, calculatePrestigeTP } from '../data/techDefs';
+import { getTechBonuses } from '../engine/tech';
 import { generateRivals } from '../data/rivals';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
@@ -81,6 +84,7 @@ interface GameActions {
   hireLawyer: (lawyerId: string) => boolean;
   fireLawyer: () => void;
   prestige: () => boolean;
+  purchaseTechUpgrade: (upgradeId: TechUpgradeId) => boolean;
   resetGame: () => void;
   // Rivals & hitmen
   startNewGame: (rivalCount: number) => void;
@@ -103,7 +107,8 @@ export const useGameStore = create<GameStore>()(
         set((state) => {
           let { dirtyCash, cleanCash } = state;
 
-          const { newOp, dirtyEarned, maintenanceCost } = tickCriminalOperation(state.operation, state.prestigeBonus);
+          const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
+          const { newOp, dirtyEarned, maintenanceCost } = tickCriminalOperation(state.operation, tech);
           dirtyCash += dirtyEarned;
           dirtyCash = Math.max(0, dirtyCash - maintenanceCost);
 
@@ -132,7 +137,7 @@ export const useGameStore = create<GameStore>()(
             } else if (bizDef?.isRental) {
               // rental revenue is 100% clean cash — already counted in totalRevenue above
             } else {
-              const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed);
+              const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed, tech.launderMultiplier);
               totalDirtyConsumed += dirtyConsumed;
               totalCleanProduced += cleanProduced;
             }
@@ -192,7 +197,7 @@ export const useGameStore = create<GameStore>()(
           const heatDelta = calculateHeatTick(
             state.heat, dirtyCash,
             state.operation.dealerCount, state.operation.dealerTierIndex,
-            state.businesses, activeLawyerId,
+            state.businesses, activeLawyerId, tech.heatReduction,
           );
           const newHeat = Math.max(0, Math.min(HEAT_MAX, state.heat + heatDelta));
 
@@ -268,7 +273,8 @@ export const useGameStore = create<GameStore>()(
 
       harvestGrowRoom: (roomId, slotIndex) => {
         const state = get();
-        const { newOp, unitsHarvested, cycleCost, speedBonus } = harvestSlot(state.operation, roomId, slotIndex, state.prestigeBonus);
+        const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
+        const { newOp, unitsHarvested, cycleCost, speedBonus } = harvestSlot(state.operation, roomId, slotIndex, tech);
         if (unitsHarvested > 0) {
           const updates: Partial<typeof state> = { dirtyCash: Math.max(0, state.dirtyCash - cycleCost) };
           if (newOp.seedStock > 0) {
@@ -738,11 +744,37 @@ export const useGameStore = create<GameStore>()(
       prestige: () => {
         const state = get();
         if (state.totalDirtyEarned < PRESTIGE_THRESHOLD) return false;
+        const { total: earnedTP } = calculatePrestigeTP(state);
         const newCount = (state.prestigeCount ?? 0) + 1;
         set({
           ...INITIAL_GAME_STATE,
           prestigeCount: newCount,
-          prestigeBonus: newCount * PRESTIGE_BONUS_PER_LEVEL,
+          prestigeBonus: 0,
+          techPoints: (state.techPoints ?? 0) + earnedTP,
+          totalTechPointsEarned: (state.totalTechPointsEarned ?? 0) + earnedTP,
+          techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
+          gameSettings: { ...state.gameSettings },
+          rivals: generateRivals(state.gameSettings.rivalCount),
+          hitmen: [],
+          rivalAttackLog: [],
+        });
+        return true;
+      },
+
+      purchaseTechUpgrade: (upgradeId: TechUpgradeId) => {
+        const state = get();
+        const def = TECH_UPGRADE_MAP[upgradeId];
+        if (!def) return false;
+        const currentLevel = (state.techUpgrades ?? INITIAL_TECH_UPGRADES)[upgradeId] ?? 0;
+        if (currentLevel >= def.maxLevel) return false;
+        const cost = def.costs[currentLevel];
+        if ((state.techPoints ?? 0) < cost) return false;
+        set({
+          techPoints: (state.techPoints ?? 0) - cost,
+          techUpgrades: {
+            ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES),
+            [upgradeId]: currentLevel + 1,
+          },
         });
         return true;
       },
@@ -752,7 +784,10 @@ export const useGameStore = create<GameStore>()(
         set({
           ...INITIAL_GAME_STATE,
           prestigeCount: state.prestigeCount ?? 0,
-          prestigeBonus: state.prestigeBonus ?? 0,
+          prestigeBonus: 0,
+          techPoints: state.techPoints ?? 0,
+          totalTechPointsEarned: state.totalTechPointsEarned ?? 0,
+          techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
         });
       },
 
@@ -761,7 +796,10 @@ export const useGameStore = create<GameStore>()(
         set({
           ...INITIAL_GAME_STATE,
           prestigeCount: state.prestigeCount ?? 0,
-          prestigeBonus: state.prestigeBonus ?? 0,
+          prestigeBonus: 0,
+          techPoints: state.techPoints ?? 0,
+          totalTechPointsEarned: state.totalTechPointsEarned ?? 0,
+          techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
           gameSettings: { rivalCount, gameStarted: true },
           rivals: generateRivals(rivalCount),
           hitmen: [],
@@ -903,7 +941,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 20,
+      version: 21,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -998,6 +1036,17 @@ export const useGameStore = create<GameStore>()(
         // Preserve prestige across migrations
         if (!merged.prestigeCount) merged.prestigeCount = 0;
         if (!merged.prestigeBonus) merged.prestigeBonus = 0;
+
+        // Tech Points system (v21) — migrate old prestigeBonus into tech_yield levels
+        if (!merged.techUpgrades) merged.techUpgrades = { ...INITIAL_TECH_UPGRADES };
+        if (merged.techPoints === undefined) merged.techPoints = 0;
+        if (merged.totalTechPointsEarned === undefined) merged.totalTechPointsEarned = 0;
+        if (_version < 21 && merged.prestigeBonus > 0) {
+          // Convert old flat prestigeBonus into tech_yield levels (1 level per 0.05, max 5)
+          const yieldLevels = Math.min(5, Math.round(merged.prestigeBonus / 0.05));
+          merged.techUpgrades = { ...merged.techUpgrades, tech_yield: yieldLevels };
+          merged.prestigeBonus = 0;
+        }
 
         // Heat scale migration: 0-100 → 0-1000 (v18)
         if (_version < 18 && merged.heat > 0 && merged.heat <= 100) {

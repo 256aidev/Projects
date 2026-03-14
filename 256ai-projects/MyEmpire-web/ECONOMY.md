@@ -86,7 +86,7 @@ Seeds are required to grow product. Each plant consumes 1 seed.
 
 When a slot's `ticksRemaining` reaches 0, it can be harvested.
 
-**Yield formula:** `floor(slot.harvestYield x (1 + yieldBonus + prestigeBonus))`
+**Yield formula:** `floor(slot.harvestYield x (1 + roomYieldBonus + techYieldBonus))`
 
 **Double chance:** `if (Math.random() < doubleChance) → yield x 2`
 
@@ -94,7 +94,7 @@ When a slot's `ticksRemaining` reaches 0, it can be harvested.
 - `yieldBonus` = sum of FloraMicro + Light upgrade bonuses (`getRoomBonus(room, 'yield')`)
 - `speedBonus` = sum of FloraGro + Water upgrade bonuses (`getRoomBonus(room, 'speed')`)
 - `doubleChance` = sum of FloraBloom upgrade bonuses (`getRoomBonus(room, 'double')`)
-- `prestigeBonus` = `prestigeCount x 0.05`
+- `techYieldBonus` = `techUpgrades.tech_yield x 0.05` (from Tech Lab)
 
 **Cycle cost:** `getRoomCycleCost(room)` deducted from dirty cash on each harvest (sum of all upgrade costPerCycle values).
 
@@ -409,16 +409,57 @@ Resources are defined per business but do NOT currently affect gameplay. Busines
 
 ---
 
-## 16. Prestige
+## 16. Prestige & Tech Points
 
-Reset the game with a permanent yield bonus.
+Reset the game to earn **Tech Points (TP)** — a permanent currency spent on upgrades in the **Tech Lab**.
 
-- **Threshold:** $1M total dirty cash earned
-- **Bonus:** +5% grow yield per prestige level (stacks additively)
-- **Persists across resets:** prestigeCount, prestigeBonus
-- **Applied to:** All harvest yields (manual and auto): `yield x (1 + yieldBonus + prestigeBonus)`
+### Prestige Threshold
+- **Threshold:** $1M total dirty cash earned to unlock prestige
+- **Base reward:** 1 TP per prestige
+- **Milestone bonuses:** Additional TP for achievements during the run (up to ~22 TP per prestige)
 
-**Code:** `prestige()` in `src/store/gameStore.ts`
+### Prestige Milestones (bonus TP per prestige)
+| Category | Threshold | Bonus TP |
+|----------|-----------|----------|
+| Total Dirty Earned | $5M / $25M / $100M | +1 / +2 / +3 |
+| Total Clean Earned | $500K / $5M / $50M | +1 / +2 / +3 |
+| Grow Rooms Built | 3 / 6 / 10 | +1 / +1 / +2 |
+| Front Businesses | 3 / 8 / 15 | +1 / +1 / +2 |
+| Districts Unlocked | 4 / 8 | +1 / +2 |
+| Rivals Defeated | 1 / All | +1 / +2 |
+
+### Tech Upgrades (7 tracks, 5 levels each)
+| ID | Name | Effect/Level | Cost (L1-L5) | Total TP |
+|----|------|-------------|-------------|----------|
+| `tech_yield` | Hybrid Genetics | +5% yield | 1, 2, 4, 7, 12 | 26 |
+| `tech_speed` | LED Matrix | -3% grow time | 1, 2, 4, 7, 12 | 26 |
+| `tech_double` | Selective Breeding | +2% double chance | 1, 3, 5, 8, 14 | 31 |
+| `tech_capacity` | Vertical Farming | +1 plant/room | 2, 3, 5, 8, 14 | 32 |
+| `tech_dealer` | Supply Chain | +10% dealer sales | 2, 4, 6, 10, 16 | 38 |
+| `tech_launder` | Creative Accounting | +5% launder efficiency | 2, 4, 6, 10, 16 | 38 |
+| `tech_heat` | Clean Operation | -8% heat gain | 3, 5, 8, 12, 18 | 46 |
+
+**Total to max all: 237 TP** (~35-45 prestiges at avg 5-6 TP each)
+
+### How Tech Bonuses Stack
+- **Yield:** `floor(harvestYield x (1 + roomYieldBonus + techYieldBonus))`
+- **Speed:** `ceil(growTimerTicks x (1 - roomSpeedBonus - techSpeedBonus))`
+- **Double:** `roomDoubleChance + techDoubleChance`
+- **Capacity:** Each room's plantsCapacity gets `+ techCapacityLevel`
+- **Dealer:** `salesRatePerTick x dealerCount x (1 + techDealerBonus)`
+- **Launder:** `dirtyConsumed x launderEfficiency x techLaunderMultiplier`
+- **Heat:** `heatGain x (1 - techHeatReduction)`
+
+### Persists Across Resets
+`prestigeCount`, `techPoints`, `totalTechPointsEarned`, `techUpgrades`
+
+### UI
+- **Tech Lab (🔬):** HUD button with TP badge → full-screen overlay with upgrade grid
+- **Prestige Confirm:** Modal showing TP breakdown before confirming reset
+- **Account Screen:** Shows active tech bonuses + prestige/tech buttons
+
+**Code:** `prestige()`, `purchaseTechUpgrade()` in `src/store/gameStore.ts`
+**Data:** `src/data/techDefs.ts` | **Engine:** `src/engine/tech.ts`
 
 ---
 
@@ -490,8 +531,8 @@ Every tick (1 second):
 | `getDealerHireCost(tier, ownedCount)` | `src/data/types.ts` | Escalating dealer cost (1.5x per dealer) |
 | `getRoomBonus(room, bonusType)` | `src/engine/economy.ts` | Total speed/yield/double bonus from upgrades |
 | `getRoomCycleCost(room)` | `src/engine/economy.ts` | Total per-harvest overhead cost |
-| `tickCriminalOperation(op, prestige)` | `src/engine/economy.ts` | Full criminal op tick (dealers + auto-harvest) |
-| `harvestSlot(op, roomId, slotIdx, prestige)` | `src/engine/economy.ts` | Manual harvest with bonuses |
+| `tickCriminalOperation(op, tech?)` | `src/engine/economy.ts` | Full criminal op tick (dealers + auto-harvest) |
+| `harvestSlot(op, roomId, slotIdx, tech?)` | `src/engine/economy.ts` | Manual harvest with bonuses |
 | `calculateLaunderTick(biz, available)` | `src/engine/economy.ts` | Dirty -> clean per tick |
 | `calculateDispensaryTick(biz, oz, price)` | `src/engine/economy.ts` | Product -> clean per tick |
 | `calculateBusinessRevenue(biz)` | `src/engine/economy.ts` | Clean cash revenue per tick |

@@ -26,8 +26,11 @@ export default function HUD() {
   const rivalColor = RIVAL_TIER_COLORS[rivalTier];
   const rivalTierName = RIVAL_TIER_NAMES[rivalTier];
 
+  const techPoints = useGameStore((s) => s.techPoints ?? 0);
+
   const { user, syncing } = useAuthStore();
   const setShowAccountScreen = useUIStore((s) => s.setShowAccountScreen);
+  const setShowTechMenu = useUIStore((s) => s.setShowTechMenu);
   const setPanel = useUIStore((s) => s.setPanel);
   const activePanel = useUIStore((s) => s.activePanel);
   const isGuest = !user || (user as { uid: string }).uid === 'guest';
@@ -74,6 +77,20 @@ export default function HUD() {
         <span className="text-white font-semibold">{bizCount}</span>
         <span className="text-gray-500 text-xs">fronts</span>
       </div>
+
+      {/* Tech Lab button */}
+      <button
+        onClick={() => setShowTechMenu(true)}
+        className="flex items-center gap-1 hover:opacity-80 transition relative"
+        title="Tech Lab"
+      >
+        <span className="text-base">🔬</span>
+        {techPoints > 0 && (
+          <span className="absolute -top-1 -right-1.5 bg-cyan-500 text-white text-[8px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+            {techPoints > 9 ? '9+' : techPoints}
+          </span>
+        )}
+      </button>
 
       <div className="h-6 w-px bg-gray-700 mx-1" />
 

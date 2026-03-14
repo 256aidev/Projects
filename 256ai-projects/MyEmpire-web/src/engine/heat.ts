@@ -42,6 +42,7 @@ export function getHeatBreakdown(
   dealerTierIndex: number,
   businesses: BusinessInstance[],
   activeLawyerId: string | null,
+  techHeatReduction = 0,
 ): HeatBreakdown {
   // Heat gain from holding dirty cash
   const dirtyCashHeat = (dirtyCash / DIRTY_CASH_DIVISOR) * DIRTY_CASH_RATE;
@@ -60,7 +61,7 @@ export function getHeatBreakdown(
     }, 0) / districtIds.length;
   }
 
-  const totalGain = (dirtyCashHeat + dealerHeat) * policeMultiplier;
+  const totalGain = (dirtyCashHeat + dealerHeat) * policeMultiplier * (1 - techHeatReduction);
 
   // Decay sources
   const naturalDecay = NATURAL_DECAY;
@@ -99,8 +100,9 @@ export function calculateHeatTick(
   dealerTierIndex: number,
   businesses: BusinessInstance[],
   activeLawyerId: string | null,
+  techHeatReduction = 0,
 ): number {
-  const breakdown = getHeatBreakdown(dirtyCash, dealerCount, dealerTierIndex, businesses, activeLawyerId);
+  const breakdown = getHeatBreakdown(dirtyCash, dealerCount, dealerTierIndex, businesses, activeLawyerId, techHeatReduction);
   const newHeat = Math.max(0, Math.min(HEAT_MAX, currentHeat + breakdown.netPerTick));
   return newHeat - currentHeat;
 }

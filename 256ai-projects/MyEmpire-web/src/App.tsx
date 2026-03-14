@@ -38,6 +38,8 @@ import LoginScreen from './components/auth/LoginScreen';
 import AccountScreen from './components/auth/AccountScreen';
 import LeaderboardView from './components/ui/LeaderboardView';
 import StartGameScreen from './components/ui/StartGameScreen';
+import TechMenu from './components/tech/TechMenu';
+import PrestigeConfirmModal from './components/tech/PrestigeConfirmModal';
 
 // Auto-sync to Firestore every 60 ticks (≈ 1 min)
 const SYNC_INTERVAL_TICKS = 60;
@@ -51,6 +53,8 @@ export default function App() {
   const activePanel = useUIStore((s) => s.activePanel);
   const showAccountScreen = useUIStore((s) => s.showAccountScreen);
   const showLeaderboard = useUIStore((s) => s.showLeaderboard);
+  const showTechMenu = useUIStore((s) => s.showTechMenu);
+  const showPrestigeConfirm = useUIStore((s) => s.showPrestigeConfirm);
   const setPanel = useUIStore((s) => s.setPanel);
 
   const { user, loading, syncToCloud } = useAuthStore();
@@ -136,6 +140,8 @@ export default function App() {
       <Notifications />
       {showAccountScreen && <AccountScreen />}
       {showLeaderboard && <LeaderboardView />}
+      {showTechMenu && <TechMenu />}
+      {showPrestigeConfirm && <PrestigeConfirmModal />}
     </div>
   );
 }

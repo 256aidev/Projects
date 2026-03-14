@@ -2,6 +2,7 @@ import type { BusinessInstance, CriminalOperation, GrowRoom } from '../data/type
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICT_MAP } from '../data/districts';
 import { DEALER_TIERS, ROOM_UPGRADE_DEFS, GROW_ROOM_TYPE_MAP } from '../data/types';
+import type { TechBonuses } from './tech';
 
 // ─── ROOM UPGRADE HELPERS ────────────────────────
 
@@ -36,7 +37,7 @@ export function getRoomCycleCost(room: GrowRoom): number {
 
 // ─── CRIMINAL OPERATION ───────────────────────────
 
-export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0): {
+export function tickCriminalOperation(op: CriminalOperation, tech?: TechBonuses): {
   newOp: CriminalOperation;
   dirtyEarned: number;
   maintenanceCost: number;
@@ -48,7 +49,8 @@ export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0):
   // Dealers sell product → dirty cash, per strain at actual prices
   const totalOz = Object.values(newProductInventory).reduce((sum, e) => sum + e.oz, 0);
   if (op.dealerCount > 0 && totalOz > 0) {
-    const unitsSold = Math.min(totalOz, dealerTier.salesRatePerTick * op.dealerCount);
+    const dealerMult = tech?.dealerMultiplier ?? 1;
+    const unitsSold = Math.min(totalOz, dealerTier.salesRatePerTick * op.dealerCount * dealerMult);
     const cutCost = unitsSold * (dealerTier.cutPer8oz / 8);
     let saleValue = 0;
     for (const strainName of Object.keys(newProductInventory)) {
@@ -67,9 +69,9 @@ export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0):
   let newSeedStock = op.seedStock;
 
   const newGrowRooms = op.growRooms.map((room) => {
-    const speedBonus = getRoomBonus(room, 'speed');
-    const yieldBonus = getRoomBonus(room, 'yield');
-    const doubleChance = getRoomBonus(room, 'double');
+    const speedBonus = getRoomBonus(room, 'speed') + (tech?.speedBonus ?? 0);
+    const yieldBonus = getRoomBonus(room, 'yield') + (tech?.yieldBonus ?? 0);
+    const doubleChance = getRoomBonus(room, 'double') + (tech?.doubleChance ?? 0);
     const isAutoHarvest = (room.upgradeLevels?.auto_harvest ?? 0) > 0;
     const cycleCost = getRoomCycleCost(room);
 
@@ -82,7 +84,7 @@ export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0):
       // ticksRemaining === 1: reaches 0 this tick
       if (slot.ticksRemaining === 1) {
         if (isAutoHarvest && newSeedStock > 0) {
-          const baseUnits = Math.floor(slot.harvestYield * (1 + yieldBonus + prestigeBonus));
+          const baseUnits = Math.floor(slot.harvestYield * (1 + yieldBonus));
           const doubled = doubleChance > 0 && Math.random() < doubleChance;
           const harvestedUnits = doubled ? baseUnits * 2 : baseUnits;
           if (!autoHarvestedByStrain[slot.strainName]) {
@@ -123,7 +125,7 @@ export function tickCriminalOperation(op: CriminalOperation, prestigeBonus = 0):
   };
 }
 
-export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: number, prestigeBonus = 0): {
+export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: number, tech?: TechBonuses): {
   newOp: CriminalOperation;
   unitsHarvested: number;
   cycleCost: number;
@@ -134,15 +136,15 @@ export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: nu
   const slot = room.slots[slotIndex];
   if (!slot || !slot.isHarvesting || slot.ticksRemaining > 0) return { newOp: op, unitsHarvested: 0, cycleCost: 0, speedBonus: 0 };
 
-  const speedBonus = getRoomBonus(room, 'speed');
-  const yieldBonus = getRoomBonus(room, 'yield');
-  const doubleChance = getRoomBonus(room, 'double');
+  const speedBonus = getRoomBonus(room, 'speed') + (tech?.speedBonus ?? 0);
+  const yieldBonus = getRoomBonus(room, 'yield') + (tech?.yieldBonus ?? 0);
+  const doubleChance = getRoomBonus(room, 'double') + (tech?.doubleChance ?? 0);
   const cycleCost = getRoomCycleCost(room);
 
   // Always use canonical yield from def (saved state may be stale)
   const def = GROW_ROOM_TYPE_MAP[room.typeId];
   const canonicalYield = def?.strainSlots[slotIndex]?.harvestYield ?? slot.harvestYield;
-  const baseUnits = Math.floor(canonicalYield * (1 + yieldBonus + prestigeBonus));
+  const baseUnits = Math.floor(canonicalYield * (1 + yieldBonus));
   const doubled = doubleChance > 0 && Math.random() < doubleChance;
   const unitsHarvested = doubled ? baseUnits * 2 : baseUnits;
 
@@ -226,7 +228,7 @@ export function calculateBusinessExpenses(biz: BusinessInstance): number {
 }
 
 // Returns { dirtyConsumed, cleanProduced } for one tick of laundering
-export function calculateLaunderTick(biz: BusinessInstance, availableDirty: number): {
+export function calculateLaunderTick(biz: BusinessInstance, availableDirty: number, launderMultiplier = 1): {
   dirtyConsumed: number;
   cleanProduced: number;
 } {
@@ -234,7 +236,7 @@ export function calculateLaunderTick(biz: BusinessInstance, availableDirty: numb
   if (!def || !biz.isOperating) return { dirtyConsumed: 0, cleanProduced: 0 };
   const capacity = calculateLaunderCapacity(biz);
   const dirtyConsumed = Math.min(availableDirty, capacity, biz.dirtyQueuedPerTick);
-  const cleanProduced = dirtyConsumed * def.launderEfficiency;
+  const cleanProduced = dirtyConsumed * def.launderEfficiency * launderMultiplier;
   return { dirtyConsumed, cleanProduced };
 }
 

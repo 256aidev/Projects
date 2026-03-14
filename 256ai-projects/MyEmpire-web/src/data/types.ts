@@ -1,3 +1,6 @@
+import type { TechUpgradeId } from './techDefs';
+import { INITIAL_TECH_UPGRADES } from './techDefs';
+
 // ─────────────────────────────────────────
 // CRIMINAL OPERATION
 // ─────────────────────────────────────────
@@ -578,7 +581,10 @@ export interface GameState {
   tickCount: number;
   eventCooldown: number;
   prestigeCount: number;       // how many times prestige'd
-  prestigeBonus: number;       // cumulative yield multiplier (0.05 per level)
+  prestigeBonus: number;       // DEPRECATED — kept for migration, use techUpgrades instead
+  techPoints: number;                             // unspent Tech Points
+  totalTechPointsEarned: number;                  // lifetime Tech Points earned
+  techUpgrades: Record<TechUpgradeId, number>;    // upgrade ID → current level (0-5)
   streetSellQuotaOz: number;       // oz remaining in current sell window (max 160 = 10 lbs)
   streetSellCooldownTicks: number; // ticks until quota refills (600 = 10 min)
   generatedBlocks: Record<string, GeneratedBlock>; // dynamically discovered city blocks
@@ -756,6 +762,9 @@ export const INITIAL_GAME_STATE: GameState = {
   eventCooldown: 0,
   prestigeCount: 0,
   prestigeBonus: 0,
+  techPoints: 0,
+  totalTechPointsEarned: 0,
+  techUpgrades: { ...INITIAL_TECH_UPGRADES },
   streetSellQuotaOz: 160,
   streetSellCooldownTicks: 0,
   generatedBlocks: {},
