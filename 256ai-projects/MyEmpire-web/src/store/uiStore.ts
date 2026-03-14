@@ -16,6 +16,9 @@ interface UIState {
   showLeaderboard: boolean;
   showTechMenu: boolean;
   showPrestigeConfirm: boolean;
+  showCasino: boolean;
+  showJewelryStore: boolean;
+  showCarDealership: boolean;
   gameSpeed: GameSpeed;
   notifications: { id: number; message: string; type: 'success' | 'warning' | 'error' }[];
 }
@@ -30,6 +33,9 @@ interface UIActions {
   setShowLeaderboard: (show: boolean) => void;
   setShowTechMenu: (show: boolean) => void;
   setShowPrestigeConfirm: (show: boolean) => void;
+  setShowCasino: (show: boolean) => void;
+  setShowJewelryStore: (show: boolean) => void;
+  setShowCarDealership: (show: boolean) => void;
   setGameSpeed: (speed: GameSpeed) => void;
   closeAll: () => void;
   addNotification: (message: string, type: 'success' | 'warning' | 'error') => void;
@@ -48,6 +54,9 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   showLeaderboard: false,
   showTechMenu: false,
   showPrestigeConfirm: false,
+  showCasino: false,
+  showJewelryStore: false,
+  showCarDealership: false,
   gameSpeed: 1,
   notifications: [],
 
@@ -60,6 +69,9 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   setShowLeaderboard: (show) => set({ showLeaderboard: show }),
   setShowTechMenu: (show) => set({ showTechMenu: show }),
   setShowPrestigeConfirm: (show) => set({ showPrestigeConfirm: show }),
+  setShowCasino: (show) => set({ showCasino: show }),
+  setShowJewelryStore: (show) => set({ showJewelryStore: show }),
+  setShowCarDealership: (show) => set({ showCarDealership: show }),
   setGameSpeed: (speed) => set({ gameSpeed: speed }),
   closeAll: () => set({ selectedSlot: null, selectedBusinessId: null, activePanel: null }),
 

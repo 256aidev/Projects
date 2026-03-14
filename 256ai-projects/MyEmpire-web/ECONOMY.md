@@ -783,3 +783,128 @@ Prestige is weighted heavily ($500K per prestige) because each prestige requires
 | `src/store/authStore.ts` | Calls leaderboard update in `syncToCloud()` |
 | `src/components/ui/LeaderboardView.tsx` | Leaderboard UI overlay |
 | `src/components/layout/NavBar.tsx` | Trophy button to open leaderboard |
+
+---
+
+## 17. Casino (Money Laundering via Gambling)
+
+The casino converts **dirty cash → clean cash** with a **15% tax** on winnings. Even losing launders (dirty cash is removed).
+
+### Constants
+| Param | Value |
+|-------|-------|
+| Tax Rate | 15% of gross payout |
+| Min Bet | $100 |
+| Max Bet | $100,000 |
+
+### Games
+
+**Roulette** — Bet on number (35:1), color (2:1), section (3:1), high/low (2:1), even/odd (2:1). Single-zero wheel (0–36).
+
+**Blackjack** — Standard rules. Dealer hits on <17. Normal win pays 1:1. Natural blackjack pays 3:2. Push returns bet.
+
+**Poker (5-Card Draw)** — Deal 5 cards, hold/discard, draw replacements. Jacks-or-better required for pair payout.
+
+| Hand | Payout |
+|------|--------|
+| Royal Flush | 250:1 |
+| Straight Flush | 50:1 |
+| Four of a Kind | 25:1 |
+| Full House | 10:1 |
+| Flush | 7:1 |
+| Straight | 5:1 |
+| Three of a Kind | 3:1 |
+| Two Pair | 2:1 |
+| Pair (J+) | 1:1 |
+| High Card | 0 (lose) |
+
+### Settlement Formula
+```
+grossPayout = betAmount × multiplier (if won), else 0
+taxAmount = floor(grossPayout × 0.15)
+cleanCashWon = grossPayout - taxAmount
+dirtyCash -= betAmount (always deducted)
+cleanCash += cleanCashWon (if won)
+```
+
+### Code Locations
+| File | Purpose |
+|------|---------|
+| `src/data/casinoDefs.ts` | Constants, payouts, card types |
+| `src/engine/casino.ts` | Game logic (roulette, blackjack, poker) |
+| `src/store/gameStore.ts` | `settleCasinoBet()` action |
+| `src/components/casino/CasinoView.tsx` | Full-screen casino overlay with 3 games |
+| `src/components/city/CasinoBlock.tsx` | City map block |
+
+---
+
+## 18. Jewelry Store (Passive Bonuses)
+
+Buy and upgrade jewelry pieces for permanent passive bonuses. Each piece occupies a slot (ring, bracelet, necklace, pendant) with limits.
+
+### Slot Limits
+| Slot | Max |
+|------|-----|
+| Ring | 8 (4 per hand, no thumbs) |
+| Bracelet | 2 |
+| Necklace | 1 |
+| Pendant | 1 |
+
+### Tier Progression (5 tiers per piece)
+| Tier | Name | Upgrade Cost |
+|------|------|-------------|
+| 0 | Silver | Free (base purchase) |
+| 1 | Gold | $15,000 |
+| 2 | Platinum | $75,000 |
+| 3 | Diamond | $300,000 |
+| 4 | Legendary | $1,000,000 |
+
+### Bonus Formula
+```
+bonus = bonusPerTier × (tier + 1)
+```
+At Silver (tier 0): 1× base. At Legendary (tier 4): 5× base.
+
+### Bonus Types
+| Type | Effect | Example Pieces |
+|------|--------|---------------|
+| yield_boost | +% harvest yield | Harvest Band (+1%/tier), Crown Medallion (+3%/tier) |
+| heat_decay | +% heat decay rate | Shadow Ring (+1.5%/tier) |
+| operation_discount | -% operation costs | Efficiency Ring (+1%/tier) |
+| hitman_discount | -% hitman costs | Iron Knuckle (+2%/tier), War Bangle (+3%/tier) |
+| prestige_speed | +% prestige progress | King's Chain (+4%/tier) |
+| launder_boost | +% launder efficiency | Clean Cut (+1%/tier), Money Cuff (+2%/tier) |
+
+### Code Locations
+| File | Purpose |
+|------|---------|
+| `src/data/jewelryDefs.ts` | 12 piece definitions, tier data, slot limits |
+| `src/engine/jewelry.ts` | `getJewelryBonuses()` aggregation |
+| `src/store/gameStore.ts` | `buyJewelry()`, `upgradeJewelry()` actions |
+| `src/components/jewelry/JewelryStoreView.tsx` | Full-screen store overlay |
+| `src/components/city/JewelryBlock.tsx` | City map block |
+
+---
+
+## 19. Car Dealership (Prestige Collection)
+
+Buy collectible cars with clean cash. Each car provides a prestige bonus. Future integration with house/garage system.
+
+### Tiers
+| Tier | Price Range | Prestige Range |
+|------|------------|---------------|
+| Economy | $5K–$12K | 1–2 |
+| Sport | $35K–$55K | 5–8 |
+| Luxury | $100K–$150K | 15–22 |
+| Exotic | $250K–$400K | 40–55 |
+| Supercar | $750K–$2M | 75–100 |
+
+15 total cars. Each can only be purchased once.
+
+### Code Locations
+| File | Purpose |
+|------|---------|
+| `src/data/carDefs.ts` | 15 car definitions, tier colors |
+| `src/store/gameStore.ts` | `buyCar()` action |
+| `src/components/cars/CarDealershipView.tsx` | Full-screen dealership overlay |
+| `src/components/city/CarDealershipBlock.tsx` | City map block |

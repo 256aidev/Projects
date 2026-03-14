@@ -40,6 +40,9 @@ import LeaderboardView from './components/ui/LeaderboardView';
 import StartGameScreen from './components/ui/StartGameScreen';
 import TechMenu from './components/tech/TechMenu';
 import PrestigeConfirmModal from './components/tech/PrestigeConfirmModal';
+import CasinoView from './components/casino/CasinoView';
+import JewelryStoreView from './components/jewelry/JewelryStoreView';
+import CarDealershipView from './components/cars/CarDealershipView';
 
 // Auto-sync to Firestore every 60 ticks (≈ 1 min)
 const SYNC_INTERVAL_TICKS = 60;
@@ -55,6 +58,9 @@ export default function App() {
   const showLeaderboard = useUIStore((s) => s.showLeaderboard);
   const showTechMenu = useUIStore((s) => s.showTechMenu);
   const showPrestigeConfirm = useUIStore((s) => s.showPrestigeConfirm);
+  const showCasino = useUIStore((s) => s.showCasino);
+  const showJewelryStore = useUIStore((s) => s.showJewelryStore);
+  const showCarDealership = useUIStore((s) => s.showCarDealership);
   const setPanel = useUIStore((s) => s.setPanel);
 
   const { user, loading, syncToCloud } = useAuthStore();
@@ -142,6 +148,9 @@ export default function App() {
       {showLeaderboard && <LeaderboardView />}
       {showTechMenu && <TechMenu />}
       {showPrestigeConfirm && <PrestigeConfirmModal />}
+      {showCasino && <CasinoView />}
+      {showJewelryStore && <JewelryStoreView />}
+      {showCarDealership && <CarDealershipView />}
     </div>
   );
 }

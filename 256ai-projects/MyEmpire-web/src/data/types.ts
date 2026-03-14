@@ -557,6 +557,61 @@ export interface GameSettings {
   gameStarted: boolean;  // false = show start screen
 }
 
+// ─── CASINO ───────────────────────────────────────────────────────────
+export type CasinoGame = 'poker' | 'roulette' | 'blackjack';
+
+export interface CasinoHistory {
+  totalGambled: number;      // lifetime dirty cash wagered
+  totalWon: number;          // lifetime clean cash won (after tax)
+  totalLost: number;         // lifetime dirty cash lost
+  gamesPlayed: number;
+}
+
+// ─── JEWELRY ──────────────────────────────────────────────────────────
+export type JewelrySlotType = 'ring' | 'bracelet' | 'necklace' | 'pendant';
+
+export interface JewelryPieceDef {
+  id: string;
+  name: string;
+  slotType: JewelrySlotType;
+  icon: string;
+  baseCost: number;
+  tiers: JewelryTierDef[];
+  bonusType: 'prestige_speed' | 'hitman_discount' | 'operation_discount' | 'yield_boost' | 'heat_decay' | 'launder_boost';
+  bonusPerTier: number;
+}
+
+export interface JewelryTierDef {
+  name: string;
+  upgradeCost: number;
+  icon: string;
+}
+
+export interface OwnedJewelry {
+  defId: string;
+  slotType: JewelrySlotType;
+  tier: number;               // 0-4
+  equippedSlotIndex: number;  // which slot it occupies
+}
+
+// ─── CARS ──────────────────────────────────────────────────────────────
+export type CarTier = 'economy' | 'sport' | 'luxury' | 'exotic' | 'supercar';
+
+export interface CarDef {
+  id: string;
+  name: string;
+  tier: CarTier;
+  cost: number;
+  prestigeBonus: number;
+  icon: string;
+  description: string;
+}
+
+export interface OwnedCar {
+  defId: string;
+  purchasedAtTick: number;
+}
+
 // ─────────────────────────────────────────
 // GAME STATE
 // ─────────────────────────────────────────
@@ -598,6 +653,10 @@ export interface GameState {
   rivals: RivalSyndicate[];
   hitmen: HiredHitman[];           // player's hired hitmen
   rivalAttackLog: string[];        // recent attack messages (last 10)
+  // Casino, Jewelry, Cars
+  casinoHistory: CasinoHistory;
+  jewelry: OwnedJewelry[];
+  cars: OwnedCar[];
 }
 
 // Prestige thresholds and reward
@@ -777,4 +836,7 @@ export const INITIAL_GAME_STATE: GameState = {
   rivals: [],
   hitmen: [],
   rivalAttackLog: [],
+  casinoHistory: { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 },
+  jewelry: [],
+  cars: [],
 };

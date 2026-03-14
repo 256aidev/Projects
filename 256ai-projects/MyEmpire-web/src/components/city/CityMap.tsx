@@ -10,6 +10,9 @@ import BuildingLot from './BuildingLot';
 import OperationsBlock from './OperationsBlock';
 import DealerNetworkBlock from './DealerNetworkBlock';
 import JobDistrictBlock from './JobDistrictBlock';
+import CasinoBlock from './CasinoBlock';
+import JewelryBlock from './JewelryBlock';
+import CarDealershipBlock from './CarDealershipBlock';
 
 const BLOCK_W = 164;
 const BLOCK_H = 258;
@@ -511,6 +514,27 @@ export default function CityMap() {
                   return (
                     <div key={cell.id} style={placement}>
                       <JobDistrictBlock />
+                    </div>
+                  );
+                }
+                if (cell.id === 'casino_district') {
+                  return (
+                    <div key={cell.id} style={placement}>
+                      <CasinoBlock />
+                    </div>
+                  );
+                }
+                if (cell.id === 'jewelry_district') {
+                  return (
+                    <div key={cell.id} style={placement}>
+                      <JewelryBlock />
+                    </div>
+                  );
+                }
+                if (cell.id === 'car_district') {
+                  return (
+                    <div key={cell.id} style={placement}>
+                      <CarDealershipBlock />
                     </div>
                   );
                 }

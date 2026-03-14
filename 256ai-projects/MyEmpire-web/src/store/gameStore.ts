@@ -95,6 +95,11 @@ interface GameActions {
   hireHitman: (defId: string) => boolean;
   fireHitman: (defId: string) => boolean;
   attackRival: (rivalId: string, actionType: string) => { success: boolean; message: string } | null;
+  // Casino, Jewelry, Cars
+  settleCasinoBet: (betAmount: number, grossPayout: number) => void;
+  buyJewelry: (defId: string) => boolean;
+  upgradeJewelry: (index: number) => boolean;
+  buyCar: (defId: string) => boolean;
 }
 
 type GameStore = GameState & GameActions;
@@ -959,10 +964,84 @@ export const useGameStore = create<GameStore>()(
         });
         return { success, message: message! };
       },
+
+      // ─── CASINO ────────────────────────────────────────────────
+      settleCasinoBet: (betAmount, grossPayout) => {
+        const state = get();
+        if (state.dirtyCash < betAmount) return;
+        const taxAmount = grossPayout > 0 ? Math.floor(grossPayout * 0.15) : 0;
+        const cleanWon = grossPayout - taxAmount;
+        const history = state.casinoHistory ?? { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 };
+        set({
+          dirtyCash: state.dirtyCash - betAmount,
+          cleanCash: state.cleanCash + Math.max(0, cleanWon),
+          totalCleanEarned: state.totalCleanEarned + Math.max(0, cleanWon),
+          casinoHistory: {
+            totalGambled: history.totalGambled + betAmount,
+            totalWon: history.totalWon + Math.max(0, cleanWon),
+            totalLost: history.totalLost + (grossPayout === 0 ? betAmount : 0),
+            gamesPlayed: history.gamesPlayed + 1,
+          },
+        });
+      },
+
+      // ─── JEWELRY ───────────────────────────────────────────────
+      buyJewelry: (defId) => {
+        const state = get();
+        const { JEWELRY_DEF_MAP, JEWELRY_SLOT_LIMITS } = require('../data/jewelryDefs');
+        const def = JEWELRY_DEF_MAP[defId];
+        if (!def || state.cleanCash < def.baseCost) return false;
+        // Check slot limits
+        const slotsUsed = (state.jewelry ?? []).filter((j: { slotType: string }) => j.slotType === def.slotType).length;
+        if (slotsUsed >= JEWELRY_SLOT_LIMITS[def.slotType]) return false;
+        // Check not already owned
+        if ((state.jewelry ?? []).some((j: { defId: string }) => j.defId === defId)) return false;
+        set({
+          cleanCash: state.cleanCash - def.baseCost,
+          totalSpent: state.totalSpent + def.baseCost,
+          jewelry: [...(state.jewelry ?? []), { defId, slotType: def.slotType, tier: 0, equippedSlotIndex: slotsUsed }],
+        });
+        return true;
+      },
+
+      upgradeJewelry: (index) => {
+        const state = get();
+        const jewelry = [...(state.jewelry ?? [])];
+        const piece = jewelry[index];
+        if (!piece || piece.tier >= 4) return false;
+        const { JEWELRY_DEF_MAP } = require('../data/jewelryDefs');
+        const def = JEWELRY_DEF_MAP[piece.defId];
+        if (!def) return false;
+        const nextTier = def.tiers[piece.tier + 1];
+        if (!nextTier || state.cleanCash < nextTier.upgradeCost) return false;
+        jewelry[index] = { ...piece, tier: piece.tier + 1 };
+        set({
+          cleanCash: state.cleanCash - nextTier.upgradeCost,
+          totalSpent: state.totalSpent + nextTier.upgradeCost,
+          jewelry,
+        });
+        return true;
+      },
+
+      // ─── CARS ──────────────────────────────────────────────────
+      buyCar: (defId) => {
+        const state = get();
+        const { CAR_DEF_MAP } = require('../data/carDefs');
+        const def = CAR_DEF_MAP[defId];
+        if (!def || state.cleanCash < def.cost) return false;
+        // Check not already owned
+        if ((state.cars ?? []).some((c: { defId: string }) => c.defId === defId)) return false;
+        set({
+          cleanCash: state.cleanCash - def.cost,
+          totalSpent: state.totalSpent + def.cost,
+          cars: [...(state.cars ?? []), { defId, purchasedAtTick: state.tickCount }],
+        });
+        return true;
+      },
     }),
     {
       name: 'myempire-save',
-      version: 21,
+      version: 22,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
@@ -1082,6 +1161,11 @@ export const useGameStore = create<GameStore>()(
         if (!merged.rivals) merged.rivals = [];
         if (!merged.hitmen) merged.hitmen = [];
         if (!merged.rivalAttackLog) merged.rivalAttackLog = [];
+
+        // Casino, Jewelry, Cars (v22)
+        if (!merged.casinoHistory) merged.casinoHistory = { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 };
+        if (!merged.jewelry) merged.jewelry = [];
+        if (!merged.cars) merged.cars = [];
 
         // Bootstrap unlocked slots for existing saves
         if (!merged.unlockedSlots) {
