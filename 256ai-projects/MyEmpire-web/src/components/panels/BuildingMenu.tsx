@@ -57,8 +57,9 @@ export default function BuildingMenu() {
   if (!biz) return null;
 
   const def = BUSINESS_MAP[biz.businessDefId];
+  if (!def) return null;
   const district = DISTRICT_MAP[biz.districtId];
-  if (!def || !district) return null;
+  const districtName = district?.name ?? biz.districtId.replace(/^gen_\d+_\d+$/, 'Expansion Zone');
 
   const tier = def.upgradeTiers[biz.upgradeLevel];
   const nextTier = def.upgradeTiers[biz.upgradeLevel + 1];
@@ -93,7 +94,7 @@ export default function BuildingMenu() {
           <span className="text-3xl">{def.icon}</span>
           <div>
             <h3 className="text-white font-bold text-lg leading-tight">{def.displayName}</h3>
-            <p className="text-gray-400 text-xs">{tier?.name} · {district.name}</p>
+            <p className="text-gray-400 text-xs">{tier?.name} · {districtName}</p>
             {def.isDispensary && <p className="text-green-400 text-[10px] font-semibold mt-0.5">LEGAL DISPENSARY</p>}
           </div>
         </div>
