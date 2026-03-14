@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useGameStore } from '../../store/gameStore';
 import { useLeaderboardStore } from '../../store/leaderboardStore';
 import { formatMoney } from '../../engine/economy';
+import { getDifficultyMultiplier } from '../../engine/difficulty';
 
 function formatTime(ticks: number): string {
   const totalSec = ticks;
@@ -58,6 +59,7 @@ export default function LeaderboardView() {
   const rivals = useGameStore((s) => s.rivals);
   const operation = useGameStore((s) => s.operation);
   const storageCapacity = useGameStore((s) => s.storageCapacity);
+  const gameSettings = useGameStore((s) => s.gameSettings);
 
   // Global leaderboard
   const { entries, loading, fetchLeaderboard } = useLeaderboardStore();
@@ -69,7 +71,9 @@ export default function LeaderboardView() {
 
   // Computed stats
   const totalEarned = totalDirtyEarned + totalCleanEarned;
-  const empireScore = totalEarned + prestigeCount * 500_000;
+  const diffMultiplier = getDifficultyMultiplier(gameSettings.rivalCount, gameSettings.rivalEntryDelay);
+  const baseScore = totalEarned + prestigeCount * 500_000;
+  const empireScore = Math.floor(baseScore * diffMultiplier);
   const netWorth = dirtyCash + cleanCash;
   const totalRooms = operation?.growRooms?.length ?? 0;
   const totalDealers = operation?.dealerCount ?? 0;
@@ -96,11 +100,20 @@ export default function LeaderboardView() {
           <div className="bg-gradient-to-br from-indigo-900/60 to-purple-900/40 border border-indigo-500/30 rounded-2xl p-5 text-center">
             <p className="text-indigo-300 text-xs uppercase tracking-widest mb-1">Empire Score</p>
             <p className="text-white text-3xl font-black">{empireScore.toLocaleString()}</p>
+            <div className="flex items-center justify-center gap-3 mt-1.5">
+              {diffMultiplier > 1 && (
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${diffMultiplier >= 2 ? 'bg-red-900/50 text-red-400' : diffMultiplier >= 1.5 ? 'bg-orange-900/50 text-orange-400' : 'bg-yellow-900/50 text-yellow-400'}`}>
+                  ×{diffMultiplier.toFixed(1)} difficulty
+                </span>
+              )}
+              {prestigeCount > 0 && (
+                <span className="text-yellow-400 text-xs">
+                  {'⭐'.repeat(Math.min(prestigeCount, 5))}{prestigeCount > 5 ? ` ×${prestigeCount}` : ''}
+                </span>
+              )}
+            </div>
             {prestigeCount > 0 && (
-              <p className="text-yellow-400 text-sm mt-1">
-                {'⭐'.repeat(Math.min(prestigeCount, 5))}{prestigeCount > 5 ? ` ×${prestigeCount}` : ''}
-                <span className="text-indigo-300 text-xs ml-2">+{Math.round(prestigeBonus * 100)}% yield</span>
-              </p>
+              <p className="text-indigo-300 text-[10px] mt-1">+{Math.round(prestigeBonus * 100)}% yield</p>
             )}
           </div>
 
@@ -214,6 +227,9 @@ export default function LeaderboardView() {
                           {entry.displayName}
                           {isPlayer && <span className="text-indigo-400 text-[10px] ml-1">(you)</span>}
                         </p>
+                        {(entry.difficultyMultiplier ?? 1) > 1 && (
+                          <p className="text-[9px] text-gray-500">×{(entry.difficultyMultiplier ?? 1).toFixed(1)} diff</p>
+                        )}
                       </div>
                       <span className="text-green-400 font-bold text-sm">{entry.score.toLocaleString()}</span>
                     </div>

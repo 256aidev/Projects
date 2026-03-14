@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { getDifficultyMultiplier } from '../../engine/difficulty';
 
 export default function StartGameScreen() {
   const gameSettings = useGameStore((s) => s.gameSettings);
@@ -9,8 +10,11 @@ export default function StartGameScreen() {
   const tickCount = useGameStore((s) => s.tickCount);
 
   const [rivalCount, setRivalCount] = useState(gameSettings.rivalCount);
-  const [entryDelay, setEntryDelay] = useState(gameSettings.rivalEntryDelay ?? 2);
+  const [entryDelay, setEntryDelay] = useState(gameSettings.rivalEntryDelay ?? 10);
   const hasExistingGame = tickCount > 0 && gameSettings.gameStarted;
+
+  // Difficulty multiplier calculation (same formula as leaderboard scoring)
+  const diffMultiplier = getDifficultyMultiplier(rivalCount, entryDelay);
 
   return (
     <div className="h-full flex flex-col items-center justify-center bg-gray-950 p-6">
@@ -47,26 +51,39 @@ export default function StartGameScreen() {
 
         {/* Entry delay slider */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 mb-6">
-          <p className="text-white font-bold text-sm mb-1">Rival Entry Delay</p>
+          <p className="text-white font-bold text-sm mb-1">Rival Start Time</p>
           <p className="text-gray-500 text-[10px] mb-3">
-            Minutes between each rival entering the game (Royal Rumble style). 5-min warmup, then one rival every {entryDelay} min{entryDelay !== 1 ? 's' : ''}.
+            {entryDelay === 0
+              ? 'Rivals start immediately — no warmup!'
+              : `First rival enters after ${entryDelay} min, then one every ${Math.max(1, Math.floor(entryDelay / rivalCount))} min.`}
           </p>
           <div className="flex items-center gap-3">
             <input
               type="range"
-              min={1}
-              max={5}
-              step={1}
+              min={0}
+              max={60}
+              step={10}
               value={entryDelay}
               onChange={(e) => setEntryDelay(Number(e.target.value))}
               className="flex-1 accent-amber-500"
             />
-            <span className="text-amber-400 font-black text-2xl w-8 text-center">{entryDelay}</span>
+            <span className="text-amber-400 font-black text-2xl w-12 text-center">{entryDelay}m</span>
           </div>
           <div className="flex justify-between text-[9px] text-gray-600 mt-1 px-0.5">
-            <span>Fast</span>
-            <span>Slow</span>
+            <span>Instant</span>
+            <span>60 min</span>
           </div>
+        </div>
+
+        {/* Difficulty multiplier display */}
+        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-3 mb-6 text-center">
+          <p className="text-gray-500 text-[9px] uppercase tracking-widest mb-1">Score Multiplier</p>
+          <p className={`font-black text-2xl ${diffMultiplier >= 2 ? 'text-red-400' : diffMultiplier >= 1.5 ? 'text-orange-400' : diffMultiplier > 1 ? 'text-yellow-400' : 'text-gray-400'}`}>
+            ×{diffMultiplier.toFixed(1)}
+          </p>
+          <p className="text-gray-600 text-[9px] mt-1">
+            {diffMultiplier >= 2 ? 'Insane — max score boost!' : diffMultiplier >= 1.5 ? 'Hard — big score boost' : diffMultiplier > 1 ? 'Moderate difficulty' : 'Easy — base score'}
+          </p>
         </div>
 
         {/* Start button */}

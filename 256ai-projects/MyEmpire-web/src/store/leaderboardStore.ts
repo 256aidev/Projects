@@ -11,6 +11,9 @@ export interface LeaderboardEntry {
   prestigeCount: number;
   businessCount: number;
   tickCount: number;
+  difficultyMultiplier?: number;
+  rivalCount?: number;
+  rivalEntryDelay?: number;
   updatedAt: number;
 }
 

@@ -839,7 +839,7 @@ export const INITIAL_GAME_STATE: GameState = {
   nextBlockCost: 2000,
   currentJobId: null,
   jobFiredCooldown: 0,
-  gameSettings: { rivalCount: 3, rivalEntryDelay: 2, gameStarted: false, tutorialActive: false, tutorialStep: 0 },
+  gameSettings: { rivalCount: 3, rivalEntryDelay: 10, gameStarted: false, tutorialActive: false, tutorialStep: 0 },
   rivals: [],
   hitmen: [],
   rivalAttackLog: [],

@@ -2,6 +2,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { GameState } from '../data/types';
 import { INITIAL_GAME_STATE } from '../data/types';
+import { getDifficultyMultiplier } from '../engine/difficulty';
 
 const SAVE_VERSION = 4;
 
@@ -30,7 +31,15 @@ export async function updateLeaderboardEntry(
 ): Promise<void> {
   const gs = state as unknown as GameState;
   const totalEarned = (gs.totalDirtyEarned ?? 0) + (gs.totalCleanEarned ?? 0);
-  const score = totalEarned + (gs.prestigeCount ?? 0) * 500_000;
+  const baseScore = totalEarned + (gs.prestigeCount ?? 0) * 500_000;
+
+  // Apply difficulty multiplier based on game settings
+  const settings = gs.gameSettings;
+  const diffMultiplier = settings
+    ? getDifficultyMultiplier(settings.rivalCount, settings.rivalEntryDelay)
+    : 1;
+  const score = Math.floor(baseScore * diffMultiplier);
+
   const ref = doc(db, 'leaderboard', uid);
   await setDoc(ref, {
     displayName: displayName || 'Anonymous',
@@ -40,6 +49,9 @@ export async function updateLeaderboardEntry(
     prestigeCount: gs.prestigeCount ?? 0,
     businessCount: Array.isArray(gs.businesses) ? gs.businesses.length : 0,
     tickCount: gs.tickCount ?? 0,
+    difficultyMultiplier: diffMultiplier,
+    rivalCount: settings?.rivalCount ?? 0,
+    rivalEntryDelay: settings?.rivalEntryDelay ?? 0,
     updatedAt: Date.now(),
   });
 }

@@ -908,7 +908,7 @@ export const useGameStore = create<GameStore>()(
         set({ ...INITIAL_GAME_STATE });
       },
 
-      startNewGame: (rivalCount, entryDelayMinutes = 2) => {
+      startNewGame: (rivalCount, entryDelayMinutes = 10) => {
         const state = get();
         const isFirstEver = (state.prestigeCount ?? 0) === 0 && (state.tickCount ?? 0) === 0;
         // First-ever game: first harvest is free (ticksRemaining = 0) so new players
