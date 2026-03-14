@@ -1138,6 +1138,12 @@ export const useGameStore = create<GameStore>()(
         if (!merged.unlockedDistricts.includes('job_district')) {
           merged.unlockedDistricts = [...merged.unlockedDistricts, 'job_district'];
         }
+        // Shop districts are always unlocked (free access)
+        for (const shopId of ['casino_district', 'jewelry_district', 'car_district']) {
+          if (!merged.unlockedDistricts.includes(shopId)) {
+            merged.unlockedDistricts = [...merged.unlockedDistricts, shopId];
+          }
+        }
 
         // Backfill job fields for old saves
         if (merged.currentJobId === undefined) merged.currentJobId = null;
