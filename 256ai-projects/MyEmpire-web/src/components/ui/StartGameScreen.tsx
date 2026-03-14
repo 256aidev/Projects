@@ -91,6 +91,24 @@ export default function StartGameScreen() {
             Starting a new game will reset all progress.
           </p>
         )}
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-gray-800" />
+          <span className="text-gray-600 text-[10px]">or</span>
+          <div className="flex-1 h-px bg-gray-800" />
+        </div>
+
+        {/* Learning Mode */}
+        <button
+          onClick={() => startNewGame(0, 0)}
+          className="w-full py-3.5 rounded-xl text-lg font-black bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-lg shadow-emerald-900/30"
+        >
+          Learning Mode
+        </button>
+        <p className="text-gray-600 text-[9px] text-center mt-2">
+          No rivals — explore the game at your own pace.
+        </p>
       </div>
     </div>
   );
