@@ -233,6 +233,7 @@ export const useGameStore = create<GameStore>()(
             const result = tickRivals(
               rivals, newRivalHeat, dirtyCash, totalProductOz,
               state.businesses, getPlayerDefense(state.hitmen ?? []),
+              newTickCount,
             );
             rivals = result.rivals;
             dirtyCash = Math.max(0, dirtyCash - result.playerDirtyCashLost);
@@ -530,10 +531,18 @@ export const useGameStore = create<GameStore>()(
           cleanToDirtyPerTick: 0,
           ...(def.isDispensary ? { productQueuedPerTick: 2 } : {}),
         };
+        // Clear this slot from any rival's blacklist (player buying clears the title)
+        const slotKey = `${districtId}:${slotIndex}`;
+        const updatedRivals = state.rivals.map(r => {
+          if (!r.blacklistedSlots?.includes(slotKey)) return r;
+          return { ...r, blacklistedSlots: r.blacklistedSlots.filter(s => s !== slotKey) };
+        });
+
         set({
           cleanCash: state.cleanCash - def.purchaseCost,
           totalSpent: state.totalSpent + def.purchaseCost,
           businesses: [...state.businesses, instance],
+          rivals: updatedRivals,
         });
         return true;
       },
@@ -854,15 +863,18 @@ export const useGameStore = create<GameStore>()(
               return { ...r, businesses: updated.filter(b => b.health > 0), aggression: Math.min(1, r.aggression + 0.25) };
             }
             case 'arson': {
-              if (r.businesses.length === 0) {
+              // Only target non-burning businesses
+              const active = r.businesses.filter(b => !b.burnedAtTick);
+              if (active.length === 0) {
                 message = `${rival.name} has no businesses to burn!`;
                 return r;
               }
-              const bIdx = Math.floor(Math.random() * r.businesses.length);
-              message = `Burned down ${rival.name}'s business!`;
-              const remaining = r.businesses.filter((_, i) => i !== bIdx);
-              const defeated = remaining.length === 0 && r.dirtyCash < 1000 && r.productOz < 5;
-              return { ...r, businesses: remaining, isDefeated: defeated, aggression: Math.min(1, r.aggression + 0.3) };
+              const target = active[Math.floor(Math.random() * active.length)];
+              message = `Burned down ${rival.name}'s business! 🔥`;
+              const updated = r.businesses.map(b =>
+                b === target ? { ...b, burnedAtTick: state.tickCount, health: 0 } : b
+              );
+              return { ...r, businesses: updated, aggression: Math.min(1, r.aggression + 0.3) };
             }
             default:
               return r;

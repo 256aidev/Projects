@@ -483,7 +483,11 @@ export interface RivalBusiness {
   slotIndex: number;
   businessDefId: string;
   health: number;          // 0-100, destroyed at 0
+  burnedAtTick?: number;   // tick when arson hit — shows fire for ARSON_DURATION ticks
 }
+
+export const ARSON_DURATION = 100; // ~10 seconds of fire/rubble before lot clears
+export const ARSON_INSURANCE = 5000; // rival gets insurance payout when fire clears
 
 export interface RivalSyndicate {
   id: string;
@@ -498,6 +502,7 @@ export interface RivalSyndicate {
   aggression: number;      // 0-1, how likely to attack per tick
   power: number;           // overall strength scaling (grows over time)
   isDefeated: boolean;
+  blacklistedSlots?: string[]; // "districtId:slotIndex" — can't rebuy after arson insurance
 }
 
 export interface HitmanDef {

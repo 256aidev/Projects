@@ -63,6 +63,31 @@ function RivalLot({ rivalBiz, rival, size, onAction }: {
   const bizDef = BUSINESS_MAP[rivalBiz.businessDefId];
   const rootSize = size === 'xs' ? 'w-[56px] h-[56px]' : 'w-[72px] h-[72px]';
   const textSz = size === 'xs' ? 'text-[6px]' : 'text-[7px]';
+  const isBurning = rivalBiz.burnedAtTick != null;
+
+  // Burning lot — show fire/rubble
+  if (isBurning) {
+    return (
+      <div
+        className={`${rootSize} rounded-lg border-2 border-orange-600/60 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden`}
+        style={{ backgroundColor: '#1a0800' }}
+      >
+        {/* Animated fire glow */}
+        <div className="absolute inset-0 bg-gradient-to-t from-orange-900/80 via-red-900/40 to-transparent animate-pulse" />
+        <div className="relative z-10 flex flex-col items-center">
+          <span className="text-lg" style={{ animation: 'pulse 0.8s ease-in-out infinite' }}>🔥</span>
+          <span className={`${textSz} font-bold text-orange-400`}>FIRE</span>
+          <span className={`${textSz} text-orange-300/60`}>{rival.name.split(' ')[1]}</span>
+        </div>
+        {/* Rubble pieces */}
+        <div className="absolute bottom-0.5 left-1 right-1 flex justify-center gap-0.5">
+          <span className="text-[6px]">🧱</span>
+          <span className="text-[6px]">🪨</span>
+          <span className="text-[6px]">🧱</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">

@@ -1,5 +1,5 @@
 import type { RivalSyndicate, HiredHitman, BusinessInstance } from '../data/types';
-import { HITMAN_MAP } from '../data/types';
+import { HITMAN_MAP, ARSON_DURATION, ARSON_INSURANCE } from '../data/types';
 import { BUSINESSES } from '../data/businesses';
 import { DISTRICTS } from '../data/districts';
 
@@ -47,6 +47,7 @@ export function tickRivals(
   playerProductOz: number,
   playerBusinesses: BusinessInstance[],
   playerDefense: number,
+  tickCount: number,
 ): RivalTickResult {
   const messages: string[] = [];
   let dirtyCashLost = 0;
@@ -64,7 +65,35 @@ export function tickRivals(
     r.productOz += 2 + Math.floor(r.power * 0.5);
     r.power = Math.min(20, r.power + 0.02); // slow power creep
 
+    // ── Process burned businesses — fire clears after ARSON_DURATION ticks ──
+    const stillBurning: typeof r.businesses = [];
+    const cleared: typeof r.businesses = [];
+    for (const biz of r.businesses) {
+      if (biz.burnedAtTick != null) {
+        if (tickCount - biz.burnedAtTick >= ARSON_DURATION) {
+          cleared.push(biz);
+        } else {
+          stillBurning.push(biz);
+        }
+      } else {
+        stillBurning.push(biz);
+      }
+    }
+    if (cleared.length > 0) {
+      r.businesses = stillBurning;
+      // Insurance payout per cleared building — rival gets cash back
+      r.dirtyCash += cleared.length * ARSON_INSURANCE;
+      // Blacklist the slots — rival can't rebuy until someone else buys and clears
+      const newBlacklist = [...(r.blacklistedSlots ?? [])];
+      for (const biz of cleared) {
+        newBlacklist.push(`${biz.districtId}:${biz.slotIndex}`);
+      }
+      r.blacklistedSlots = newBlacklist;
+      messages.push(`${r.icon} ${r.name} collected $${(cleared.length * ARSON_INSURANCE).toLocaleString()} insurance`);
+    }
+
     // Rival buys a business occasionally (every ~50 ticks when they have money)
+    // Skip slots that are still burning
     if (r.dirtyCash > 15000 && Math.random() < 0.08) {
       const bizDef = BUSINESSES[Math.floor(Math.random() * BUSINESSES.length)];
       const district = DISTRICTS.filter(d => d.maxBusinessSlots > 0)[
@@ -72,8 +101,10 @@ export function tickRivals(
       ];
       if (bizDef && district) {
         const slot = Math.floor(Math.random() * district.maxBusinessSlots);
+        const slotKey = `${district.id}:${slot}`;
         const alreadyHas = r.businesses.some(b => b.districtId === district.id && b.slotIndex === slot);
-        if (!alreadyHas) {
+        const isBlacklisted = (r.blacklistedSlots ?? []).includes(slotKey);
+        if (!alreadyHas && !isBlacklisted) {
           r.businesses = [...r.businesses, {
             districtId: district.id,
             slotIndex: slot,
