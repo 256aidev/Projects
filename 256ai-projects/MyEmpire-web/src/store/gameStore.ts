@@ -804,8 +804,18 @@ export const useGameStore = create<GameStore>()(
 
       startNewGame: (rivalCount) => {
         const state = get();
+        const isFirstEver = (state.prestigeCount ?? 0) === 0 && (state.tickCount ?? 0) === 0;
+        // First-ever game: first harvest is free (ticksRemaining = 0) so new players
+        // can immediately harvest, sell, and understand the loop.
+        const startOp = { ...INITIAL_GAME_STATE.operation };
+        if (isFirstEver && startOp.growRooms[0]?.slots[0]) {
+          startOp.growRooms = [
+            { ...startOp.growRooms[0], slots: [{ ...startOp.growRooms[0].slots[0], ticksRemaining: 0 }] },
+          ];
+        }
         set({
           ...INITIAL_GAME_STATE,
+          operation: startOp,
           prestigeCount: state.prestigeCount ?? 0,
           prestigeBonus: 0,
           techPoints: state.techPoints ?? 0,
