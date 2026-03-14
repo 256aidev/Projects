@@ -37,12 +37,11 @@ Wife's PC (Marketing Station)
 - Apple Smart App Banner meta tag
 - Mobile-optimized responsive design
 
-### 1.2 Analytics Setup — NEEDS USER INPUT
-- Add Google Analytics 4 (GA4) to all 256ai.xyz pages
-- GA4 property ID needed (create at analytics.google.com)
-- Conversion events: `app_store_click`, `email_signup`
-- Link GA4 to Google Ads for conversion tracking
-- Google Ads conversion tracking pixel
+### 1.2 Analytics Setup ✅ DONE
+- GA4 (G-RE9GJQFV6X) added to ALL 256ai.xyz pages (home, bazi, support, privacy, policy)
+- Conversion events wired: `app_store_click`, `email_signup` (on bazi landing)
+- TODO: Link GA4 to Google Ads for conversion tracking (needs Google Ads account ID)
+- TODO: Google Ads conversion tracking pixel (needs AW- ID)
 
 ### 1.3 Email Capture Backend — TODO
 - Cloudflare Worker function at `/api/subscribe`
