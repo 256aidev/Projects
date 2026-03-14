@@ -7,6 +7,7 @@ import { getHeatTier, getRivalHeatTier, HEAT_MAX } from '../../engine/heat';
 import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS } from '../../data/types';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
+import type { GameSpeed } from '../../store/uiStore';
 
 export default function HUD() {
   const [sfxOn, setSfxOn] = useState(!sound.sfxMuted);
@@ -33,6 +34,8 @@ export default function HUD() {
   const setShowTechMenu = useUIStore((s) => s.setShowTechMenu);
   const setPanel = useUIStore((s) => s.setPanel);
   const activePanel = useUIStore((s) => s.activePanel);
+  const gameSpeed = useUIStore((s) => s.gameSpeed);
+  const setGameSpeed = useUIStore((s) => s.setGameSpeed);
   const isGuest = !user || (user as { uid: string }).uid === 'guest';
 
   return (
@@ -116,6 +119,28 @@ export default function HUD() {
           />
         </div>
         <span className="text-[10px] font-mono" style={{ color: rivalColor }}>{Math.floor(rivalHeat)}</span>
+      </div>
+
+      {/* Speed controls */}
+      <div className="flex items-center gap-0.5 bg-gray-800 rounded-lg px-1 py-0.5">
+        {([0, 1, 2, 4, 8] as GameSpeed[]).map((speed) => {
+          const label = speed === 0 ? '⏸' : speed === 1 ? '▶' : `${speed}x`;
+          const isActive = gameSpeed === speed;
+          return (
+            <button
+              key={speed}
+              onClick={() => setGameSpeed(speed)}
+              className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition ${
+                isActive
+                  ? speed === 0 ? 'bg-red-700 text-white' : 'bg-green-700 text-white'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+              title={speed === 0 ? 'Pause' : `${speed}x speed`}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Sound controls — SFX and Music independently */}

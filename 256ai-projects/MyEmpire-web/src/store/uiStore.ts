@@ -4,6 +4,8 @@ import { sound } from '../engine/sound';
 type PanelName = 'buy' | 'market' | 'lawyer' | 'event' | 'settings' | 'warehouse' | null;
 export type ViewName = 'operation' | 'city' | 'warehouse' | 'legal' | 'finance';
 
+export type GameSpeed = 0 | 1 | 2 | 4 | 8;
+
 interface UIState {
   activeView: ViewName;
   activeDistrictId: string;
@@ -14,6 +16,7 @@ interface UIState {
   showLeaderboard: boolean;
   showTechMenu: boolean;
   showPrestigeConfirm: boolean;
+  gameSpeed: GameSpeed;
   notifications: { id: number; message: string; type: 'success' | 'warning' | 'error' }[];
 }
 
@@ -27,6 +30,7 @@ interface UIActions {
   setShowLeaderboard: (show: boolean) => void;
   setShowTechMenu: (show: boolean) => void;
   setShowPrestigeConfirm: (show: boolean) => void;
+  setGameSpeed: (speed: GameSpeed) => void;
   closeAll: () => void;
   addNotification: (message: string, type: 'success' | 'warning' | 'error') => void;
   removeNotification: (id: number) => void;
@@ -44,6 +48,7 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   showLeaderboard: false,
   showTechMenu: false,
   showPrestigeConfirm: false,
+  gameSpeed: 1,
   notifications: [],
 
   setActiveView: (view) => set({ activeView: view, selectedSlot: null, selectedBusinessId: null, activePanel: null }),
@@ -55,6 +60,7 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   setShowLeaderboard: (show) => set({ showLeaderboard: show }),
   setShowTechMenu: (show) => set({ showTechMenu: show }),
   setShowPrestigeConfirm: (show) => set({ showPrestigeConfirm: show }),
+  setGameSpeed: (speed) => set({ gameSpeed: speed }),
   closeAll: () => set({ selectedSlot: null, selectedBusinessId: null, activePanel: null }),
 
   addNotification: (message, type) => {
