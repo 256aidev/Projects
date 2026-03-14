@@ -94,6 +94,7 @@ interface GameActions {
   prestige: () => boolean;
   purchaseTechUpgrade: (upgradeId: TechUpgradeId) => boolean;
   resetGame: () => void;
+  wipeGame: () => void;
   // Rivals & hitmen
   startNewGame: (rivalCount: number, entryDelayMinutes?: number) => void;
   continueGame: () => void;
@@ -900,6 +901,10 @@ export const useGameStore = create<GameStore>()(
           totalTechPointsEarned: state.totalTechPointsEarned ?? 0,
           techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
         });
+      },
+
+      wipeGame: () => {
+        set({ ...INITIAL_GAME_STATE });
       },
 
       startNewGame: (rivalCount, entryDelayMinutes = 2) => {

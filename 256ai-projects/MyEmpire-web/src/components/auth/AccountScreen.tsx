@@ -22,6 +22,8 @@ export default function AccountScreen() {
 
   const isGuest = !user || (user as { uid: string }).uid === 'guest';
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmWipe, setConfirmWipe] = useState(false);
+  const wipeGame = useGameStore((s) => s.wipeGame);
   const [sfxVol, setSfxVol] = useState(sound.sfxVolume);
   const [musicVol, setMusicVol] = useState(sound.musicVolume);
   const [sfxOn, setSfxOn] = useState(!sound.sfxMuted);
@@ -225,6 +227,37 @@ export default function AccountScreen() {
               className="w-full py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-red-400 font-semibold text-sm transition"
             >
               Reset Game
+            </button>
+          )}
+
+          {confirmWipe ? (
+            <div className="bg-red-950 border-2 border-red-600 rounded-xl p-4 space-y-3">
+              <p className="text-red-400 text-sm font-bold text-center">⚠️ DELETE ALL DATA ⚠️</p>
+              <p className="text-red-300/80 text-xs text-center leading-relaxed">
+                This will permanently erase <span className="font-bold text-white">everything</span> — all cash, businesses, prestige levels, tech upgrades, and progress. You will start completely fresh as if you never played.
+              </p>
+              <p className="text-red-500 text-[10px] text-center font-semibold">This cannot be undone.</p>
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmWipe(false)} className="flex-1 py-2 rounded-lg bg-gray-700 text-gray-300 text-sm font-semibold">Cancel</button>
+                <button
+                  onClick={() => {
+                    wipeGame();
+                    setConfirmWipe(false);
+                    addNotification('All data wiped. Starting fresh.', 'error');
+                    setShowAccountScreen(false);
+                  }}
+                  className="flex-1 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm font-bold transition"
+                >
+                  Yes, Wipe Everything
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmWipe(true)}
+              className="w-full py-2 rounded-xl bg-gray-800 hover:bg-red-950 text-gray-500 hover:text-red-400 font-semibold text-sm transition border border-transparent hover:border-red-800"
+            >
+              Exit Game (Wipe All Data)
             </button>
           )}
 
