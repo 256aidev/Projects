@@ -8,6 +8,7 @@ import { getTechBonuses } from '../engine/tech';
 import { generateRivals } from '../data/rivals';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
+import { useUIStore } from './uiStore';
 
 // ── City block helpers ──────────────────────────────────────────────────────
 
@@ -283,7 +284,7 @@ export const useGameStore = create<GameStore>()(
           // Event system tick
           let eventSystem = tickBuffs(state.eventSystem ?? INITIAL_EVENT_STATE, newTickCount);
           const totalProductOzForEvents = Object.values(finalOp.productInventory).reduce((s, e) => s + e.oz, 0);
-          if (shouldTriggerEvent(newTickCount, eventSystem)) {
+          if (shouldTriggerEvent(newTickCount, eventSystem, useUIStore.getState().gameSpeed)) {
             const checkState: EventCheckState = {
               tickCount: newTickCount,
               heat: newHeat,

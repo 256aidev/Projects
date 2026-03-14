@@ -85,24 +85,32 @@ export function selectRandomEvent(
   return eligible[eligible.length - 1];
 }
 
-/** Check if it's time for a new event */
+/** Check if it's time for a new event.
+ *  gameSpeed scales the intervals so events feel the same in real-time
+ *  regardless of game speed (1x/2x/4x/8x). */
 export function shouldTriggerEvent(
   tickCount: number,
   eventState: EventSystemState,
+  gameSpeed: number = 1,
 ): boolean {
   // Don't trigger if there's already an active event
   if (eventState.activeEvent) return false;
 
+  const speed = Math.max(1, gameSpeed);
   const ticksSinceLastEvent = tickCount - eventState.lastEventTick;
 
+  // Scale intervals by game speed — at 8x, require 8x more ticks between events
+  const scaledMinInterval = EVENT_MIN_INTERVAL * speed;
+  const scaledMaxInterval = EVENT_MAX_INTERVAL * speed;
+
   // Minimum interval not met
-  if (ticksSinceLastEvent < EVENT_MIN_INTERVAL) return false;
+  if (ticksSinceLastEvent < scaledMinInterval) return false;
 
   // Guaranteed event at max interval
-  if (ticksSinceLastEvent >= EVENT_MAX_INTERVAL) return true;
+  if (ticksSinceLastEvent >= scaledMaxInterval) return true;
 
   // Increasing probability as we approach max interval
-  const progress = (ticksSinceLastEvent - EVENT_MIN_INTERVAL) / (EVENT_MAX_INTERVAL - EVENT_MIN_INTERVAL);
+  const progress = (ticksSinceLastEvent - scaledMinInterval) / (scaledMaxInterval - scaledMinInterval);
   return Math.random() < progress * 0.15; // up to 15% chance per tick near max
 }
 
