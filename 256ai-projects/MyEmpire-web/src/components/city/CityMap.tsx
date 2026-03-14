@@ -211,7 +211,9 @@ export default function CityMap() {
   const lastPos = useRef({ x: 0, y: 0 });
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if ((e.target as HTMLElement).closest('button')) return;
+    // Let buttons handle their own clicks — check target and all ancestors
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[data-clickable]')) return;
     dragging.current = true;
     hasMoved.current = false;
     lastPos.current = { x: e.clientX, y: e.clientY };
@@ -225,7 +227,14 @@ export default function CityMap() {
     lastPos.current = { x: e.clientX, y: e.clientY };
     setOffset(o => ({ x: o.x + dx, y: o.y + dy }));
   }
-  function onPointerUp() { dragging.current = false; }
+  function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const wasDragging = dragging.current;
+    dragging.current = false;
+    // If we were dragging, release capture and prevent any stale clicks
+    if (wasDragging && hasMoved.current) {
+      try { (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId); } catch {}
+    }
+  }
 
   function onWheel(e: React.WheelEvent) {
     e.preventDefault();
