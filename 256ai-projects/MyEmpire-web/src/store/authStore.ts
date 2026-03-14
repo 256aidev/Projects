@@ -6,7 +6,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth, googleProvider, appleProvider } from '../firebase';
-import { loadCloudSave, saveToCloud } from './cloudSave';
+import { loadCloudSave, saveToCloud, updateLeaderboardEntry } from './cloudSave';
 import { useGameStore } from './gameStore';
 
 interface AuthState {
@@ -81,7 +81,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     if (!user || syncing) return;
     set({ syncing: true });
     try {
-      await saveToCloud(user.uid, getGameSnapshot());
+      const snapshot = getGameSnapshot();
+      await saveToCloud(user.uid, snapshot);
+      await updateLeaderboardEntry(user.uid, user.displayName ?? 'Anonymous', snapshot);
     } finally {
       set({ syncing: false });
     }

@@ -36,6 +36,7 @@ import ResourceMarketPanel from './components/panels/ResourceMarketPanel';
 import Notifications from './components/ui/Notifications';
 import LoginScreen from './components/auth/LoginScreen';
 import AccountScreen from './components/auth/AccountScreen';
+import LeaderboardView from './components/ui/LeaderboardView';
 import StartGameScreen from './components/ui/StartGameScreen';
 
 // Auto-sync to Firestore every 60 ticks (≈ 1 min)
@@ -49,6 +50,7 @@ export default function App() {
   const selectedBusinessId = useUIStore((s) => s.selectedBusinessId);
   const activePanel = useUIStore((s) => s.activePanel);
   const showAccountScreen = useUIStore((s) => s.showAccountScreen);
+  const showLeaderboard = useUIStore((s) => s.showLeaderboard);
   const setPanel = useUIStore((s) => s.setPanel);
 
   const { user, loading, syncToCloud } = useAuthStore();
@@ -133,6 +135,7 @@ export default function App() {
 
       <Notifications />
       {showAccountScreen && <AccountScreen />}
+      {showLeaderboard && <LeaderboardView />}
     </div>
   );
 }

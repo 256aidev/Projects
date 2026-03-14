@@ -11,6 +11,7 @@ interface UIState {
   selectedBusinessId: string | null;
   activePanel: PanelName;
   showAccountScreen: boolean;
+  showLeaderboard: boolean;
   notifications: { id: number; message: string; type: 'success' | 'warning' | 'error' }[];
 }
 
@@ -21,6 +22,7 @@ interface UIActions {
   selectBusiness: (instanceId: string | null) => void;
   setPanel: (panel: PanelName) => void;
   setShowAccountScreen: (show: boolean) => void;
+  setShowLeaderboard: (show: boolean) => void;
   closeAll: () => void;
   addNotification: (message: string, type: 'success' | 'warning' | 'error') => void;
   removeNotification: (id: number) => void;
@@ -35,6 +37,7 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   selectedBusinessId: null,
   activePanel: null,
   showAccountScreen: false,
+  showLeaderboard: false,
   notifications: [],
 
   setActiveView: (view) => set({ activeView: view, selectedSlot: null, selectedBusinessId: null, activePanel: null }),
@@ -43,6 +46,7 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   selectBusiness: (instanceId) => set({ selectedBusinessId: instanceId, selectedSlot: null }),
   setPanel: (panel) => set({ activePanel: panel, selectedSlot: null, selectedBusinessId: null }),
   setShowAccountScreen: (show) => set({ showAccountScreen: show }),
+  setShowLeaderboard: (show) => set({ showLeaderboard: show }),
   closeAll: () => set({ selectedSlot: null, selectedBusinessId: null, activePanel: null }),
 
   addNotification: (message, type) => {

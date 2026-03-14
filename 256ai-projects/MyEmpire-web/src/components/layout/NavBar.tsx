@@ -12,6 +12,7 @@ const TABS: { id: ViewName; label: string; icon: string | null }[] = [
 export default function NavBar() {
   const activeView = useUIStore((s) => s.activeView);
   const setActiveView = useUIStore((s) => s.setActiveView);
+  const setShowLeaderboard = useUIStore((s) => s.setShowLeaderboard);
   const heatNoticeShown = useGameStore((s) => s.heatNoticeShown);
 
   return (
@@ -44,6 +45,15 @@ export default function NavBar() {
           </button>
         );
       })}
+
+      {/* Leaderboard button */}
+      <button
+        onClick={() => setShowLeaderboard(true)}
+        className="flex flex-col items-center justify-center py-2.5 gap-0.5 px-3 text-gray-500 hover:text-yellow-400 transition"
+      >
+        <span className="text-lg">🏆</span>
+        <span className="text-[10px] font-medium">Ranks</span>
+      </button>
     </div>
   );
 }

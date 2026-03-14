@@ -673,3 +673,54 @@ Players hire hitmen from the Legal view to defend against rival attacks.
 | 17 | Migration syncs plantsCapacity, harvestYield, pricePerUnit from canonical defs |
 | 18 | Heat max 100→1000, tier thresholds ×10, job maxHeat ×10 |
 | 19 | Rival heat system (rivalHeat field, 0-1000 scale) |
+
+---
+
+## 20. Leaderboard System
+
+### Overview
+Global leaderboard powered by Firestore. No additional server — uses the same Firebase project as auth and cloud saves.
+
+### Firestore Collection
+- **Collection:** `leaderboard`
+- **Document ID:** User's Firebase UID
+- **Updated:** Every 60 ticks (~1 min) alongside cloud saves
+
+### Composite Score Formula
+```
+score = totalDirtyEarned + totalCleanEarned + (prestigeCount × 500,000)
+```
+Prestige is weighted heavily ($500K per prestige) because each prestige requires reaching $1M total dirty earnings.
+
+### Leaderboard Entry Fields
+| Field | Type | Description |
+|-------|------|-------------|
+| displayName | string | From Firebase Auth |
+| score | number | Composite score |
+| totalDirtyEarned | number | Lifetime dirty cash earned |
+| totalCleanEarned | number | Lifetime clean cash earned |
+| prestigeCount | number | Number of prestige resets |
+| businessCount | number | Current front businesses owned |
+| tickCount | number | Total game ticks (time played) |
+| updatedAt | number | Timestamp of last update |
+
+### Ranking Tabs
+1. **Empire Score** — composite score (default)
+2. **Total Earned** — totalDirtyEarned + totalCleanEarned
+3. **Prestige** — prestigeCount
+
+### Rules
+- Guest users are excluded (no UID to write to)
+- Top 50 displayed per query
+- Player's own entry shown at bottom if not in top 50
+- 60-second cache on reads to limit Firestore costs
+- Entries auto-update on every cloud save sync
+
+### Code Locations
+| File | Purpose |
+|------|---------|
+| `src/store/leaderboardStore.ts` | Zustand store, Firestore queries |
+| `src/store/cloudSave.ts` | `updateLeaderboardEntry()` writes to Firestore |
+| `src/store/authStore.ts` | Calls leaderboard update in `syncToCloud()` |
+| `src/components/ui/LeaderboardView.tsx` | Leaderboard UI overlay |
+| `src/components/layout/NavBar.tsx` | Trophy button to open leaderboard |

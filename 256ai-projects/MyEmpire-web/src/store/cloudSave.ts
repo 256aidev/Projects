@@ -29,6 +29,27 @@ export async function saveToCloud(uid: string, state: Record<string, unknown>): 
   });
 }
 
+export async function updateLeaderboardEntry(
+  uid: string,
+  displayName: string,
+  state: Record<string, unknown>,
+): Promise<void> {
+  const gs = state as unknown as GameState;
+  const totalEarned = (gs.totalDirtyEarned ?? 0) + (gs.totalCleanEarned ?? 0);
+  const score = totalEarned + (gs.prestigeCount ?? 0) * 500_000;
+  const ref = doc(db, 'leaderboard', uid);
+  await setDoc(ref, {
+    displayName: displayName || 'Anonymous',
+    score,
+    totalDirtyEarned: gs.totalDirtyEarned ?? 0,
+    totalCleanEarned: gs.totalCleanEarned ?? 0,
+    prestigeCount: gs.prestigeCount ?? 0,
+    businessCount: Array.isArray(gs.businesses) ? gs.businesses.length : 0,
+    tickCount: gs.tickCount ?? 0,
+    updatedAt: Date.now(),
+  });
+}
+
 export async function loadCloudSave(uid: string): Promise<GameState | null> {
   const ref = doc(db, 'saves', uid);
   const snap = await getDoc(ref);
