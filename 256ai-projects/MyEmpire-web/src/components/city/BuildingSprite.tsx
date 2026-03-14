@@ -278,11 +278,146 @@ function DesertBurger({ w, h }: SpriteProps) {
   );
 }
 
+// ─── Suds & Shine Car Wash ────────────────────────────────────────────────────
+
+function CarWash({ w, h }: SpriteProps) {
+  return (
+    <ParkingLot w={w} h={h} spots="both">
+      {/* === Building shadow === */}
+      <rect x="19" y="19" width="122" height="72" rx="3" fill="#000" opacity="0.25" />
+
+      {/* === Main building === */}
+      <rect x="15" y="15" width="122" height="72" rx="3" fill="#0C4A6E" />
+      {/* Roof accent stripe */}
+      <rect x="15" y="15" width="122" height="16" rx="3" fill="#0EA5E9" />
+      <rect x="15" y="28" width="122" height="3" fill="#0284C7" />
+
+      {/* "SUDS & SHINE" sign on roof */}
+      <rect x="28" y="17" width="80" height="12" rx="2" fill="#fff" opacity="0.9" />
+      <text x="68" y="27" textAnchor="middle" fontSize="7" fill="#0C4A6E" fontWeight="bold" fontFamily="sans-serif">SUDS &amp; SHINE</text>
+
+      {/* A/C unit on roof */}
+      <rect x="118" y="17" width="14" height="10" rx="1" fill="#6B7280" />
+      <rect x="120" y="19" width="10" height="6" rx="3" fill="#4B5563" />
+
+      {/* === Office section (left) === */}
+      {/* Office window */}
+      <rect x="20" y="38" width="16" height="12" rx="2" fill="#7DD3FC" opacity="0.35" />
+      <rect x="27.5" y="38" width="1" height="12" fill="#0284C7" opacity="0.5" />
+      <rect x="20" y="43.5" width="16" height="1" fill="#0284C7" opacity="0.5" />
+      {/* Office door */}
+      <rect x="20" y="54" width="12" height="18" rx="2" fill="#0f172a" />
+      <rect x="22" y="56" width="8" height="14" rx="1" fill="#0C4A6E" opacity="0.4" />
+      <circle cx="29" cy="63" r="1.2" fill="#7DD3FC" /> {/* door handle */}
+
+      {/* === Wash bay openings (2 tunnels) === */}
+      {/* Bay 1 */}
+      <rect x="42" y="38" width="38" height="36" rx="2" fill="#0f172a" />
+      {/* Roller shutter lines */}
+      {[40, 44, 48, 52, 56].map(yy => (
+        <rect key={yy} x="44" y={yy} width="34" height="1.5" rx="0.5" fill="#1e293b" />
+      ))}
+      {/* Spinning brush roller (top-down circles) */}
+      <circle cx="52" cy="52" r="6" fill="#0EA5E9" opacity="0.5" />
+      <circle cx="52" cy="52" r="4" fill="#7DD3FC" opacity="0.4" />
+      <line x1="48" y1="52" x2="56" y2="52" stroke="#0284C7" strokeWidth="1" />
+      <line x1="52" y1="48" x2="52" y2="56" stroke="#0284C7" strokeWidth="1" />
+      <circle cx="68" cy="52" r="6" fill="#0EA5E9" opacity="0.5" />
+      <circle cx="68" cy="52" r="4" fill="#7DD3FC" opacity="0.4" />
+      <line x1="64" y1="52" x2="72" y2="52" stroke="#0284C7" strokeWidth="1" />
+      <line x1="68" y1="48" x2="68" y2="56" stroke="#0284C7" strokeWidth="1" />
+
+      {/* Bay 2 */}
+      <rect x="86" y="38" width="38" height="36" rx="2" fill="#0f172a" />
+      {[40, 44, 48, 52, 56].map(yy => (
+        <rect key={`b2-${yy}`} x="88" y={yy} width="34" height="1.5" rx="0.5" fill="#1e293b" />
+      ))}
+      {/* Brush rollers bay 2 */}
+      <circle cx="96" cy="52" r="6" fill="#0EA5E9" opacity="0.5" />
+      <circle cx="96" cy="52" r="4" fill="#7DD3FC" opacity="0.4" />
+      <line x1="92" y1="52" x2="100" y2="52" stroke="#0284C7" strokeWidth="1" />
+      <line x1="96" y1="48" x2="96" y2="56" stroke="#0284C7" strokeWidth="1" />
+      <circle cx="112" cy="52" r="6" fill="#0EA5E9" opacity="0.5" />
+      <circle cx="112" cy="52" r="4" fill="#7DD3FC" opacity="0.4" />
+      <line x1="108" y1="52" x2="116" y2="52" stroke="#0284C7" strokeWidth="1" />
+      <line x1="112" y1="48" x2="112" y2="56" stroke="#0284C7" strokeWidth="1" />
+
+      {/* Water spray arcs coming from bays */}
+      <ellipse cx="61" cy="80" rx="18" ry="4" fill="#BAE6FD" opacity="0.25" />
+      <ellipse cx="105" cy="80" rx="18" ry="4" fill="#BAE6FD" opacity="0.25" />
+
+      {/* === Conveyor track lines on ground (entry) === */}
+      <rect x="55" y="76" width="2" height="20" rx="0.5" fill="#555" opacity="0.6" />
+      <rect x="65" y="76" width="2" height="20" rx="0.5" fill="#555" opacity="0.6" />
+      <rect x="99" y="76" width="2" height="20" rx="0.5" fill="#555" opacity="0.6" />
+      <rect x="109" y="76" width="2" height="20" rx="0.5" fill="#555" opacity="0.6" />
+
+      {/* Wet puddles on ground near exit */}
+      <ellipse cx="61" cy="95" rx="14" ry="5" fill="#7DD3FC" opacity="0.15" />
+      <ellipse cx="105" cy="98" rx="12" ry="4" fill="#7DD3FC" opacity="0.12" />
+      <ellipse cx="80" cy="102" rx="8" ry="3" fill="#7DD3FC" opacity="0.1" />
+
+      {/* === Car in wash bay 1 (covered in suds) === */}
+      <Car x={61} y={52} color="#64748b" rot={90} />
+      {/* Soap suds overlay */}
+      <circle cx="56" cy="50" r="3" fill="#fff" opacity="0.4" />
+      <circle cx="64" cy="48" r="2.5" fill="#fff" opacity="0.35" />
+      <circle cx="60" cy="55" r="2" fill="#fff" opacity="0.3" />
+      <circle cx="66" cy="53" r="2.5" fill="#fff" opacity="0.35" />
+      <circle cx="58" cy="46" r="2" fill="#fff" opacity="0.3" />
+
+      {/* === Vacuum stations (right side area) === */}
+      {/* Vacuum post 1 */}
+      <circle cx="145" cy="30" r="3" fill="#374151" />
+      <circle cx="145" cy="30" r="1.5" fill="#4B5563" />
+      <ellipse cx="145" cy="38" rx="5" ry="3" fill="#1f2937" opacity="0.6" /> {/* hose coil */}
+      {/* Vacuum post 2 */}
+      <circle cx="145" cy="55" r="3" fill="#374151" />
+      <circle cx="145" cy="55" r="1.5" fill="#4B5563" />
+      <ellipse cx="145" cy="63" rx="5" ry="3" fill="#1f2937" opacity="0.6" />
+      {/* Vacuum post 3 */}
+      <circle cx="145" cy="80" r="3" fill="#374151" />
+      <circle cx="145" cy="80" r="1.5" fill="#4B5563" />
+      <ellipse cx="145" cy="88" rx="5" ry="3" fill="#1f2937" opacity="0.6" />
+
+      {/* "WASH" price sign near entrance */}
+      <line x1="14" y1="95" x2="14" y2="110" stroke="#888" strokeWidth="2" />
+      <rect x="4" y="95" width="20" height="12" rx="2" fill="#0EA5E9" />
+      <text x="14" y="104" textAnchor="middle" fontSize="6" fill="#fff" fontWeight="bold" fontFamily="sans-serif">WASH</text>
+
+      {/* === Parked cars in bottom lot === */}
+      <Car x={40} y={172} color="#0EA5E9" rot={90} />
+      <Car x={108} y={172} color="#f5f5f4" rot={90} />
+      <Car x={143} y={172} color="#9ca3af" rot={90} />
+
+      {/* Car using vacuum (right side lot) */}
+      <Car x={176} y={42} color="#facc15" rot={0} />
+
+      {/* Trash can near vacuums */}
+      <circle cx="145" cy="105" r="4" fill="#374151" />
+      <circle cx="145" cy="105" r="2.5" fill="#4B5563" />
+
+      {/* Dumpster (back corner) */}
+      <rect x="140" y="12" width="20" height="14" rx="2" fill="#374151" />
+      <rect x="140" y="12" width="20" height="4" rx="1" fill="#4B5563" />
+
+      {/* Landscaping bushes */}
+      <circle cx="10" cy="15" r="5" fill="#166534" opacity="0.6" />
+      <circle cx="10" cy="15" r="3" fill="#22c55e" opacity="0.4" />
+      <circle cx="10" cy="80" r="4" fill="#166534" opacity="0.6" />
+      <circle cx="10" cy="80" r="2.5" fill="#22c55e" opacity="0.4" />
+      <circle cx="138" cy="140" r="5" fill="#166534" opacity="0.6" />
+      <circle cx="138" cy="140" r="3" fill="#22c55e" opacity="0.4" />
+    </ParkingLot>
+  );
+}
+
 // ─── Sprite router ────────────────────────────────────────────────────────────
 
 const SPRITE_MAP: Record<string, (props: SpriteProps) => React.ReactNode> = {
   tasty_toads: TacoStand,
   desert_burger: DesertBurger,
+  car_wash: CarWash,
 };
 
 export default function BuildingSprite({ businessDefId, w = 72, h = 72 }: { businessDefId: string; w?: number; h?: number }) {
