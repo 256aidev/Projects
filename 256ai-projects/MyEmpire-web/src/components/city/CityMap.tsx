@@ -89,7 +89,7 @@ function RivalLot({ rivalBiz, rival, size, onAction }: {
               onClick={() => { onAction(rival.id, action.type); setShowMenu(false); }}
               className="block w-full text-left px-1.5 py-1 rounded text-[9px] text-red-300 hover:bg-red-900/40 transition"
             >
-              {action.name}
+              {action.name} <span className="text-yellow-400">${(action.cost / 1000).toFixed(0)}k</span>
             </button>
           ))}
         </div>

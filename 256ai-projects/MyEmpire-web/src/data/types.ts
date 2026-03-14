@@ -527,13 +527,14 @@ export interface RivalAction {
   hitmenRequired: number;   // min hitmen needed
   successBase: number;      // base success chance 0-1
   heatGain: number;         // rival heat gained
+  cost: number;             // dirty cash cost to attempt
 }
 
 export const RIVAL_ACTIONS: RivalAction[] = [
-  { type: 'rob',      name: 'Rob',      description: 'Steal their dirty cash',           hitmenRequired: 1, successBase: 0.7, heatGain: 5 },
-  { type: 'raid',     name: 'Raid',     description: 'Steal their product stash',        hitmenRequired: 2, successBase: 0.5, heatGain: 10 },
-  { type: 'sabotage', name: 'Sabotage', description: 'Damage a business (50% health)',   hitmenRequired: 2, successBase: 0.6, heatGain: 15 },
-  { type: 'arson',    name: 'Arson',    description: 'Burn it down (destroy business)',   hitmenRequired: 4, successBase: 0.3, heatGain: 30 },
+  { type: 'rob',      name: 'Rob',      description: 'Steal their dirty cash',           hitmenRequired: 1, successBase: 0.8,  heatGain: 5,  cost: 2000 },
+  { type: 'raid',     name: 'Raid',     description: 'Steal their product stash',        hitmenRequired: 2, successBase: 0.7,  heatGain: 10, cost: 5000 },
+  { type: 'sabotage', name: 'Sabotage', description: 'Damage a business (50% health)',   hitmenRequired: 2, successBase: 0.75, heatGain: 15, cost: 8000 },
+  { type: 'arson',    name: 'Arson',    description: 'Burn it down (destroy business)',   hitmenRequired: 4, successBase: 0.65, heatGain: 30, cost: 20000 },
 ];
 
 export interface HiredHitman {

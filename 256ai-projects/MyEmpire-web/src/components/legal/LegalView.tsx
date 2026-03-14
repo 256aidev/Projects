@@ -272,6 +272,8 @@ export default function LegalView() {
                   <div className="flex gap-1 flex-wrap">
                     {RIVAL_ACTIONS.map(action => {
                       const hasEnough = playerHitmanCount >= action.hitmenRequired;
+                      const canAffordAction = dirtyCash >= action.cost;
+                      const canDo = hasEnough && canAffordAction;
                       return (
                         <button
                           key={action.type}
@@ -279,13 +281,13 @@ export default function LegalView() {
                             const result = attackRival(rival.id, action.type);
                             if (result) addNotification(result.message, result.success ? 'success' : 'warning');
                           }}
-                          disabled={!hasEnough}
-                          title={`${action.description} (need ${action.hitmenRequired}+ hitmen)`}
-                          className={`px-2 py-1 rounded text-[9px] font-semibold transition ${
-                            hasEnough ? 'bg-red-900/60 hover:bg-red-800/60 text-red-300' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                          disabled={!canDo}
+                          title={`${action.description} · ${formatMoney(action.cost)} · need ${action.hitmenRequired}+ hitmen`}
+                          className={`px-2 py-1.5 rounded text-[9px] font-semibold transition ${
+                            canDo ? 'bg-red-900/60 hover:bg-red-800/60 text-red-300' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
                           }`}
                         >
-                          {action.name}
+                          {action.name} · {formatMoney(action.cost)}
                         </button>
                       );
                     })}

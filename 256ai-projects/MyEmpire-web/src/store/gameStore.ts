@@ -801,6 +801,11 @@ export const useGameStore = create<GameStore>()(
         const action = RIVAL_ACTIONS.find(a => a.type === actionType as RivalActionType);
         if (!action) return null;
 
+        // Check cost
+        if (state.dirtyCash < action.cost) {
+          return { success: false, message: `Need $${action.cost.toLocaleString()} dirty cash` };
+        }
+
         const playerHitmen = state.hitmen.reduce((sum, h) => {
           const def = HITMAN_MAP[h.defId];
           return sum + (def ? h.count : 0);
@@ -874,11 +879,12 @@ export const useGameStore = create<GameStore>()(
         }
 
         const log = [...(state.rivalAttackLog ?? []), message!].slice(-10);
+        const newDirtyCash = state.dirtyCash - action.cost + dirtyCashGain;
         set({
           rivals: updatedRivals,
           rivalHeat: newRivalHeat,
           rivalAttackLog: log,
-          ...(dirtyCashGain > 0 ? { dirtyCash: state.dirtyCash + dirtyCashGain } : {}),
+          dirtyCash: newDirtyCash,
         });
         return { success, message: message! };
       },
