@@ -192,25 +192,27 @@ export default function LegalView() {
             const owned = hitmen.find(h => h.defId === def.id)?.count ?? 0;
             const canAfford = dirtyCash >= def.cost;
             return (
-              <div key={def.id} className="flex items-center justify-between bg-gray-900/60 rounded-lg p-2.5">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-semibold text-sm">{def.name}</span>
-                    {owned > 0 && <span className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded-full">×{owned}</span>}
-                  </div>
-                  <div className="flex gap-3 text-[10px] mt-0.5">
-                    <span className="text-red-400">ATK {def.attack}</span>
-                    <span className="text-blue-400">DEF {def.defense}</span>
-                    <span className="text-yellow-400">{formatMoney(def.upkeep)}/tick</span>
+              <div key={def.id} className="bg-gray-900/60 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-semibold text-sm">{def.name}</span>
+                      {owned > 0 && <span className="text-[10px] bg-red-600/80 text-white px-2 py-0.5 rounded-full">×{owned}</span>}
+                    </div>
+                    <div className="flex gap-3 text-[11px] mt-0.5">
+                      <span className="text-red-400">ATK {def.attack}</span>
+                      <span className="text-blue-400">DEF {def.defense}</span>
+                      <span className="text-yellow-400">{formatMoney(def.upkeep)}/tick</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                   {owned > 0 && (
                     <button
                       onClick={() => fireHitman(def.id)}
-                      className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-red-400 text-[10px] font-semibold"
+                      className="flex-1 py-2 rounded-lg border border-white/30 bg-gray-700 hover:bg-gray-600 text-red-400 text-xs font-bold transition"
                     >
-                      -
+                      Fire
                     </button>
                   )}
                   <button
@@ -219,11 +221,11 @@ export default function LegalView() {
                       else addNotification(`Need ${formatMoney(def.cost)} dirty cash`, 'warning');
                     }}
                     disabled={!canAfford}
-                    className={`px-2.5 py-1 rounded text-[10px] font-semibold transition ${
+                    className={`flex-1 py-2 rounded-lg border border-white/30 text-xs font-bold transition ${
                       canAfford ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                     }`}
                   >
-                    {formatMoney(def.cost)}
+                    Hire · {formatMoney(def.cost)}
                   </button>
                 </div>
               </div>
@@ -322,7 +324,7 @@ export default function LegalView() {
             </div>
             <button
               onClick={() => fireLawyer()}
-              className="px-3 py-1.5 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-xs font-semibold hover:bg-red-900/80 transition"
+              className="px-6 py-2 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-xs font-bold hover:bg-red-900/80 transition"
             >
               Fire
             </button>
@@ -353,41 +355,34 @@ export default function LegalView() {
                       : 'border-gray-700 bg-gray-800/40'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-white font-semibold text-sm">{lawyer.name}</span>
-                      {isActive && <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full">ACTIVE</span>}
-                    </div>
-                    <p className="text-gray-400 text-[11px]">{lawyer.description}</p>
-                    <div className="flex gap-3 mt-1 text-[10px]">
-                      <span className="text-yellow-400">Retainer: {formatMoney(lawyer.monthlyRetainer)}/tick</span>
-                      <span className="text-green-400">Decay: -{lawyer.heatDecayBonus.toFixed(3)}/s</span>
-                    </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-white font-semibold text-sm">{lawyer.name}</span>
+                    {isActive && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVE</span>}
+                    {!meetsHeatTier && <span className="text-gray-500 text-sm">🔒 Tier {lawyer.requiredHeatTier}</span>}
+                  </div>
+                  <p className="text-gray-400 text-[11px]">{lawyer.description}</p>
+                  <div className="flex gap-3 mt-1 mb-2 text-[11px]">
+                    <span className="text-yellow-400">Retainer: {formatMoney(lawyer.monthlyRetainer)}/tick</span>
+                    <span className="text-green-400">Decay: -{lawyer.heatDecayBonus.toFixed(3)}/s</span>
                   </div>
 
-                  <div className="ml-3">
-                    {!meetsHeatTier ? (
-                      <div className="text-center">
-                        <span className="text-gray-500 text-lg">🔒</span>
-                        <p className="text-[9px] text-gray-500">Tier {lawyer.requiredHeatTier}</p>
-                      </div>
-                    ) : isActive ? (
-                      <span className="text-indigo-400 text-xs">✓</span>
-                    ) : (
-                      <button
-                        disabled={!canHire}
-                        onClick={() => hireLawyer(lawyer.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                          canHire
-                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        {formatMoney(lawyer.unlockCost)}
-                      </button>
-                    )}
-                  </div>
+                  {meetsHeatTier && !isActive && (
+                    <button
+                      disabled={!canHire}
+                      onClick={() => hireLawyer(lawyer.id)}
+                      className={`w-full py-2 rounded-lg border border-white/30 text-xs font-bold transition ${
+                        canHire
+                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Hire · {formatMoney(lawyer.unlockCost)}
+                    </button>
+                  )}
+                  {isActive && (
+                    <p className="text-indigo-400 text-xs text-center font-semibold">✓ Currently Retained</p>
+                  )}
                 </div>
               </div>
             );
