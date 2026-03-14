@@ -8,6 +8,7 @@ export default function StartGameScreen() {
   const tickCount = useGameStore((s) => s.tickCount);
 
   const [rivalCount, setRivalCount] = useState(gameSettings.rivalCount);
+  const [entryDelay, setEntryDelay] = useState(gameSettings.rivalEntryDelay ?? 2);
   const hasExistingGame = tickCount > 0 && gameSettings.gameStarted;
 
   return (
@@ -43,9 +44,33 @@ export default function StartGameScreen() {
           </div>
         </div>
 
+        {/* Entry delay slider */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 mb-6">
+          <p className="text-white font-bold text-sm mb-1">Rival Entry Delay</p>
+          <p className="text-gray-500 text-[10px] mb-3">
+            Minutes between each rival entering the game (Royal Rumble style). 5-min warmup, then one rival every {entryDelay} min{entryDelay !== 1 ? 's' : ''}.
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={1}
+              max={5}
+              step={1}
+              value={entryDelay}
+              onChange={(e) => setEntryDelay(Number(e.target.value))}
+              className="flex-1 accent-amber-500"
+            />
+            <span className="text-amber-400 font-black text-2xl w-8 text-center">{entryDelay}</span>
+          </div>
+          <div className="flex justify-between text-[9px] text-gray-600 mt-1 px-0.5">
+            <span>Fast</span>
+            <span>Slow</span>
+          </div>
+        </div>
+
         {/* Start button */}
         <button
-          onClick={() => startNewGame(rivalCount)}
+          onClick={() => startNewGame(rivalCount, entryDelay)}
           className="w-full py-3.5 rounded-xl text-lg font-black bg-red-600 hover:bg-red-500 text-white transition shadow-lg shadow-red-900/30 mb-3"
         >
           {hasExistingGame ? 'New Game' : 'Start Game'}

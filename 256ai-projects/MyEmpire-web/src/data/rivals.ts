@@ -24,11 +24,20 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-export function generateRivals(count: number, seed?: number): RivalSyndicate[] {
+/** 5-minute base buffer before first rival enters */
+const BASE_HEAD_START_TICKS = 300;
+
+/**
+ * Generate rivals with staggered Royal Rumble entry times.
+ * First rival enters after 5 minutes, each subsequent rival enters
+ * `entryDelayMinutes` later.
+ */
+export function generateRivals(count: number, entryDelayMinutes = 2, seed?: number): RivalSyndicate[] {
   const rng = seededRandom(seed ?? Date.now());
   const pick = <T>(arr: T[]) => arr[Math.floor(rng() * arr.length)];
   const usedNames = new Set<string>();
   const usedColors = new Set<string>();
+  const entryDelayTicks = entryDelayMinutes * 60; // 1 tick ≈ 1 second
 
   const rivals: RivalSyndicate[] = [];
   for (let i = 0; i < count; i++) {
@@ -57,6 +66,7 @@ export function generateRivals(count: number, seed?: number): RivalSyndicate[] {
       aggression: 0.1 + rng() * 0.4,
       power: 1,
       isDefeated: false,
+      activeAtTick: BASE_HEAD_START_TICKS + i * entryDelayTicks,
     });
   }
   return rivals;

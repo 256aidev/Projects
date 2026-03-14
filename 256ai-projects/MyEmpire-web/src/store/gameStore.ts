@@ -58,9 +58,13 @@ import {
 } from '../engine/economy';
 import { calculateHeatTick, calculateRivalHeatTick, getHeatTier, HEAT_MAX } from '../engine/heat';
 import { tickRivals, getPlayerDefense, getHitmanUpkeep, RIVAL_TICK_INTERVAL } from '../engine/rivals';
+import { shouldTriggerEvent, triggerEvent, resolveEventChoice as resolveChoice, tickBuffs, getEventDef, type EventCheckState } from '../engine/events';
+import { INITIAL_EVENT_STATE } from '../data/events/types';
 
 interface GameActions {
   tick: () => void;
+  resolveEvent: (choiceIndex: number) => { success: boolean; message: string } | null;
+  dismissEvent: () => void;
   harvestGrowRoom: (roomId: string, slotIndex: number) => number;
   buyGrowRoom: (typeId: string) => boolean;
   upgradeRoom: (roomId: string) => boolean;
@@ -90,7 +94,7 @@ interface GameActions {
   purchaseTechUpgrade: (upgradeId: TechUpgradeId) => boolean;
   resetGame: () => void;
   // Rivals & hitmen
-  startNewGame: (rivalCount: number) => void;
+  startNewGame: (rivalCount: number, entryDelayMinutes?: number) => void;
   continueGame: () => void;
   hireHitman: (defId: string) => boolean;
   fireHitman: (defId: string) => boolean;
@@ -788,7 +792,7 @@ export const useGameStore = create<GameStore>()(
           totalTechPointsEarned: (state.totalTechPointsEarned ?? 0) + earnedTP,
           techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
           gameSettings: { ...state.gameSettings },
-          rivals: generateRivals(state.gameSettings.rivalCount),
+          rivals: generateRivals(state.gameSettings.rivalCount, state.gameSettings.rivalEntryDelay ?? 2),
           hitmen: [],
           rivalAttackLog: [],
         });
@@ -825,7 +829,7 @@ export const useGameStore = create<GameStore>()(
         });
       },
 
-      startNewGame: (rivalCount) => {
+      startNewGame: (rivalCount, entryDelayMinutes = 2) => {
         const state = get();
         const isFirstEver = (state.prestigeCount ?? 0) === 0 && (state.tickCount ?? 0) === 0;
         // First-ever game: first harvest is free (ticksRemaining = 0) so new players
@@ -844,8 +848,8 @@ export const useGameStore = create<GameStore>()(
           techPoints: state.techPoints ?? 0,
           totalTechPointsEarned: state.totalTechPointsEarned ?? 0,
           techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
-          gameSettings: { rivalCount, gameStarted: true },
-          rivals: generateRivals(rivalCount),
+          gameSettings: { rivalCount, rivalEntryDelay: entryDelayMinutes, gameStarted: true },
+          rivals: generateRivals(rivalCount, entryDelayMinutes),
           hitmen: [],
           rivalAttackLog: [],
         });

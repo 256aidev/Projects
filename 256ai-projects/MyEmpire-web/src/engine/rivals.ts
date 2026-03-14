@@ -6,7 +6,7 @@ import { DISTRICTS } from '../data/districts';
 // Rival AI runs every N ticks to avoid per-tick overhead
 export const RIVAL_TICK_INTERVAL = 10;
 
-// Rivals do nothing for the first 5 minutes — player gets a head start
+// Legacy fallback — each rival now has its own activeAtTick for staggered entry
 export const RIVAL_HEAD_START_TICKS = 300;
 
 /** Get total player defense power from hitmen */
@@ -53,18 +53,6 @@ export function tickRivals(
   tickCount: number,
   playerUnlockedSlots?: Record<string, number>,
 ): RivalTickResult {
-  // Player gets a 5-minute head start — rivals do absolutely nothing
-  if (tickCount < RIVAL_HEAD_START_TICKS) {
-    return {
-      rivals,
-      attackMessages: [],
-      playerDirtyCashLost: 0,
-      playerCleanCashLost: 0,
-      playerProductLost: 0,
-      businessesDamaged: [],
-    };
-  }
-
   const messages: string[] = [];
   let dirtyCashLost = 0;
   let cleanCashLost = 0;
@@ -73,6 +61,9 @@ export function tickRivals(
 
   const updatedRivals = rivals.map(rival => {
     if (rival.isDefeated) return rival;
+    // Royal Rumble staggered entry — each rival has its own activation tick
+    const entryTick = rival.activeAtTick ?? RIVAL_HEAD_START_TICKS;
+    if (tickCount < entryTick) return rival;
 
     // ── Passive growth — scales with power² so early game is slow ──────
     let r = { ...rival };

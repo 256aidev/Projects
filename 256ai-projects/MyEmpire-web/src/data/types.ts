@@ -509,6 +509,7 @@ export interface RivalSyndicate {
   power: number;           // overall strength scaling (grows over time)
   isDefeated: boolean;
   blacklistedSlots?: string[]; // "districtId:slotIndex" — can't rebuy after arson insurance
+  activeAtTick?: number;       // tick when this rival enters the game (Royal Rumble stagger)
 }
 
 export interface HitmanDef {
@@ -554,8 +555,9 @@ export interface HiredHitman {
 }
 
 export interface GameSettings {
-  rivalCount: number;    // 1-5
-  gameStarted: boolean;  // false = show start screen
+  rivalCount: number;       // 1-5
+  rivalEntryDelay: number;  // minutes between each rival entry (Royal Rumble style)
+  gameStarted: boolean;     // false = show start screen
 }
 
 // ─── CASINO ───────────────────────────────────────────────────────────
@@ -658,6 +660,8 @@ export interface GameState {
   casinoHistory: CasinoHistory;
   jewelry: OwnedJewelry[];
   cars: OwnedCar[];
+  // Event system
+  eventSystem: import('./events/types').EventSystemState;
 }
 
 // Prestige thresholds and reward
@@ -833,11 +837,12 @@ export const INITIAL_GAME_STATE: GameState = {
   nextBlockCost: 2000,
   currentJobId: null,
   jobFiredCooldown: 0,
-  gameSettings: { rivalCount: 3, gameStarted: false },
+  gameSettings: { rivalCount: 3, rivalEntryDelay: 2, gameStarted: false },
   rivals: [],
   hitmen: [],
   rivalAttackLog: [],
   casinoHistory: { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 },
   jewelry: [],
   cars: [],
+  eventSystem: { activeEvent: null, completedOneTimeEvents: [], eventCooldowns: {}, lastEventTick: 0, activeBuffs: [] },
 };
