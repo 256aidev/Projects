@@ -71,10 +71,10 @@ export default function LeaderboardView() {
   const totalEarned = totalDirtyEarned + totalCleanEarned;
   const empireScore = totalEarned + prestigeCount * 500_000;
   const netWorth = dirtyCash + cleanCash;
-  const totalRooms = operation?.rooms?.length ?? 0;
-  const totalDealers = operation?.dealers ?? 0;
+  const totalRooms = operation?.growRooms?.length ?? 0;
+  const totalDealers = operation?.dealerCount ?? 0;
   const defeatedRivals = rivals.filter((r) => r.isDefeated).length;
-  const totalProduct = Object.values(operation?.productInventory ?? {}).reduce((a, b) => a + b, 0);
+  const totalProduct = Object.values(operation?.productInventory ?? {}).reduce((a, b) => a + b.oz, 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">

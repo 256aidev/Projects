@@ -428,7 +428,7 @@ export default function OperationView() {
 function SeedButtons({ buySeed, dirtyCash, addNotification }: {
   buySeed: (qty: number) => boolean;
   dirtyCash: number;
-  addNotification: (msg: string, type: string) => void;
+  addNotification: (msg: string, type: 'success' | 'warning' | 'error') => void;
 }) {
   const [customQty, setCustomQty] = useState('');
   const [showCustom, setShowCustom] = useState(false);

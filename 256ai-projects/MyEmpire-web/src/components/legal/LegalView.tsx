@@ -1,7 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { getHeatTier, getHeatBreakdown, getRivalHeatTier, getRivalHeatBreakdown, HEAT_MAX } from '../../engine/heat';
-import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS, HITMAN_DEFS, HITMAN_MAP, RIVAL_ACTIONS } from '../../data/types';
+import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS, HITMAN_DEFS, RIVAL_ACTIONS } from '../../data/types';
 import { LAWYER_DEFS, LAWYER_MAP } from '../../data/lawyers';
 import { formatMoney } from '../../engine/economy';
 import { getPlayerHitmanCount, getHitmanUpkeep } from '../../engine/rivals';

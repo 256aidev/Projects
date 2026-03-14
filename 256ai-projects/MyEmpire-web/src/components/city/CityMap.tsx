@@ -6,7 +6,6 @@ import { DISTRICTS, DISTRICT_MAP } from '../../data/districts';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
-import { getPlayerHitmanCount } from '../../engine/rivals';
 import BuildingLot from './BuildingLot';
 import OperationsBlock from './OperationsBlock';
 import DealerNetworkBlock from './DealerNetworkBlock';

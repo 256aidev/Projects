@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { collection, doc, getDoc, setDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export interface LeaderboardEntry {
