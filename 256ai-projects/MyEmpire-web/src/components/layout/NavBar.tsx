@@ -50,7 +50,7 @@ export default function NavBar() {
       {/* Leaderboard button */}
       <button
         onClick={() => setShowLeaderboard(true)}
-        className="flex flex-col items-center justify-center py-4 gap-1 px-6 text-gray-500 hover:text-yellow-400 transition bg-gray-800/50 border-l border-gray-700/60"
+        className="flex flex-col items-center justify-center py-4 gap-1 px-10 text-gray-500 hover:text-yellow-400 transition bg-gray-800/50 border-l border-gray-700/60"
       >
         <span className="text-3xl">🏆</span>
         <span className="text-sm font-semibold">Ranks</span>
