@@ -1,4 +1,4 @@
-import { GameEventDef } from './types';
+import type { GameEventDef } from './types';
 
 export const VICE_EVENTS_PART2: GameEventDef[] = [
   // ═══════════════════════════════════════════

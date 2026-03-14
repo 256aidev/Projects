@@ -1,4 +1,4 @@
-import { GameEventDef } from './types';
+import type { GameEventDef } from './types';
 
 import { VICE_EVENTS_PART2 } from './viceEventsPart2';
 

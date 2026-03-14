@@ -280,6 +280,30 @@ export const useGameStore = create<GameStore>()(
             }
           }
 
+          // Event system tick
+          let eventSystem = tickBuffs(state.eventSystem ?? INITIAL_EVENT_STATE, newTickCount);
+          const totalProductOzForEvents = Object.values(finalOp.productInventory).reduce((s, e) => s + e.oz, 0);
+          if (shouldTriggerEvent(newTickCount, eventSystem)) {
+            const checkState: EventCheckState = {
+              tickCount: newTickCount,
+              heat: newHeat,
+              rivalHeat: newRivalHeat,
+              dirtyCash,
+              cleanCash,
+              totalDirtyEarned: totalEarned,
+              businessCount: state.businesses.length,
+              growRoomCount: finalOp.growRooms.length,
+              dealerCount: finalOp.dealerCount,
+              prestigeCount: state.prestigeCount,
+              hitmenCount: (state.hitmen ?? []).length,
+              hasJob: !!currentJobId,
+              hasLawyer: !!activeLawyerId,
+              productOz: totalProductOzForEvents,
+              rivalsDefeated: rivals.filter((r) => r.isDefeated).length,
+            };
+            eventSystem = triggerEvent(checkState, eventSystem);
+          }
+
           return {
             dirtyCash,
             cleanCash,
@@ -298,9 +322,38 @@ export const useGameStore = create<GameStore>()(
             jobFiredCooldown,
             rivals,
             rivalAttackLog,
+            eventSystem,
             ...(unlockedDistrictsUpdated ? { unlockedDistricts: unlockedDistrictsUpdated } : {}),
           };
         });
+      },
+
+      resolveEvent: (choiceIndex) => {
+        const state = get();
+        const es = state.eventSystem ?? INITIAL_EVENT_STATE;
+        if (!es.activeEvent) return null;
+        const eventDef = getEventDef(es.activeEvent.eventId);
+        if (!eventDef) { set({ eventSystem: { ...es, activeEvent: null } }); return null; }
+        const { outcome, eventState, success } = resolveChoice(eventDef, choiceIndex, es, state.tickCount);
+        const updates: Partial<GameState> = { eventSystem: eventState };
+        if (outcome.dirtyCashDelta) updates.dirtyCash = Math.max(0, state.dirtyCash + outcome.dirtyCashDelta);
+        if (outcome.cleanCashDelta) updates.cleanCash = Math.max(0, state.cleanCash + outcome.cleanCashDelta);
+        if (outcome.heatDelta) updates.heat = Math.max(0, Math.min(1000, state.heat + outcome.heatDelta));
+        if (outcome.rivalHeatDelta) updates.rivalHeat = Math.max(0, Math.min(1000, (state.rivalHeat ?? 0) + outcome.rivalHeatDelta));
+        if (outcome.seedDelta) {
+          updates.operation = { ...state.operation, seedStock: Math.max(0, state.operation.seedStock + outcome.seedDelta) };
+        }
+        if (outcome.dealerCountDelta) {
+          const op = updates.operation ?? state.operation;
+          updates.operation = { ...op, dealerCount: Math.max(0, op.dealerCount + outcome.dealerCountDelta) };
+        }
+        set(updates);
+        return { success, message: success ? eventDef.choices[choiceIndex].description : (eventDef.choices[choiceIndex].description + ' (failed)') };
+      },
+
+      dismissEvent: () => {
+        const es = get().eventSystem ?? INITIAL_EVENT_STATE;
+        set({ eventSystem: { ...es, activeEvent: null } });
       },
 
       harvestGrowRoom: (roomId, slotIndex) => {

@@ -1,4 +1,4 @@
-import { GameEventDef } from './types';
+import type { GameEventDef } from './types';
 
 export const CRIMINAL_EVENTS: GameEventDef[] = [
   // ═══════════════════════════════════════════

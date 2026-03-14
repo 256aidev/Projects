@@ -908,3 +908,24 @@ Buy collectible cars with clean cash. Each car provides a prestige bonus. Future
 | `src/store/gameStore.ts` | `buyCar()` action |
 | `src/components/cars/CarDealershipView.tsx` | Full-screen dealership overlay |
 | `src/components/city/CarDealershipBlock.tsx` | City map block |
+
+---
+
+## 21. Event System
+
+Random events trigger every 30-120 ticks (~30s to 2min) with 400 total events across 4 categories. Each event presents 2-3 choices with risk/reward outcomes. Full documentation in [EVENTS.md](EVENTS.md).
+
+| Category | Count | Theme |
+|----------|-------|-------|
+| Life | 100 | Personal, family, neighborhood |
+| Criminal | 100 | Law enforcement, rivals, underground |
+| Business | 100 | Front businesses, market, finance |
+| Vice | 100 | Gambling, temptation, moral dilemmas |
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/data/events/` | 400 event definitions (types, life, criminal, business, vice) |
+| `src/engine/events.ts` | Event engine (selection, resolution, buffs) |
+| `src/components/ui/EventPopup.tsx` | Event popup UI |
