@@ -105,11 +105,26 @@ interface GameActions {
   buyJewelry: (defId: string) => boolean;
   upgradeJewelry: (index: number) => boolean;
   buyCar: (defId: string) => boolean;
+  // Tutorial
+  startTutorial: () => void;
+  advanceTutorial: () => void;
+  skipTutorial: () => void;
 }
 
 type GameStore = GameState & GameActions;
 
 let nextInstanceId = 1;
+
+/** Advance tutorial if current step matches the given action */
+function checkTutorialAdvance(get: () => GameStore, action: string) {
+  const gs = get().gameSettings;
+  if (!gs.tutorialActive) return;
+  const { TUTORIAL_STEPS } = require('../data/tutorial');
+  const step = TUTORIAL_STEPS[gs.tutorialStep];
+  if (step?.advanceOn === action) {
+    get().advanceTutorial();
+  }
+}
 
 export const useGameStore = create<GameStore>()(
   persist(
@@ -388,6 +403,7 @@ export const useGameStore = create<GameStore>()(
             set({ ...updates, operation: newOp });
           }
         }
+        if (unitsHarvested > 0) checkTutorialAdvance(get, 'harvest');
         return unitsHarvested;
       },
 
@@ -422,6 +438,7 @@ export const useGameStore = create<GameStore>()(
           streetSellQuotaOz: newQuota,
           heat: Math.min(HEAT_MAX, state.heat + sellHeat),
         });
+        checkTutorialAdvance(get, 'sell');
         return dirtyEarned;
       },
 
@@ -571,6 +588,7 @@ export const useGameStore = create<GameStore>()(
           totalSpent: state.totalSpent + cost,
           operation: { ...state.operation, seedStock: state.operation.seedStock + quantity },
         });
+        checkTutorialAdvance(get, 'buy-seed');
         return true;
       },
 
@@ -599,6 +617,7 @@ export const useGameStore = create<GameStore>()(
             ),
           },
         });
+        checkTutorialAdvance(get, 'plant');
         return true;
       },
 
@@ -902,7 +921,7 @@ export const useGameStore = create<GameStore>()(
           techPoints: state.techPoints ?? 0,
           totalTechPointsEarned: state.totalTechPointsEarned ?? 0,
           techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
-          gameSettings: { rivalCount, rivalEntryDelay: entryDelayMinutes, gameStarted: true },
+          gameSettings: { rivalCount, rivalEntryDelay: entryDelayMinutes, gameStarted: true, tutorialActive: false, tutorialStep: 0 },
           rivals: generateRivals(rivalCount, entryDelayMinutes),
           hitmen: [],
           rivalAttackLog: [],
@@ -1114,6 +1133,50 @@ export const useGameStore = create<GameStore>()(
         });
         return true;
       },
+
+      // ── Tutorial ─────────────────────────────────────────────────────────
+      startTutorial: () => {
+        const state = get();
+        const isFirstEver = (state.prestigeCount ?? 0) === 0 && (state.tickCount ?? 0) === 0;
+        const startOp = { ...INITIAL_GAME_STATE.operation };
+        if (isFirstEver && startOp.growRooms[0]?.slots[0]) {
+          startOp.growRooms = [
+            { ...startOp.growRooms[0], slots: [{ ...startOp.growRooms[0].slots[0], ticksRemaining: 0 }] },
+          ];
+        }
+        set({
+          ...INITIAL_GAME_STATE,
+          operation: startOp,
+          prestigeCount: state.prestigeCount ?? 0,
+          prestigeBonus: 0,
+          techPoints: state.techPoints ?? 0,
+          totalTechPointsEarned: state.totalTechPointsEarned ?? 0,
+          techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
+          gameSettings: { rivalCount: 0, rivalEntryDelay: 0, gameStarted: true, tutorialActive: true, tutorialStep: 0 },
+          rivals: [],
+          hitmen: [],
+          rivalAttackLog: [],
+        });
+      },
+
+      advanceTutorial: () => {
+        const state = get();
+        const gs = state.gameSettings;
+        if (!gs.tutorialActive) return;
+        const { TUTORIAL_STEPS } = require('../data/tutorial');
+        const nextStep = gs.tutorialStep + 1;
+        if (nextStep >= TUTORIAL_STEPS.length) {
+          // Tutorial complete
+          set({ gameSettings: { ...gs, tutorialActive: false, tutorialStep: 0 } });
+        } else {
+          set({ gameSettings: { ...gs, tutorialStep: nextStep } });
+        }
+      },
+
+      skipTutorial: () => {
+        const state = get();
+        set({ gameSettings: { ...state.gameSettings, tutorialActive: false, tutorialStep: 0 } });
+      },
     }),
     {
       name: 'myempire-save',
@@ -1239,7 +1302,9 @@ export const useGameStore = create<GameStore>()(
         if (merged.rivalHeat === undefined) merged.rivalHeat = 0;
 
         // Rivals & hitmen (v20) — existing saves with progress should auto-continue
-        if (!merged.gameSettings) merged.gameSettings = { rivalCount: 3, gameStarted: (merged.tickCount ?? 0) > 0 };
+        if (!merged.gameSettings) merged.gameSettings = { rivalCount: 3, rivalEntryDelay: 2, gameStarted: (merged.tickCount ?? 0) > 0, tutorialActive: false, tutorialStep: 0 };
+        if (merged.gameSettings.tutorialActive === undefined) { merged.gameSettings.tutorialActive = false; merged.gameSettings.tutorialStep = 0; }
+        if (merged.gameSettings.rivalEntryDelay === undefined) merged.gameSettings.rivalEntryDelay = 2;
         if (!merged.rivals) merged.rivals = [];
         if (!merged.hitmen) merged.hitmen = [];
         if (!merged.rivalAttackLog) merged.rivalAttackLog = [];

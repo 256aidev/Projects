@@ -44,6 +44,7 @@ import CasinoView from './components/casino/CasinoView';
 import JewelryStoreView from './components/jewelry/JewelryStoreView';
 import CarDealershipView from './components/cars/CarDealershipView';
 import EventPopup from './components/ui/EventPopup';
+import TutorialOverlay from './components/ui/TutorialOverlay';
 
 // Auto-sync to Firestore every 60 ticks (≈ 1 min)
 const SYNC_INTERVAL_TICKS = 60;
@@ -153,6 +154,7 @@ export default function App() {
       {showJewelryStore && <JewelryStoreView />}
       {showCarDealership && <CarDealershipView />}
       <EventPopup />
+      <TutorialOverlay />
     </div>
   );
 }

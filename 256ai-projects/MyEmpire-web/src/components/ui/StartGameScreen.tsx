@@ -4,6 +4,7 @@ import { useGameStore } from '../../store/gameStore';
 export default function StartGameScreen() {
   const gameSettings = useGameStore((s) => s.gameSettings);
   const startNewGame = useGameStore((s) => s.startNewGame);
+  const startTutorial = useGameStore((s) => s.startTutorial);
   const continueGame = useGameStore((s) => s.continueGame);
   const tickCount = useGameStore((s) => s.tickCount);
 
@@ -99,15 +100,15 @@ export default function StartGameScreen() {
           <div className="flex-1 h-px bg-gray-800" />
         </div>
 
-        {/* Learning Mode */}
+        {/* Tutorial */}
         <button
-          onClick={() => startNewGame(0, 0)}
+          onClick={startTutorial}
           className="w-full py-3.5 rounded-xl text-lg font-black bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-lg shadow-emerald-900/30"
         >
-          Learning Mode
+          Tutorial
         </button>
         <p className="text-gray-600 text-[9px] text-center mt-2">
-          No rivals — explore the game at your own pace.
+          Learn the basics — guided walkthrough, no rivals.
         </p>
       </div>
     </div>

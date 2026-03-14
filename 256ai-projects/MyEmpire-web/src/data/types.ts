@@ -558,6 +558,8 @@ export interface GameSettings {
   rivalCount: number;       // 1-5
   rivalEntryDelay: number;  // minutes between each rival entry (Royal Rumble style)
   gameStarted: boolean;     // false = show start screen
+  tutorialActive: boolean;  // true = guided tutorial in progress
+  tutorialStep: number;     // current step index in TUTORIAL_STEPS
 }
 
 // ─── CASINO ───────────────────────────────────────────────────────────
@@ -837,7 +839,7 @@ export const INITIAL_GAME_STATE: GameState = {
   nextBlockCost: 2000,
   currentJobId: null,
   jobFiredCooldown: 0,
-  gameSettings: { rivalCount: 3, rivalEntryDelay: 2, gameStarted: false },
+  gameSettings: { rivalCount: 3, rivalEntryDelay: 2, gameStarted: false, tutorialActive: false, tutorialStep: 0 },
   rivals: [],
   hitmen: [],
   rivalAttackLog: [],

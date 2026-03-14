@@ -60,7 +60,21 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   gameSpeed: 1,
   notifications: [],
 
-  setActiveView: (view) => set({ activeView: view, selectedSlot: null, selectedBusinessId: null, activePanel: null }),
+  setActiveView: (view) => {
+    set({ activeView: view, selectedSlot: null, selectedBusinessId: null, activePanel: null });
+    // Tutorial advance on tab switch
+    try {
+      const { useGameStore } = require('./gameStore');
+      const gs = useGameStore.getState().gameSettings;
+      if (gs?.tutorialActive) {
+        const { TUTORIAL_STEPS } = require('../data/tutorial');
+        const step = TUTORIAL_STEPS[gs.tutorialStep];
+        if (step?.advanceOn === `switch-${view}`) {
+          useGameStore.getState().advanceTutorial();
+        }
+      }
+    } catch { /* ignore during init */ }
+  },
   setActiveDistrict: (id) => set({ activeDistrictId: id, selectedSlot: null, selectedBusinessId: null }),
   selectSlot: (districtId, slotIndex) => set({ selectedSlot: { districtId, slotIndex }, selectedBusinessId: null, activePanel: null }),
   selectBusiness: (instanceId) => set({ selectedBusinessId: instanceId, selectedSlot: null }),

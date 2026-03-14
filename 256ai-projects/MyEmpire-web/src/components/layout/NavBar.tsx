@@ -23,6 +23,7 @@ export default function NavBar() {
         return (
           <button
             key={tab.id}
+            data-tutorial={`nav-${tab.id}`}
             onClick={() => setActiveView(tab.id)}
             className={`
               flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition
