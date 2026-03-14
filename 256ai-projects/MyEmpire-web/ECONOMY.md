@@ -512,14 +512,14 @@ Rival gangs operate autonomously in the city. They grow in power over time, buy 
 
 Rivals are procedurally generated at game start with random names, icons, and colors.
 
-**Starting stats:**
-| Stat | Range |
-|------|-------|
-| Dirty Cash | $500 - $2,500 |
-| Clean Cash | $100 - $600 |
-| Product | 2 - 12 oz |
-| Hitmen | 1 - 3 |
-| Aggression | 0.1 - 0.5 |
+**Starting stats (all rivals start from zero, like the player):**
+| Stat | Starting Value |
+|------|---------------|
+| Dirty Cash | $0 |
+| Clean Cash | $0 |
+| Product | 0 oz |
+| Hitmen | 0 |
+| Aggression | 0.1 - 0.5 (random) |
 | Power | 1.0 (grows over time, max 20) |
 
 **Code:** `generateRivals()` in `src/data/rivals.ts`
@@ -566,24 +566,79 @@ All attacks cost dirty cash (paid win or lose) to prevent spam. Higher success r
 
 **Code:** `attackRival()` in `src/store/gameStore.ts`, `RIVAL_ACTIONS` in `src/data/types.ts`
 
-### Arson Fire & Insurance System
+### Arson Fire & Insurance System — Building Lifecycle
 
-When arson succeeds:
-1. Target business gets `burnedAtTick = currentTick`, `health = 0`
-2. City map shows animated fire/rubble graphic (🔥 + 🧱🪨)
-3. After **100 ticks** (~10 seconds), fire clears:
-   - Business is removed from rival's inventory
-   - Rival collects **$5,000 insurance** per cleared building
-   - The slot (`districtId:slotIndex`) is added to rival's `blacklistedSlots`
-4. **Blacklisted slots** — that rival can never buy that slot again until a player purchases a business there (clearing the title)
+Arson is the most expensive attack ($20K) but the only way to permanently remove a rival business from a lot. The system models a realistic fire → rubble → demolition → resale cycle.
 
-**Constants:**
-- `ARSON_DURATION = 100` ticks
-- `ARSON_INSURANCE = 5,000` dirty cash
+#### Full Lifecycle
 
-**Blacklist clearing:** When a player buys any business, all rivals' blacklist entries for that slot are removed.
+```
+Player pays $20K dirty cash (win or lose)
+        │
+        ▼
+   65% success?
+   ├── NO → "Attack failed!" (money still spent)
+   └── YES ▼
+        │
+   Building catches FIRE
+   ├── burnedAtTick = currentTick
+   ├── health = 0
+   ├── Business stops generating income for rival
+   └── City map shows: 🔥 fire animation + 🧱🪨 rubble
+        │
+        ▼
+   100 ticks pass (~10 seconds real time)
+        │
+        ▼
+   Fire CLEARS (processed in tickRivals)
+   ├── Business removed from rival's inventory
+   ├── Rival collects $5,000 insurance payout
+   ├── Slot added to rival's blacklistedSlots[]
+   └── Lot appears EMPTY on city map (available for purchase)
+        │
+        ▼
+   BLACKLIST active for that rival
+   ├── That rival CANNOT buy this lot again
+   ├── Other rivals CAN buy this lot
+   └── Player CAN buy this lot
+        │
+        ▼
+   Player BUYS a business on this lot (optional)
+   ├── Blacklist entry cleared for ALL rivals
+   └── If player later sells/loses it, rival could buy it again
+```
 
-**Code:** Fire cleanup in `tickRivals()` (`src/engine/rivals.ts`), visual in `RivalLot` component (`src/components/city/CityMap.tsx`), blacklist clear in `purchaseBusiness()` (`src/store/gameStore.ts`)
+#### Constants
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `ARSON_DURATION` | 100 ticks | How long fire burns before clearing |
+| `ARSON_INSURANCE` | $5,000 | Dirty cash rival receives per cleared building |
+
+#### Visual States on City Map
+
+| State | Visual | Duration |
+|-------|--------|----------|
+| Normal rival business | Rival color border + business icon | Until attacked |
+| Burning (after arson) | Dark red bg, pulsing 🔥, rubble 🧱🪨, "FIRE" label | 100 ticks |
+| Cleared (after fire) | Empty lot (no building shown) | Until someone buys |
+
+#### Blacklist Rules
+
+- **Stored as:** Array of `"districtId:slotIndex"` strings on each `RivalSyndicate`
+- **Checked when:** Rival AI tries to buy a new business (`tickRivals`)
+- **Cleared when:** Player calls `purchaseBusiness()` on a blacklisted slot — clears that slot from ALL rivals' blacklists
+- **Purpose:** Prevents the frustrating loop where you burn a rival's building and they instantly rebuy the same lot. The rival is "banned" from that lot until a new owner (the player) buys it and clears the title.
+
+#### Code Locations
+
+| What | Where |
+|------|-------|
+| Arson attack (sets burnedAtTick) | `attackRival()` in `src/store/gameStore.ts` |
+| Fire cleanup (removes biz, pays insurance, blacklists) | `tickRivals()` in `src/engine/rivals.ts` |
+| Fire/rubble visual | `RivalLot` component in `src/components/city/CityMap.tsx` |
+| Blacklist clearing on player purchase | `purchaseBusiness()` in `src/store/gameStore.ts` |
+| Constants (duration, insurance) | `ARSON_DURATION`, `ARSON_INSURANCE` in `src/data/types.ts` |
 
 ### Rival Attacks on Player
 
