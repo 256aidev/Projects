@@ -114,9 +114,9 @@ export default function BuildingLot({
             {profit >= 0 ? '+' : ''}{formatMoney(profit)}/s
           </span>
         </div>
-        {/* Tier badge — top left */}
+        {/* Name badge — top left */}
         <div className="absolute top-0.5 left-0.5 bg-black/50 rounded px-1 pointer-events-none">
-          <span className={`${textSm} text-white/70`}>{tier?.name}</span>
+          <span className={`${textSm} text-white/90 font-semibold`}>{def.displayName}</span>
         </div>
         {/* Supply indicator */}
         {business.supplyModifier < 1 && (
