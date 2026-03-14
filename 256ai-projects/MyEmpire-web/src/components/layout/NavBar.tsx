@@ -16,7 +16,7 @@ export default function NavBar() {
   const heatNoticeShown = useGameStore((s) => s.heatNoticeShown);
 
   return (
-    <div className="flex bg-gray-900 border-t border-gray-700/80">
+    <div className="flex bg-gray-900 border-t-2 border-gray-700/80">
       {TABS.map((tab) => {
         const active = activeView === tab.id;
         const hasBadge = tab.id === 'legal' && heatNoticeShown;
@@ -26,23 +26,23 @@ export default function NavBar() {
             data-tutorial={`nav-${tab.id}`}
             onClick={() => setActiveView(tab.id)}
             className={`
-              flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition
+              flex-1 flex flex-col items-center justify-center py-4 gap-1 transition
               ${active
-                ? 'text-white bg-gray-800 border-t-2 border-indigo-500'
+                ? 'text-white bg-gray-800 border-t-3 border-indigo-500'
                 : 'text-gray-500 hover:text-gray-300'
               }
             `}
           >
             <span className="relative flex items-center justify-center">
               {tab.icon === null
-                ? <CannabisLeaf size={22} className={active ? 'opacity-100' : 'opacity-40'} />
-                : <span className="text-lg">{tab.icon}</span>
+                ? <CannabisLeaf size={32} className={active ? 'opacity-100' : 'opacity-40'} />
+                : <span className="text-3xl">{tab.icon}</span>
               }
               {hasBadge && (
-                <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-red-500" />
+                <span className="absolute -top-1 -right-1.5 w-3 h-3 rounded-full bg-red-500" />
               )}
             </span>
-            <span className="text-[10px] font-medium">{tab.label}</span>
+            <span className="text-sm font-semibold">{tab.label}</span>
           </button>
         );
       })}
@@ -50,10 +50,10 @@ export default function NavBar() {
       {/* Leaderboard button */}
       <button
         onClick={() => setShowLeaderboard(true)}
-        className="flex flex-col items-center justify-center py-2.5 gap-0.5 px-3 text-gray-500 hover:text-yellow-400 transition"
+        className="flex flex-col items-center justify-center py-4 gap-1 px-6 text-gray-500 hover:text-yellow-400 transition bg-gray-800/50 border-l border-gray-700/60"
       >
-        <span className="text-lg">🏆</span>
-        <span className="text-[10px] font-medium">Ranks</span>
+        <span className="text-3xl">🏆</span>
+        <span className="text-sm font-semibold">Ranks</span>
       </button>
     </div>
   );
