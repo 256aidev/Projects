@@ -512,6 +512,8 @@ Rival gangs operate autonomously in the city. They grow in power over time, buy 
 
 Rivals are procedurally generated at game start with random names, icons, and colors.
 
+**Head start:** Rivals are completely frozen for the first **300 ticks (5 minutes)** — no income, no buying, no attacks. The player gets a full 5-minute head start to grow, sell, and establish before rivals even wake up.
+
 **Starting stats (all rivals start from zero, like the player):**
 | Stat | Starting Value |
 |------|---------------|

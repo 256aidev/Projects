@@ -6,6 +6,9 @@ import { DISTRICTS } from '../data/districts';
 // Rival AI runs every N ticks to avoid per-tick overhead
 export const RIVAL_TICK_INTERVAL = 10;
 
+// Rivals do nothing for the first 5 minutes — player gets a head start
+export const RIVAL_HEAD_START_TICKS = 300;
+
 /** Get total player defense power from hitmen */
 export function getPlayerDefense(hitmen: HiredHitman[]): number {
   return hitmen.reduce((sum, h) => {
@@ -49,6 +52,18 @@ export function tickRivals(
   playerDefense: number,
   tickCount: number,
 ): RivalTickResult {
+  // Player gets a 5-minute head start — rivals do absolutely nothing
+  if (tickCount < RIVAL_HEAD_START_TICKS) {
+    return {
+      rivals,
+      attackMessages: [],
+      playerDirtyCashLost: 0,
+      playerCleanCashLost: 0,
+      playerProductLost: 0,
+      businessesDamaged: [],
+    };
+  }
+
   const messages: string[] = [];
   let dirtyCashLost = 0;
   let cleanCashLost = 0;
