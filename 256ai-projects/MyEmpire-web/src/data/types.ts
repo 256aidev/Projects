@@ -360,6 +360,7 @@ export interface DistrictDef {
   policePresenceMultiplier: number;
   auditChanceMultiplier: number;
   maxBusinessSlots: number;
+  lotBaseCost?: number;    // linear lot price base (default 1000); lot N costs lotBaseCost × N
   gridLayout: { rows: number; cols: number };
   gridPosition: { col: number; row: number };  // position on the city block grid
 }

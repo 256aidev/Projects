@@ -243,13 +243,14 @@ export const useGameStore = create<GameStore>()(
           // Rival AI tick (runs every RIVAL_TICK_INTERVAL ticks)
           let rivals = state.rivals ?? [];
           let rivalAttackLog = state.rivalAttackLog ?? [];
+          let unlockedDistrictsUpdated: string[] | null = null;
           const newTickCount = state.tickCount + 1;
           if (rivals.length > 0 && newTickCount % RIVAL_TICK_INTERVAL === 0) {
             const totalProductOz = Object.values(finalOp.productInventory).reduce((s, e) => s + e.oz, 0);
             const result = tickRivals(
               rivals, newRivalHeat, dirtyCash, totalProductOz,
               state.businesses, getPlayerDefense(state.hitmen ?? []),
-              newTickCount,
+              newTickCount, state.unlockedSlots,
             );
             rivals = result.rivals;
             dirtyCash = Math.max(0, dirtyCash - result.playerDirtyCashLost);
@@ -258,6 +259,21 @@ export const useGameStore = create<GameStore>()(
               rivalAttackLog = [...rivalAttackLog, ...result.attackMessages].slice(-10);
             }
             // TODO: handle businessesDamaged and productLost
+
+            // Rival district reveal — if a rival has a business in a district
+            // the player hasn't unlocked, auto-reveal it (free unlock)
+            const revealedDistricts = new Set(state.unlockedDistricts);
+            for (const rival of rivals) {
+              if (rival.isDefeated) continue;
+              for (const rb of rival.businesses) {
+                if (!revealedDistricts.has(rb.districtId) && !rb.districtId.startsWith('gen_')) {
+                  revealedDistricts.add(rb.districtId);
+                }
+              }
+            }
+            if (revealedDistricts.size > state.unlockedDistricts.length) {
+              unlockedDistrictsUpdated = [...revealedDistricts];
+            }
           }
 
           return {
@@ -278,6 +294,7 @@ export const useGameStore = create<GameStore>()(
             jobFiredCooldown,
             rivals,
             rivalAttackLog,
+            ...(unlockedDistrictsUpdated ? { unlockedDistricts: unlockedDistrictsUpdated } : {}),
           };
         });
       },
@@ -577,8 +594,9 @@ export const useGameStore = create<GameStore>()(
         const maxSlots = district?.maxBusinessSlots ?? 6;
         const currentUnlocked = state.unlockedSlots?.[districtId] ?? 2;
         if (currentUnlocked >= maxSlots) return false;
-        // Cost doubles each lot: lot 3 = $1k, lot 4 = $2k, lot 5 = $4k...
-        const cost = 1000 * Math.pow(2, currentUnlocked - 2);
+        // Linear lot pricing: baseCost × lotNumber (lot 3 = base×1, lot 4 = base×2, ...)
+        const baseCost = district?.lotBaseCost ?? 1000;
+        const cost = baseCost * (currentUnlocked - 1);
         if (state.cleanCash < cost) return false;
         set({
           cleanCash: state.cleanCash - cost,

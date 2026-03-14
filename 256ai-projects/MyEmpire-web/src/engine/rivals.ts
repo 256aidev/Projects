@@ -51,6 +51,7 @@ export function tickRivals(
   playerBusinesses: BusinessInstance[],
   playerDefense: number,
   tickCount: number,
+  playerUnlockedSlots?: Record<string, number>,
 ): RivalTickResult {
   // Player gets a 5-minute head start — rivals do absolutely nothing
   if (tickCount < RIVAL_HEAD_START_TICKS) {
@@ -125,7 +126,11 @@ export function tickRivals(
         const slotKey = `${district.id}:${slot}`;
         const alreadyHas = r.businesses.some(b => b.districtId === district.id && b.slotIndex === slot);
         const isBlacklisted = (r.blacklistedSlots ?? []).includes(slotKey);
-        if (!alreadyHas && !isBlacklisted) {
+        // Skip player-owned empty lots — rivals can't take lots the player bought
+        const playerOwnsSlot = slot < (playerUnlockedSlots?.[district.id] ?? 2);
+        const playerHasBizThere = playerOwnsSlot && playerBusinesses.some(b => b.districtId === district.id && b.slotIndex === slot);
+        const isProtected = playerOwnsSlot && !playerHasBizThere;
+        if (!alreadyHas && !isBlacklisted && !isProtected) {
           r.businesses = [...r.businesses, {
             districtId: district.id,
             slotIndex: slot,

@@ -11,6 +11,7 @@ interface BuildingLotProps {
   isAvailable: boolean;
   isLocked: boolean;
   buyLot?: { cost: number; canAfford: boolean; onBuy: () => void };
+  forSalePrice?: number;  // shows price but not buyable yet (must buy lots in order)
   size?: 'xs' | 'sm' | 'md';
 }
 
@@ -21,6 +22,7 @@ export default function BuildingLot({
   isAvailable,
   isLocked,
   buyLot,
+  forSalePrice,
   size = 'md',
 }: BuildingLotProps) {
   const selectSlot = useUIStore((s) => s.selectSlot);
@@ -55,6 +57,19 @@ export default function BuildingLot({
         <span className={`${textMd} text-amber-300 font-bold`}>${(buyLot.cost / 1000).toFixed(0)}k</span>
         <span className={`${textSm} text-gray-500`}>clean cash</span>
       </button>
+    );
+  }
+
+  // For-sale lot — visible with price but must buy earlier lots first
+  if (forSalePrice != null) {
+    return (
+      <div
+        className={`${rootSize} rounded-lg border-2 border-dashed border-gray-700 bg-gray-900/30 flex flex-col items-center justify-center gap-0.5 opacity-60`}
+      >
+        <span className={`${textMd} text-gray-600`}>🏷️</span>
+        <span className={`${textMd} text-gray-500 font-bold`}>{formatMoney(forSalePrice)}</span>
+        <span className={`${textSm} text-gray-600`}>clean cash</span>
+      </div>
     );
   }
 

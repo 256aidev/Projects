@@ -125,7 +125,7 @@ function RivalLot({ rivalBiz, rival, size, onAction }: {
   );
 }
 
-function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cleanCash, onUnlockLot, maxSlots, rivals, onRivalAction }: {
+function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cleanCash, onUnlockLot, maxSlots, lotBaseCost, rivals, onRivalAction }: {
   districtId: string;
   name: string;
   color: string;
@@ -134,11 +134,11 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
   cleanCash: number;
   onUnlockLot: () => void;
   maxSlots: number;
+  lotBaseCost: number;
   rivals: RivalSyndicate[];
   onRivalAction: (rivalId: string, actionType: string) => void;
 }) {
   const districtUnlocked = unlockedSlots?.[districtId] ?? 2;
-  const nextLotCost = 1000 * Math.pow(2, districtUnlocked - 2);
   const slotMap = new Map<number, BusinessInstance>();
   for (const biz of businesses) {
     if (biz.districtId === districtId) slotMap.set(biz.slotIndex, biz);
@@ -157,6 +157,9 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
     }
   }
 
+  // Linear lot price: lot at index i costs lotBaseCost × (i - 1) for i >= 2
+  const lotCostAt = (i: number) => lotBaseCost * (i - 1);
+
   return (
     <div
       style={{ width: BLOCK_W, borderColor: color + '50', backgroundColor: color + '12' }}
@@ -167,8 +170,11 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
         {Array.from({ length: maxSlots }, (_, i) => {
           const business = slotMap.get(i) ?? null;
           const rivalEntry = rivalSlotMap.get(i);
-          const isUnlocked = i < districtUnlocked;
-          const isBuyable = i === districtUnlocked && i < maxSlots && !business && !rivalEntry;
+          const isOwned = i < districtUnlocked;
+          // All unowned lots are for sale (sequential — must buy in order)
+          const isNextBuyable = i === districtUnlocked;
+          const isForSale = i >= districtUnlocked && !business;
+          const cost = lotCostAt(i);
 
           // Rival business takes this slot
           if (rivalEntry && !business) {
@@ -183,23 +189,35 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
             );
           }
 
-          if (!isUnlocked && !business && !isBuyable) {
-            const sz = maxSlots > 6 ? 'w-[56px] h-[56px]' : 'w-[72px] h-[72px]';
-            return <div key={i} className={`${sz} rounded bg-black/15`} />;
+          // For-sale lots: show price tag. Only the next sequential lot is actually buyable.
+          if (isForSale && !rivalEntry) {
+            return (
+              <BuildingLot
+                key={i}
+                slotIndex={i}
+                districtId={districtId}
+                business={null}
+                isAvailable={false}
+                isLocked={false}
+                buyLot={isNextBuyable ? {
+                  cost,
+                  canAfford: cleanCash >= cost,
+                  onBuy: onUnlockLot,
+                } : undefined}
+                forSalePrice={!isNextBuyable ? cost : undefined}
+                size={lotSize}
+              />
+            );
           }
+
           return (
             <BuildingLot
               key={i}
               slotIndex={i}
               districtId={districtId}
               business={business}
-              isAvailable={isUnlocked && !business}
+              isAvailable={isOwned && !business}
               isLocked={false}
-              buyLot={isBuyable ? {
-                cost: nextLotCost,
-                canAfford: cleanCash >= nextLotCost,
-                onBuy: onUnlockLot,
-              } : undefined}
               size={lotSize}
             />
           );
@@ -550,6 +568,7 @@ export default function CityMap() {
                       cleanCash={cleanCash}
                       onUnlockLot={() => unlockLot(cell.id)}
                       maxSlots={dist?.maxBusinessSlots ?? 6}
+                      lotBaseCost={dist?.lotBaseCost ?? 1000}
                       rivals={rivals}
                       onRivalAction={handleRivalAction}
                     />
