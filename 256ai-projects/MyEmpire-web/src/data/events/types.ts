@@ -106,7 +106,7 @@ export const INITIAL_EVENT_STATE: EventSystemState = {
 };
 
 /** Minimum ticks between any two events */
-export const EVENT_MIN_INTERVAL = 30;  // ~30 seconds at 1x speed
+export const EVENT_MIN_INTERVAL = 60;  // 1 minute at 1x speed
 
 /** Maximum ticks between events (guaranteed event) */
-export const EVENT_MAX_INTERVAL = 120; // ~2 minutes at 1x speed
+export const EVENT_MAX_INTERVAL = 180; // 3 minutes at 1x speed
