@@ -66,19 +66,24 @@ export interface EventCheckState {
   rivalsDefeated: number;
 }
 
-/** Select a random event using weighted probability from eligible events */
+/** Select a random event using weighted probability from eligible events.
+ *  seasonWeights optionally scales event weights by category (e.g. { criminal: 1.5, life: 0.8 }) */
 export function selectRandomEvent(
   state: EventCheckState,
   eventState: EventSystemState,
+  seasonWeights?: Record<string, number>,
 ): GameEventDef | null {
   const eligible = ALL_EVENTS.filter((e) => isEventEligible(e, state, eventState));
   if (eligible.length === 0) return null;
 
-  const totalWeight = eligible.reduce((sum, e) => sum + e.weight, 0);
+  // Apply seasonal weight multipliers per category
+  const getWeight = (e: GameEventDef) => e.weight * (seasonWeights?.[e.category] ?? 1);
+
+  const totalWeight = eligible.reduce((sum, e) => sum + getWeight(e), 0);
   let roll = Math.random() * totalWeight;
 
   for (const event of eligible) {
-    roll -= event.weight;
+    roll -= getWeight(event);
     if (roll <= 0) return event;
   }
 
@@ -118,8 +123,9 @@ export function shouldTriggerEvent(
 export function triggerEvent(
   state: EventCheckState,
   eventState: EventSystemState,
+  seasonWeights?: Record<string, number>,
 ): EventSystemState {
-  const event = selectRandomEvent(state, eventState);
+  const event = selectRandomEvent(state, eventState, seasonWeights);
   if (!event) return eventState;
 
   const activeEvent: ActiveEvent = {

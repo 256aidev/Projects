@@ -14,6 +14,7 @@ import { getCarBonuses } from '../data/carDefs';
 import { GAME_SYSTEMS } from '../engine/systems/registry';
 import type { TickState, TickContext } from '../engine/systems/types';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
+import { getSeasonFromTick } from '../data/seasons';
 import { useUIStore } from './uiStore';
 
 // ── Domain action creators ────────────────────────────────────────────
@@ -135,12 +136,14 @@ export const useGameStore = create<GameStore>()(
             launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier,
             heatReduction: tech.heatReduction + sTech.heatReduction,
           };
+          const { seasonDef } = getSeasonFromTick(state.tickCount + 1);
           const ctx: TickContext = {
             prevState: state,
             tech: effectiveTech,
             sessionTech: sTech,
             carBonuses: carBonus,
             gameSpeed: useUIStore.getState().gameSpeed,
+            season: seasonDef,
           };
 
           const ts: TickState = {

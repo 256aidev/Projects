@@ -21,8 +21,8 @@ export function tickLegalSystem(ts: TickState, ctx: TickContext): void {
     }
   }
 
-  // Heat calculation
-  const heatDelta = calculateHeatTick(
+  // Heat calculation (seasonal multiplier applied to heat gain)
+  const rawHeatDelta = calculateHeatTick(
     ctx.prevState.heat,
     ts.dirtyCash,
     ctx.prevState.operation.dealerCount,
@@ -31,6 +31,8 @@ export function tickLegalSystem(ts: TickState, ctx: TickContext): void {
     ts.activeLawyerId,
     ctx.tech.heatReduction + ctx.carBonuses.heatReduction,
   );
+  // Apply season heat multiplier only to heat gain (not decay)
+  const heatDelta = rawHeatDelta > 0 ? rawHeatDelta * ctx.season.heatMultiplier : rawHeatDelta;
   ts.heat = Math.max(0, Math.min(HEAT_MAX, ctx.prevState.heat + heatDelta));
 
   // Rival heat calculation

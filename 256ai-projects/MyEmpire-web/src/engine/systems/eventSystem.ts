@@ -32,6 +32,6 @@ export function tickEventSystem(ts: TickState, ctx: TickContext): void {
       productOz: totalProductOz,
       rivalsDefeated: ts.rivals.filter((r) => r.isDefeated).length,
     };
-    ts.eventSystem = triggerEvent(checkState, ts.eventSystem);
+    ts.eventSystem = triggerEvent(checkState, ts.eventSystem, ctx.season.eventWeights);
   }
 }

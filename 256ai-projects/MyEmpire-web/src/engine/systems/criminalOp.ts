@@ -11,9 +11,9 @@ export function tickCriminalOpSystem(ts: TickState, ctx: TickContext): void {
     ctx.tech,
   );
 
-  // Apply car income multiplier + dealer boost to dirty income
+  // Apply car income multiplier + dealer boost + seasonal yield to dirty income
   const dirtyEarned = Math.floor(
-    rawDirtyEarned * (1 + ctx.carBonuses.incomeMultiplier + ctx.carBonuses.dealerBoost),
+    rawDirtyEarned * (1 + ctx.carBonuses.incomeMultiplier + ctx.carBonuses.dealerBoost) * ctx.season.yieldMultiplier,
   );
 
   ts.dirtyCash += dirtyEarned;

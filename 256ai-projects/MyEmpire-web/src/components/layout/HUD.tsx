@@ -10,6 +10,7 @@ import CannabisLeaf from '../ui/CannabisLeaf';
 import Tooltip from '../ui/Tooltip';
 import CurrencyDisplay from '../ui/CurrencyDisplay';
 import type { GameSpeed } from '../../store/uiStore';
+import { getSeasonFromTick } from '../../data/seasons';
 
 export default function HUD() {
   const [sfxOn, setSfxOn] = useState(!sound.sfxMuted);
@@ -32,6 +33,8 @@ export default function HUD() {
   const techPoints = useGameStore((s) => s.techPoints ?? 0);
   const prestigeCount = useGameStore((s) => s.prestigeCount ?? 0);
   const totalDirtyEarned = useGameStore((s) => s.totalDirtyEarned);
+  const tickCount = useGameStore((s) => s.tickCount);
+  const seasonInfo = getSeasonFromTick(tickCount);
 
   const { user, syncing } = useAuthStore();
   const setShowAccountScreen = useUIStore((s) => s.setShowAccountScreen);
@@ -77,6 +80,23 @@ export default function HUD() {
           <span className="text-gray-500 text-sm">fronts</span>
         </div>
       </Tooltip>
+
+      {/* Season & Calendar */}
+      <Tooltip text={`${seasonInfo.seasonDef.name}: Yield ×${seasonInfo.seasonDef.yieldMultiplier}, Demand ×${seasonInfo.seasonDef.demandMultiplier}, Heat ×${seasonInfo.seasonDef.heatMultiplier}`}>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xl">{seasonInfo.seasonDef.icon}</span>
+          <div>
+            <p className={`font-bold text-sm leading-none ${seasonInfo.seasonDef.color}`}>
+              {seasonInfo.seasonDef.name}
+            </p>
+            <p className="text-gray-500 text-[10px] leading-none">
+              Day {seasonInfo.day} · Year {seasonInfo.year}
+            </p>
+          </div>
+        </div>
+      </Tooltip>
+
+      <div className="h-8 w-px bg-gray-700 mx-1" />
 
       {/* Tech Lab button (prestige tech) */}
       <Tooltip text="Permanent upgrades (survive prestige). Costs Tech Points.">

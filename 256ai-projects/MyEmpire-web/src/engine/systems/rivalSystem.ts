@@ -14,9 +14,10 @@ export function tickRivalSystem(ts: TickState, ctx: TickContext): void {
       (s, e) => s + e.oz,
       0,
     );
+    // Seasonal rival activity multiplier affects effective rival heat for attack calculations
     const result = tickRivals(
       ts.rivals,
-      ts.rivalHeat,
+      ts.rivalHeat * ctx.season.rivalActivityMultiplier,
       ts.dirtyCash,
       totalProductOz,
       ctx.prevState.businesses,

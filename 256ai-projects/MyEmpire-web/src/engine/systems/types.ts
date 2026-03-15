@@ -1,6 +1,7 @@
 import type { GameState, CriminalOperation, BusinessInstance } from '../../data/types';
 import type { TechBonuses } from '../tech';
 import type { SessionTechBonuses } from '../sessionTech';
+import type { SeasonDef } from '../../data/seasons';
 
 export interface CarBonuses {
   heatReduction: number;
@@ -44,6 +45,7 @@ export interface TickContext {
   sessionTech: SessionTechBonuses;
   carBonuses: CarBonuses;
   gameSpeed: number;
+  season: SeasonDef;             // current season with multipliers
 }
 
 export type GameSystem = (ts: TickState, ctx: TickContext) => void;  // mutates ts in-place
