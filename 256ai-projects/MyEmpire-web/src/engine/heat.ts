@@ -43,6 +43,7 @@ export function getHeatBreakdown(
   businesses: BusinessInstance[],
   activeLawyerId: string | null,
   techHeatReduction = 0,
+  overrideLawyerDecay?: number,
 ): HeatBreakdown {
   // Heat gain from holding dirty cash
   const dirtyCashHeat = (dirtyCash / DIRTY_CASH_DIVISOR) * DIRTY_CASH_RATE;
@@ -66,8 +67,7 @@ export function getHeatBreakdown(
   // Decay sources
   const naturalDecay = NATURAL_DECAY;
 
-  const lawyer = activeLawyerId ? LAWYER_MAP[activeLawyerId] : null;
-  const lawyerDecay = lawyer?.heatDecayBonus ?? 0;
+  const lawyerDecay = overrideLawyerDecay ?? (activeLawyerId ? (LAWYER_MAP[activeLawyerId]?.heatDecayBonus ?? 0) : 0);
 
   let businessDecay = 0;
   for (const biz of businesses) {

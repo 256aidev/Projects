@@ -25,7 +25,12 @@ export default function LegalView() {
   const rivalTier = getRivalHeatTier(rivalHeat);
   const rivalTierName = RIVAL_TIER_NAMES[rivalTier];
   const rivalTierColor = RIVAL_TIER_COLORS[rivalTier];
-  const breakdown = getHeatBreakdown(dirtyCash, dealerCount, dealerTierIndex, businesses, activeLawyerId);
+  // Calculate total lawyer decay from hiredLawyers (multi-lawyer system)
+  const totalLawyerDecay = hiredLawyers.reduce((s, h) => {
+    const d = LAWYER_MAP[h.defId];
+    return s + (d ? d.heatDecayBonus * h.count : 0);
+  }, 0);
+  const breakdown = getHeatBreakdown(dirtyCash, dealerCount, dealerTierIndex, businesses, activeLawyerId, 0, totalLawyerDecay);
   const rivalBreakdown = getRivalHeatBreakdown(dealerCount, dealerTierIndex, businesses);
   const activeLawyer = activeLawyerId ? LAWYER_MAP[activeLawyerId] : null;
 
@@ -51,10 +56,10 @@ export default function LegalView() {
           <p className="text-gray-500 font-semibold uppercase tracking-wide text-[9px]">Heat Sources</p>
           <div className="flex justify-between"><span className="text-gray-400">Dirty cash ({formatMoney(dirtyCash)})</span><span className="text-red-400">+{breakdown.dirtyCashHeat.toFixed(4)}/s</span></div>
           {dealerCount > 0 && <div className="flex justify-between"><span className="text-gray-400">Dealers ({dealerCount})</span><span className="text-red-400">+{breakdown.dealerHeat.toFixed(4)}/s</span></div>}
-          {breakdown.policeMultiplier !== 1 && <div className="flex justify-between"><span className="text-gray-400">Police presence</span><span className="text-orange-400">×{breakdown.policeMultiplier.toFixed(2)}</span></div>}
+          {breakdown.policeMultiplier !== 1 && <div className="flex justify-between"><span className="text-gray-400">Police presence multiplier</span><span className="text-orange-400">×{breakdown.policeMultiplier.toFixed(2)}</span></div>}
           <p className="text-gray-500 font-semibold uppercase tracking-wide text-[9px] mt-2">Heat Reduction</p>
           <div className="flex justify-between"><span className="text-gray-400">Natural decay</span><span className="text-green-400">-{breakdown.naturalDecay.toFixed(3)}/s</span></div>
-          {breakdown.lawyerDecay > 0 && <div className="flex justify-between"><span className="text-gray-400">Lawyer ({activeLawyer?.name})</span><span className="text-green-400">-{breakdown.lawyerDecay.toFixed(3)}/s</span></div>}
+          {breakdown.lawyerDecay > 0 && <div className="flex justify-between"><span className="text-gray-400">Lawyers ({hiredLawyers.reduce((s, h) => s + h.count, 0)} retained)</span><span className="text-green-400">-{breakdown.lawyerDecay.toFixed(3)}/s</span></div>}
           {breakdown.businessDecay > 0 && <div className="flex justify-between"><span className="text-gray-400">Front businesses</span><span className="text-green-400">-{breakdown.businessDecay.toFixed(4)}/s</span></div>}
           <div className="border-t border-gray-700 mt-1 pt-1 flex justify-between font-semibold">
             <span className="text-gray-300">Net heat/tick</span>
