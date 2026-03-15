@@ -108,6 +108,29 @@ function HouseBuilding() {
   );
 }
 
+const BACKYARD_VISUALS = [
+  { icon: '🏚️', label: 'Empty Lot', desc: 'Dirt and weeds' },
+  { icon: '🌿', label: 'Small Yard', desc: 'Patch of grass' },
+  { icon: '🏊', label: 'Pool', desc: 'Pool & patio' },
+  { icon: '🏊', label: 'Big Pool', desc: 'Pool, garden & gazebo' },
+  { icon: '🌴', label: 'Estate Grounds', desc: 'Nature paradise' },
+];
+
+function HouseBackyard() {
+  const houseLevel = useGameStore(s => s.houseLevel ?? 0);
+  const vis = BACKYARD_VISUALS[houseLevel];
+  return (
+    <div
+      className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden"
+      style={{ backgroundColor: '#16A34A15', borderColor: '#16A34A40' }}
+    >
+      <span className="text-xl leading-none">{vis.icon}</span>
+      <span className="text-[9px] font-bold text-green-400 text-center leading-tight">{vis.label}</span>
+      <span className="text-[8px] text-gray-500">{vis.desc}</span>
+    </div>
+  );
+}
+
 function HQBuilding() {
   const hqLevel = useGameStore(s => s.hqLevel ?? 0);
   const dirtyCash = useGameStore(s => s.dirtyCash);
@@ -187,8 +210,22 @@ export default function OperationsBlock() {
           />
         ))}
 
-        {/* House — upgradeable (right of legal_distribution) */}
+        {/* Garage — opens car dealership (right of legal_distribution) */}
+        <button
+          onClick={() => setPanel('cars')}
+          className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-gray-700/30 transition relative overflow-hidden"
+          style={{ backgroundColor: '#71717A20', borderColor: '#71717A60' }}
+        >
+          <span className="text-xl leading-none">🚗</span>
+          <span className="text-[9px] font-bold text-gray-300 text-center leading-tight">My Garage</span>
+          <span className="text-[8px] text-gray-500">View Cars</span>
+        </button>
+
+        {/* House — upgradeable */}
         <HouseBuilding />
+
+        {/* Backyard — visual indicator of house level */}
+        <HouseBackyard />
 
         {/* HQ — upgradeable */}
         <HQBuilding />
