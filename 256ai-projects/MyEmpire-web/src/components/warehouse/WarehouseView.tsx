@@ -8,8 +8,11 @@ export default function WarehouseView() {
   const storageCapacity = useGameStore((s) => s.storageCapacity);
 
   const allSlots = operation.growRooms.flatMap((r) => r.slots);
-  const avgPrice = allSlots.length > 0
-    ? allSlots.reduce((sum, s) => sum + s.pricePerUnit, 0) / allSlots.length
+  const invEntries = Object.values(operation.productInventory);
+  const totalOz = invEntries.reduce((s, e) => s + e.oz, 0);
+  // Weighted average by actual oz in inventory (not by strain slot count)
+  const avgPrice = totalOz > 0
+    ? invEntries.reduce((sum, e) => sum + e.oz * e.pricePerUnit, 0) / totalOz
     : 0;
   const streetPrice = Math.floor(avgPrice * 0.7);
   const totalPlants = allSlots.reduce((sum, s) => sum + s.plantsCapacity, 0);
