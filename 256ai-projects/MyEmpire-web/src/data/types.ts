@@ -697,6 +697,10 @@ export interface GameState {
   // House & HQ
   houseLevel: number;  // 0=starter, 1=bungalow, 2=villa, 3=mansion, 4=mega mansion
   hqLevel: number;     // 0=none, 1=backroom, 2=office, 3=compound, 4=fortress
+  // Bank
+  bankBalance: number;
+  bankLoans: import('../data/bankDefs').ActiveLoan[];
+  bankLastInterestTick: number;
   // Event system
   eventSystem: import('./events/types').EventSystemState;
 }
@@ -869,7 +873,7 @@ export const INITIAL_GAME_STATE: GameState = {
   heatNoticeShown: false,
   operation: INITIAL_OPERATION,
   businesses: [],
-  unlockedDistricts: ['starter', 'operations', 'dealer_network', 'job_district', 'casino_district', 'jewelry_district', 'car_district'],
+  unlockedDistricts: ['starter', 'operations', 'dealer_network', 'job_district', 'casino_district', 'jewelry_district', 'car_district', 'bank_district'],
   unlockedSlots: { starter: 0 },
   lotBuildTimers: {},
   inventory: {},
@@ -904,5 +908,8 @@ export const INITIAL_GAME_STATE: GameState = {
   cars: [],
   houseLevel: 0,
   hqLevel: 0,
+  bankBalance: 0,
+  bankLoans: [],
+  bankLastInterestTick: 0,
   eventSystem: { activeEvent: null, completedOneTimeEvents: [], eventCooldowns: {}, lastEventTick: 0, activeBuffs: [] },
 };

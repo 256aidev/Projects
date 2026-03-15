@@ -7,6 +7,7 @@ import { tickLegalSystem } from './legal';
 import { tickJobsSystem } from './jobs';
 import { tickRivalSystem } from './rivalSystem';
 import { tickEventSystem } from './eventSystem';
+import { tickBankingSystem } from './banking';
 
 /**
  * Ordered list of game systems that run each tick.
@@ -18,8 +19,9 @@ import { tickEventSystem } from './eventSystem';
  * 4. Street economy updates sell quota
  * 5. Legal handles lawyer cost + heat calculation
  * 6. Jobs handles job income + hitman upkeep
- * 7. Rivals runs AI attacks/defense
- * 8. Events checks for random events based on final state
+ * 7. Banking handles deposit interest + loan payments
+ * 8. Rivals runs AI attacks/defense
+ * 9. Events checks for random events based on final state
  */
 export const GAME_SYSTEMS: GameSystem[] = [
   tickCriminalOpSystem,
@@ -28,6 +30,7 @@ export const GAME_SYSTEMS: GameSystem[] = [
   tickStreetEconomySystem,
   tickLegalSystem,
   tickJobsSystem,
+  tickBankingSystem,
   tickRivalSystem,
   tickEventSystem,
 ];

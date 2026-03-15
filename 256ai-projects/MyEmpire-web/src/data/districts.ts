@@ -296,6 +296,21 @@ export const DISTRICTS: DistrictDef[] = [
     gridLayout: { rows: 3, cols: 2 },
     gridPosition: { col: 0, row: 5 },
   },
+  {
+    id: 'bank_district',
+    name: 'Bank',
+    description: 'First National Bank — deposits earn interest, loans give quick cash.',
+    themeColor: '#10B981',
+    revenueMultiplier: 0,
+    operatingCostMultiplier: 0,
+    customerTrafficMultiplier: 0,
+    unlockCost: 0,
+    policePresenceMultiplier: 0,
+    auditChanceMultiplier: 0,
+    maxBusinessSlots: 0,
+    gridLayout: { rows: 3, cols: 2 },
+    gridPosition: { col: 0, row: 6 },
+  },
 ];
 
 export const DISTRICT_MAP = Object.fromEntries(DISTRICTS.map((d) => [d.id, d]));

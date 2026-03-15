@@ -354,6 +354,7 @@ export const useGameStore = create<GameStore>()(
         if (merged.hqLevel === undefined) merged.hqLevel = 0;
         if (merged.bankBalance === undefined) merged.bankBalance = 0;
         if (merged.bankLoans === undefined) merged.bankLoans = [];
+        if (!merged.unlockedDistricts.includes('bank_district')) merged.unlockedDistricts.push('bank_district');
         if (merged.bankLastInterestTick === undefined) merged.bankLastInterestTick = merged.tickCount ?? 0;
 
         for (const biz of merged.businesses) {

@@ -13,6 +13,7 @@ import JobDistrictBlock from './JobDistrictBlock';
 import CasinoBlock from './CasinoBlock';
 import JewelryBlock from './JewelryBlock';
 import CarDealershipBlock from './CarDealershipBlock';
+import BankBlock from './BankBlock';
 import Tooltip from '../ui/Tooltip';
 
 const BLOCK_W = 164;
@@ -557,6 +558,13 @@ export default function CityMap() {
                   return (
                     <div key={cell.id} style={placement}>
                       <CarDealershipBlock />
+                    </div>
+                  );
+                }
+                if (cell.id === 'bank_district') {
+                  return (
+                    <div key={cell.id} style={placement}>
+                      <BankBlock />
                     </div>
                   );
                 }

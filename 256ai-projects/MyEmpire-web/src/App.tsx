@@ -46,6 +46,7 @@ import PrestigeConfirmModal from './components/tech/PrestigeConfirmModal';
 import CasinoView from './components/casino/CasinoView';
 import JewelryStoreView from './components/jewelry/JewelryStoreView';
 import CarDealershipView from './components/cars/CarDealershipView';
+import BankView from './components/bank/BankView';
 import EventPopup from './components/ui/EventPopup';
 import TutorialOverlay from './components/ui/TutorialOverlay';
 import VictoryScreen from './components/ui/VictoryScreen';
@@ -66,6 +67,7 @@ export default function App() {
   const showCasino = useUIStore((s) => s.showCasino);
   const showJewelryStore = useUIStore((s) => s.showJewelryStore);
   const showCarDealership = useUIStore((s) => s.showCarDealership);
+  const showBank = useUIStore((s) => s.showBank);
   const showSessionTechMenu = useUIStore((s) => s.showSessionTechMenu);
   const setPanel = useUIStore((s) => s.setPanel);
 
@@ -166,6 +168,7 @@ export default function App() {
       {showCasino && <CasinoView />}
       {showJewelryStore && <JewelryStoreView />}
       {showCarDealership && <CarDealershipView />}
+      {showBank && <BankView />}
       <EventPopup />
       <TutorialOverlay />
       {showVictory && <VictoryScreen onContinue={() => setVictoryDismissed(true)} />}
