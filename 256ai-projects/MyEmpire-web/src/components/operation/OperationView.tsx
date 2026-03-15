@@ -292,10 +292,10 @@ export default function OperationView() {
                   )}
                 </div>
 
-                {/* Split layout: left = strains, right = maintenance */}
+                {/* Table layout: grow slots (2-col grid) left, upgrades right */}
                 <div className="flex">
-                  {/* LEFT — Strain slots */}
-                  <div className="flex-1 p-3 flex flex-col gap-2 border-r border-gray-700">
+                  {/* LEFT — Strain slots in 2-column grid */}
+                  <div className="flex-1 p-2 grid grid-cols-2 gap-1.5 border-r border-gray-700">
                     {room.slots.map((slot, slotIndex) => {
                       const progress = slot.isHarvesting && slot.growTimerTicks > 0
                         ? 1 - slot.ticksRemaining / slot.growTimerTicks
@@ -306,21 +306,19 @@ export default function OperationView() {
                       const effectiveYield = Math.floor(slot.harvestYield * (1 + yieldBonus));
 
                       return (
-                        <div key={slotIndex} className="bg-gray-900/50 rounded-lg p-2">
-                          <div className="flex items-center justify-between mb-1">
-                            <div>
-                              <p className="text-green-400 font-semibold text-xs">{slot.strainName}</p>
-                              <p className="text-gray-600 text-[10px]">${slot.pricePerUnit}/oz · {slot.plantsCapacity} plants · {formatUnits(effectiveYield)}/harvest</p>
-                            </div>
-                            <span>{ready ? <CannabisLeaf size={18} /> : idle ? '💤' : '🌱'}</span>
+                        <div key={slotIndex} className="bg-gray-900/50 rounded-lg p-1.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <p className="text-green-400 font-semibold text-[10px] truncate">{slot.strainName}</p>
+                            <span className="text-[10px] ml-1">{ready ? <CannabisLeaf size={14} /> : idle ? '💤' : '🌱'}</span>
                           </div>
-                          <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden mb-1.5">
+                          <p className="text-gray-600 text-[9px] mb-0.5">${slot.pricePerUnit}/oz · {formatUnits(effectiveYield)}/harvest</p>
+                          <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden mb-1">
                             <div className="h-full rounded-full transition-all" style={{ width: `${progress * 100}%`, backgroundColor: ready ? '#22c55e' : '#65a30d' }} />
                           </div>
                           {ready ? (
                             <Tooltip text="Collect grown product into your stash. Auto-replants if you have seeds.">
                             <button data-tutorial="harvest-btn" onClick={() => { const u = harvestGrowRoom(room.id, slotIndex); if (u > 0) { sound.play('harvest'); addNotification(`Harvested ${formatUnits(u)} ${slot.strainName}!${op.seedStock > 0 ? ' Auto-replanting…' : ' Buy seeds.'}`, 'success'); } }}
-                              className="w-full py-1 rounded border border-white/30 bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold transition">
+                              className="w-full py-1 rounded border border-white/30 bg-green-600 hover:bg-green-500 text-white text-[9px] font-bold transition">
                               Harvest!
                             </button>
                             </Tooltip>
@@ -328,20 +326,20 @@ export default function OperationView() {
                             <Tooltip text="Plant seeds to start growing. Uses 1 seed.">
                             <button data-tutorial="plant-btn" onClick={() => { if (plantSeeds(room.id, slotIndex)) { sound.play('plant'); addNotification(`${slot.strainName} planted!`, 'success'); } else addNotification('No seeds', 'warning'); }}
                               disabled={op.seedStock < 1}
-                              className={`w-full py-1 rounded border border-white/30 text-[10px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
-                              🌱 Plant {op.seedStock < 1 ? '(no seeds)' : ''}
+                              className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
+                              🌱 Plant
                             </button>
                             </Tooltip>
                           ) : (
-                            <p className="text-center text-gray-500 text-[10px]">{slot.ticksRemaining}s left</p>
+                            <p className="text-center text-gray-500 text-[9px]">{slot.ticksRemaining}s</p>
                           )}
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* RIGHT — Maintenance: data-driven 3×2 grid */}
-                  <div className="grid grid-cols-3 gap-2 p-3">
+                  {/* RIGHT — Upgrades in a single row of 6 columns */}
+                  <div className="flex gap-1 p-2">
                     {ROOM_UPGRADE_DEFS.map((upgDef) => {
                       const level = room.upgradeLevels?.[upgDef.id] ?? 0;
                       const currentLvl = level > 0 ? upgDef.levels[level - 1] : null;
@@ -351,15 +349,13 @@ export default function OperationView() {
                       const isToggle = upgDef.bonusType === 'toggle';
                       const isActive = isToggle && level > 0;
 
-                      // Format current bonus label
                       const bonusLabel = currentLvl
-                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(currentLvl.speedBonus * 100)}% time`
-                          : upgDef.bonusType === 'yield' ? `+${Math.round(currentLvl.yieldBonus * 100)}% yield`
-                          : upgDef.bonusType === 'double' ? `${Math.round(currentLvl.doubleChance * 100)}% chance`
+                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(currentLvl.speedBonus * 100)}%`
+                          : upgDef.bonusType === 'yield' ? `+${Math.round(currentLvl.yieldBonus * 100)}%`
+                          : upgDef.bonusType === 'double' ? `${Math.round(currentLvl.doubleChance * 100)}%`
                           : null)
                         : null;
 
-                      // Format next upgrade bonus label
                       const nextBonusLabel = nextLvl
                         ? (upgDef.bonusType === 'speed' ? `-${Math.round(nextLvl.speedBonus * 100)}% time`
                           : upgDef.bonusType === 'yield' ? `+${Math.round(nextLvl.yieldBonus * 100)}% yield`
@@ -368,22 +364,23 @@ export default function OperationView() {
                         : null;
 
                       const upgradeTooltips: Record<string, string> = {
-                        speed: 'Reduce grow time. Better irrigation means faster harvests.',
-                        yield: 'Increase yield per harvest. Better equipment = bigger buds.',
-                        double: 'Chance to get 2x yield on each harvest.',
-                        toggle: 'Automatically harvest and replant when crops finish growing.',
+                        speed: 'Reduce grow time.',
+                        yield: 'Increase yield per harvest.',
+                        double: 'Chance to get 2x yield.',
+                        toggle: 'Auto harvest and replant.',
                       };
+
                       return (
-                        <Tooltip text={upgradeTooltips[upgDef.bonusType] ?? `Upgrade ${upgDef.name} for this room.`}>
-                        <div key={upgDef.id} className={`flex flex-col justify-between gap-1 p-2 rounded-lg border ${level > 0 ? `border-opacity-40 ${upgDef.bgColor}` : upgDef.borderColor}`}>
-                          <span className={`text-[11px] font-semibold ${upgDef.color}`}>{upgDef.icon} {upgDef.name}</span>
-                          <p className={`text-[11px] font-semibold leading-tight ${upgDef.color}`}>
+                        <Tooltip key={upgDef.id} text={upgradeTooltips[upgDef.bonusType] ?? `Upgrade ${upgDef.name}.`}>
+                        <div className={`w-16 flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border text-center ${level > 0 ? `border-opacity-40 ${upgDef.bgColor}` : upgDef.borderColor}`}>
+                          <span className={`text-[9px] font-bold ${upgDef.color}`}>{upgDef.icon} {upgDef.name}</span>
+                          <p className={`text-[9px] font-semibold ${upgDef.color}`}>
                             {isToggle
-                              ? (isActive ? null : <span className="text-gray-600">Auto-replants</span>)
+                              ? (isActive ? null : <span className="text-gray-600">Off</span>)
                               : (bonusLabel ?? <span className="text-gray-600">None</span>)}
                           </p>
                           {isActive ? (
-                            <span className="text-[11px] text-green-400 text-center font-bold">ACTIVE ✓</span>
+                            <span className="text-[9px] text-green-400 font-bold">ACTIVE ✓</span>
                           ) : nextLvl ? (
                             <button
                               onClick={() => {
@@ -391,15 +388,13 @@ export default function OperationView() {
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
-                              className={`w-full py-1.5 rounded border border-white/30 text-[11px] font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                              className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                             >
-                              {nextBonusLabel}
-                              {!isToggle && <><br/>{nextLvl.name}</>}
-                              <br/>{formatMoney(scaledCost)}
+                              {nextBonusLabel}<br/>{nextLvl.name}<br/>{formatMoney(scaledCost)}
                               {nextLvl.costPerCycle > 0 && <><br/><span className="text-red-300">${nextLvl.costPerCycle}/cyc</span></>}
                             </button>
                           ) : (
-                            <span className={`text-[11px] ${upgDef.color} text-center mt-0.5`}>MAX ✓</span>
+                            <span className={`text-[9px] ${upgDef.color} font-bold`}>MAX ✓</span>
                           )}
                         </div>
                         </Tooltip>
