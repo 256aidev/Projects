@@ -32,11 +32,24 @@ src/
 │   ├── types.ts             All TypeScript interfaces + balance constants
 │   ├── businesses.ts        BusinessDef array + BUSINESS_MAP lookup
 │   ├── districts.ts         DistrictDef array + DISTRICT_MAP lookup
-│   └── resources.ts         ResourceDef array + RESOURCE_MAP lookup
+│   ├── resources.ts         ResourceDef array + RESOURCE_MAP lookup
+│   ├── techDefs.ts          Prestige tech upgrades (7 tracks, 5 levels)
+│   ├── sessionTechDefs.ts   Session tech upgrades (7 tracks, 3 levels — resets on prestige)
+│   ├── carDefs.ts           15 car definitions, tier colors, gameplay bonuses
+│   ├── jewelryDefs.ts       Jewelry pieces with tier upgrades
+│   ├── rivals.ts            Rival syndicate generation + Royal Rumble entry
+│   ├── lawyers.ts           Lawyer tiers
+│   └── events/              400 random events (life, criminal, business, vice)
 │
 ├── engine/                  Pure calculation functions (no React, no state)
 │   ├── economy.ts           Tick logic, launder math, harvest calc, formatters
 │   ├── heat.ts              Heat level tiers + police event logic
+│   ├── tech.ts              Prestige tech bonus calculator
+│   ├── sessionTech.ts       Session tech bonus calculator
+│   ├── difficulty.ts        Difficulty multiplier for leaderboard scoring
+│   ├── rivals.ts            Rival AI tick logic, attacks, defense
+│   ├── events.ts            Event engine (selection, resolution, buffs)
+│   ├── jewelry.ts           Jewelry bonus calculator
 │   └── sound.ts             SoundEngine class — plays WAV SFX + loops music
 │
 ├── store/                   Zustand stores — all mutable runtime state
@@ -69,20 +82,36 @@ src/
     │   └── WarehouseView.tsx  Inventory management
     ├── legal/
     │   └── LegalView.tsx      Lawyer hire / heat reduction
+    ├── finance/
+    │   └── FinanceView.tsx    Full stats dashboard
+    ├── tech/
+    │   ├── TechMenu.tsx       Prestige tech lab (permanent upgrades)
+    │   ├── SessionTechMenu.tsx Street upgrades (temporary, 3-currency cost)
+    │   └── PrestigeConfirmModal.tsx Prestige reset confirmation
+    ├── casino/
+    │   └── CasinoView.tsx     Casino games (poker, roulette, blackjack)
+    ├── jewelry/
+    │   └── JewelryStoreView.tsx Jewelry store with tier upgrades
+    ├── cars/
+    │   └── CarDealershipView.tsx Car dealership with tier categories
     └── ui/
         ├── CannabisLeaf.tsx   Neon SVG icon component
-        └── Notifications.tsx  Toast notification overlay
+        ├── Notifications.tsx  Toast notification overlay
+        ├── EventPopup.tsx     Random event popup with choices
+        ├── LeaderboardView.tsx Firestore-powered rankings
+        ├── StartGameScreen.tsx Game setup (rivals, difficulty)
+        ├── TutorialOverlay.tsx Step-by-step tutorial
+        └── Tooltip.tsx        Reusable tooltip component
 
 public/
-└── sounds/                  Pre-generated WAV files (via 256ai Sound Engine)
-    ├── notify_success.wav
-    ├── notify_warning.wav
-    ├── plant.wav
-    ├── harvest.wav
-    ├── cash.wav
-    ├── buy.wav
-    ├── dealer_hire.wav
-    └── bg_lofi.wav
+└── sounds/                  Synthesized WAV files (via Node.js script)
+    ├── notify_success.wav   notify_warning.wav   plant.wav
+    ├── harvest.wav          cash.wav             buy.wav
+    ├── sell.wav             dealer_hire.wav      upgrade.wav
+    ├── click.wav            fire.wav             attack.wav
+    ├── casino_bet.wav       casino_win.wav       casino_lose.wav
+    ├── event_popup.wav      prestige.wav
+    └── bg_lofi.wav          (background music, loops)
 ```
 
 ---

@@ -459,25 +459,44 @@ Reset the game to earn **Tech Points (TP)** — a permanent currency spent on up
 
 **Total to max all: 237 TP** (~35-45 prestiges at avg 5-6 TP each)
 
-### How Tech Bonuses Stack
-- **Yield:** `floor(harvestYield x (1 + roomYieldBonus + techYieldBonus))`
-- **Speed:** `ceil(growTimerTicks x (1 - roomSpeedBonus - techSpeedBonus))`
+### How Prestige Tech Bonuses Stack
+- **Yield:** `floor(harvestYield x (1 + roomYieldBonus + techYieldBonus + sessionYieldBonus))`
+- **Speed:** `ceil(growTimerTicks x (1 - roomSpeedBonus - techSpeedBonus - sessionSpeedBonus - carGrowSpeed))`
 - **Double:** `roomDoubleChance + techDoubleChance`
 - **Capacity:** Each room's plantsCapacity gets `+ techCapacityLevel`
-- **Dealer:** `salesRatePerTick x dealerCount x (1 + techDealerBonus)`
-- **Launder:** `dirtyConsumed x launderEfficiency x techLaunderMultiplier`
-- **Heat:** `heatGain x (1 - techHeatReduction)`
+- **Dealer:** `salesRatePerTick x dealerCount x techDealerMultiplier x sessionDealerMultiplier`
+- **Launder:** `dirtyConsumed x launderEfficiency x techLaunderMultiplier x sessionLaunderMultiplier x (1 + carLaunderBoost)`
+- **Heat:** `heatGain x (1 - techHeatReduction - sessionHeatReduction - carHeatReduction)`
 
 ### Persists Across Resets
 `prestigeCount`, `techPoints`, `totalTechPointsEarned`, `techUpgrades`
 
-### UI
-- **Tech Lab (🔬):** HUD button with TP badge → full-screen overlay with upgrade grid
-- **Prestige Confirm:** Modal showing TP breakdown before confirming reset
-- **Account Screen:** Shows active tech bonuses + prestige/tech buttons
+### Session Tech (Street Upgrades) — Temporary
 
-**Code:** `prestige()`, `purchaseTechUpgrade()` in `src/store/gameStore.ts`
-**Data:** `src/data/techDefs.ts` | **Engine:** `src/engine/tech.ts`
+Separate tech tree that **resets on prestige reset or game reset**. Costs **dirty cash + clean cash + product (weed oz)** — requiring all three currencies makes them hard to spam.
+
+| ID | Name | Icon | Effect/Level | L1 Cost | L2 Cost | L3 Cost |
+|----|------|------|-------------|---------|---------|---------|
+| `stech_yield` | Stronger Fertilizer | 🧪 | +10% yield | $50K/25K/100oz | $200K/100K/500oz | $800K/400K/2000oz |
+| `stech_speed` | Overclocked Lights | 💡 | -8% grow time | $40K/20K/80oz | $160K/80K/400oz | $640K/320K/1600oz |
+| `stech_dealer` | Street Connects | 🤙 | +15% dealer sales | $60K/30K/150oz | $250K/125K/600oz | $1M/500K/2500oz |
+| `stech_launder` | Offshore Accounts | 🏝️ | +10% launder eff | $75K/50K/120oz | $300K/200K/500oz | $1.2M/800K/2000oz |
+| `stech_heat` | Police Scanner | 📡 | -10% heat gain | $45K/30K/100oz | $180K/120K/400oz | $720K/480K/1600oz |
+| `stech_demand` | Word of Mouth | 📢 | +50 oz street demand | $30K/15K/200oz | $120K/60K/800oz | $500K/250K/3000oz |
+| `stech_seeds` | Bulk Seed Deal | 🌱 | -15% seed cost | $20K/10K/50oz | $80K/40K/200oz | $320K/160K/800oz |
+
+*Cost format: dirty/clean/product*
+
+**Session tech bonuses multiply with prestige tech** — a player with both tech trees maxed is significantly stronger than either alone, but loses session tech on prestige reset (creating meaningful prestige tension).
+
+### UI
+- **Prestige Tech Lab (🔬):** HUD button with TP badge → full-screen overlay with upgrade grid
+- **Session Tech (🛠️ Street Upgrades):** HUD button → full-screen overlay showing costs in all 3 currencies
+- **Prestige Confirm (🔄):** HUD button, modal showing TP breakdown before confirming reset
+
+**Code:** `prestige()`, `purchaseTechUpgrade()`, `purchaseSessionTech()` in `src/store/gameStore.ts`
+**Data:** `src/data/techDefs.ts`, `src/data/sessionTechDefs.ts`
+**Engine:** `src/engine/tech.ts`, `src/engine/sessionTech.ts`
 
 ---
 
@@ -514,10 +533,28 @@ Reset the game to earn **Tech Points (TP)** — a permanent currency spent on up
 
 ### Block Expansion
 
-- **Initial cost:** $2,000 (clean cash)
-- **Formula:** `nextBlockCost x 2` after each purchase
-- **Lot unlock within district:** `$1,000 x 2^(unlockedSlots - 2)` per lot
+- **Formula:** Linear $2K increments — 1st block = $2K, 2nd = $4K, 3rd = $6K, etc.
+- **Calculated dynamically:** `cost = 2000 + (genBlocksUnlocked × 2000)`
 - **Generated blocks:** Infinite expansion, auto-discovered adjacent to unlocked districts
+
+### Lot Pricing (within districts)
+
+Each district starts with **2 free lots**. Additional lots cost $2K each, increasing by $2K per lot:
+
+| Lot # | Cost |
+|-------|------|
+| 1-2 | Free (start unlocked) |
+| 3 | $2,000 |
+| 4 | $4,000 |
+| 5 | $6,000 |
+| 6 | $8,000 |
+
+**Formula:** `cost = 2000 × (lotIndex - 1)` for lotIndex >= 2
+
+### Lot Ownership Colors
+- **Player empty lots:** Emerald/green border and background
+- **Player businesses:** Business theme color
+- **Rival businesses:** Rival's gang color (unique per rival)
 
 **Code:** `DISTRICTS` in `src/data/districts.ts`, `unlockDistrict()`, `unlockLot()`, `unlockGeneratedBlock()` in `src/store/gameStore.ts`
 
@@ -527,15 +564,16 @@ Reset the game to earn **Tech Points (TP)** — a permanent currency spent on up
 
 Every tick (1 second):
 
-1. **Criminal operation:** Dealers sell product, auto-harvest runs -> dirty cash
-2. **Inventory calc:** Compute total oz and weighted avg price across all strains
-3. **Business processing:** Revenue, expenses, laundering (dirty->clean), dispensary (product->clean), rental (pure clean)
-4. **Reverse flow:** Clean->dirty at 95% via configured business rates
-5. **Lawyer retainer:** Deduct lawyer retainer from clean cash; auto-fire if can't afford
-6. **Heat calculation:** `calculateHeatTick()` computes heat gain (dirty cash + dealers) vs decay (natural + lawyer + businesses)
-7. **Job income:** If employed, add `cleanPerTick`; check heat->fire (uses new heat value)
-8. **Street sell quota:** Dynamic max from `getMaxStreetDemand(job, businesses)`, refill via `getStreetRefillRate(maxDemand)`
-9. **State update:** Update all cash totals, heat, tick count, cooldowns
+1. **Compute bonuses:** Combine prestige tech + session tech + car bonuses into `effectiveTech`
+2. **Criminal operation:** Dealers sell product, auto-harvest runs → dirty cash (uses effectiveTech for yield/speed/dealer)
+3. **Inventory calc:** Compute total oz and weighted avg price across all strains
+4. **Business processing:** Revenue, expenses, laundering (dirty→clean using effectiveTech.launderMultiplier), dispensary (product→clean), rental (pure clean)
+5. **Reverse flow:** Clean→dirty at 95% via configured business rates
+6. **Lawyer retainer:** Deduct lawyer retainer from clean cash; auto-fire if can't afford
+7. **Heat calculation:** `calculateHeatTick()` uses effectiveTech.heatReduction + carBonus.heatReduction
+8. **Job income:** If employed, add `cleanPerTick`; check heat→fire (uses new heat value)
+9. **Street sell quota:** Dynamic max from `getMaxStreetDemand(job, businesses) + sessionTech.demandBonus`
+10. **State update:** Update all cash totals, heat, tick count, cooldowns
 
 **Code:** `tick()` in `src/store/gameStore.ts`, `tickCriminalOperation()` in `src/engine/economy.ts`
 
@@ -560,6 +598,11 @@ Every tick (1 second):
 | `getHeatTier(heat)` | `src/engine/heat.ts` | Numeric heat -> tier name/color |
 | `formatMoney(amount)` | `src/engine/economy.ts` | Human-readable money ($1.5K, $2.3M) |
 | `formatUnits(oz)` | `src/engine/economy.ts` | Human-readable weight (3lb 4oz, 2 crates) |
+| `getTechBonuses(techUpgrades)` | `src/engine/tech.ts` | Prestige tech bonuses from upgrade levels |
+| `getSessionTechBonuses(sessionTech)` | `src/engine/sessionTech.ts` | Session tech bonuses from upgrade levels |
+| `getCarBonuses(cars)` | `src/data/carDefs.ts` | Car gameplay bonuses (heat, speed, income, etc.) |
+| `getDifficultyMultiplier(rivals, delay)` | `src/engine/difficulty.ts` | Score multiplier from game settings (×1.0–×2.0) |
+| `calculatePrestigeTP(state)` | `src/data/techDefs.ts` | Tech Points earned for a prestige reset |
 
 ---
 
@@ -571,7 +614,9 @@ Rival gangs operate autonomously in the city. They grow in power over time, buy 
 
 Rivals are procedurally generated at game start with random names, icons, and colors.
 
-**Head start:** Rivals are completely frozen for the first **300 ticks (5 minutes)** — no income, no buying, no attacks. The player gets a full 5-minute head start to grow, sell, and establish before rivals even wake up.
+**Royal Rumble Entry:** Rivals enter the game in a staggered "Royal Rumble" pattern. The **Rival Start Time** (0–60 minutes, in 10-minute increments, default 10 min) sets when the first rival appears. Subsequent rivals are spaced evenly: `spacingTicks = firstEntryTicks / rivalCount`. A start time of 0 means all rivals are active immediately.
+
+**Difficulty Multiplier:** Harder settings (more rivals + shorter entry delay) amplify the leaderboard score via `getDifficultyMultiplier()` (×1.0 to ×2.0). Shown on the Start Game screen.
 
 **Starting stats (all rivals start from zero, like the player):**
 | Stat | Starting Value |
@@ -886,20 +931,22 @@ At Silver (tier 0): 1× base. At Legendary (tier 4): 5× base.
 
 ---
 
-## 19. Car Dealership (Prestige Collection)
+## 19. Car Dealership (Car Bonuses)
 
-Buy collectible cars with clean cash. Each car provides a prestige bonus. Future integration with house/garage system.
+Buy collectible cars. Each car provides a **gameplay bonus** (not just prestige). Economy cars cost **dirty cash**, all others cost **clean cash**.
 
-### Tiers
-| Tier | Price Range | Prestige Range |
-|------|------------|---------------|
-| Economy | $5K–$12K | 1–2 |
-| Sport | $35K–$55K | 5–8 |
-| Luxury | $100K–$150K | 15–22 |
-| Exotic | $250K–$400K | 40–55 |
-| Supercar | $750K–$2M | 75–100 |
+### Tiers & Pricing
+| Tier | Price Range | Currency | Bonus Type |
+|------|------------|----------|------------|
+| Economy | $150K–$200K | **Dirty** | Heat reduction, grow speed |
+| Sport | $35K–$55K | Clean | Grow speed, dealer boost |
+| Luxury | $100K–$150K | Clean | Income multiplier, launder boost |
+| Exotic | $250K–$400K | Clean | Income multiplier, dealer boost |
+| Supercar | $750K–$2M | Clean | Income multiplier, launder boost |
 
-15 total cars. Each can only be purchased once.
+**Economy cars** (Corolla $150K, Camry $150K, Civic $200K) intentionally cost dirty cash to make early prestige harder to acquire cheaply.
+
+15 total cars. Each can only be purchased once. Car bonuses stack additively.
 
 ### Code Locations
 | File | Purpose |
@@ -929,3 +976,64 @@ Random events trigger every 30-120 ticks (~30s to 2min) with 400 total events ac
 | `src/data/events/` | 400 event definitions (types, life, criminal, business, vice) |
 | `src/engine/events.ts` | Event engine (selection, resolution, buffs) |
 | `src/components/ui/EventPopup.tsx` | Event popup UI |
+
+---
+
+## 22. Difficulty & Leaderboard Scoring
+
+Game difficulty is set at the Start Game screen via two sliders:
+
+### Settings
+| Setting | Range | Default | Step |
+|---------|-------|---------|------|
+| Rival Count | 1–5 | 3 | 1 |
+| Rival Start Time | 0–60 min | 10 min | 10 min |
+
+### Difficulty Multiplier (×1.0 to ×2.0)
+Applied to leaderboard scores. Higher rivals + shorter start time = bigger multiplier.
+
+**Rival bonus:** 1→+0.1, 2→+0.2, 3→+0.35, 4→+0.5 (5 rivals)
+**Delay bonus:** 0min→+0.5, 10min→+0.35, 20min→+0.2, 30min→+0.1, 50min→+0.05, 60min→+0
+
+**Formula:** `multiplier = 1 + rivalBonus + delayBonus` (capped at ×2.0)
+
+**Leaderboard score:** `Math.floor(baseScore × difficultyMultiplier)`
+
+**Code:** `getDifficultyMultiplier()` in `src/engine/difficulty.ts`
+**UI:** `src/components/ui/StartGameScreen.tsx`, `src/components/ui/LeaderboardView.tsx`
+
+---
+
+## 23. Sound System
+
+Pool-based HTMLAudioElement sound engine with 18 sound effects and background music.
+
+### Sound Keys
+| Key | Trigger |
+|-----|---------|
+| `notify_success` | Success notifications |
+| `notify_warning` | Warning notifications |
+| `plant` | Planting seeds |
+| `harvest` | Harvesting crops |
+| `cash` | Cash transactions |
+| `buy` | Purchases (businesses, jewelry, cars, resources) |
+| `sell` | Selling product |
+| `dealer_hire` | Hiring dealers |
+| `upgrade` | Upgrades (rooms, tech, jewelry, businesses) |
+| `click` | UI button clicks (jobs, lawyers, hitmen, legal actions) |
+| `fire` | Firing dealers/lawyers |
+| `casino_bet` | Placing casino bets |
+| `casino_win` | Winning at casino |
+| `casino_lose` | Losing at casino |
+| `attack` | Attacking rivals |
+| `event_popup` | Random event appears |
+| `prestige` | Prestige reset |
+| `bg_lofi` | Background lo-fi music (loops) |
+
+### Controls
+- SFX toggle + volume slider (HUD quick toggle + Account screen slider)
+- Music toggle + volume slider
+- Pool size: 3 instances per sound for overlapping playback
+
+**Code:** `src/engine/sound.ts`
+**Assets:** `public/sounds/*.wav` (synthesized via Node.js script)
