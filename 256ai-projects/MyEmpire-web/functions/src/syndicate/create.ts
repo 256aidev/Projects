@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 
 const db = admin.firestore();
@@ -7,30 +7,30 @@ const db = admin.firestore();
  * Create a new syndicate. Caller becomes the Head of the Family.
  * Requires: name (3-30 chars), tag (2-5 chars), icon (emoji), color (hex)
  */
-export const createSyndicate = functions.https.onCall(async (data, context) => {
-  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+export const createSyndicate = onCall({ cors: true }, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
 
-  const uid = context.auth.uid;
-  const { name, tag, icon, color } = data;
+  const uid = request.auth.uid;
+  const { name, tag, icon, color } = request.data;
 
   // Validate inputs
   if (!name || typeof name !== 'string' || name.length < 3 || name.length > 30) {
-    throw new functions.https.HttpsError('invalid-argument', 'Name must be 3-30 characters');
+    throw new HttpsError('invalid-argument', 'Name must be 3-30 characters');
   }
   if (!tag || typeof tag !== 'string' || tag.length < 2 || tag.length > 5) {
-    throw new functions.https.HttpsError('invalid-argument', 'Tag must be 2-5 characters');
+    throw new HttpsError('invalid-argument', 'Tag must be 2-5 characters');
   }
 
   // Check player isn't already in a syndicate
   const existingMembership = await db.collectionGroup('members').where('uid', '==', uid).limit(1).get();
   if (!existingMembership.empty) {
-    throw new functions.https.HttpsError('already-exists', 'You are already in a syndicate');
+    throw new HttpsError('already-exists', 'You are already in a syndicate');
   }
 
   // Check name uniqueness
   const nameCheck = await db.collection('syndicates').where('name', '==', name).limit(1).get();
   if (!nameCheck.empty) {
-    throw new functions.https.HttpsError('already-exists', 'Syndicate name already taken');
+    throw new HttpsError('already-exists', 'Syndicate name already taken');
   }
 
   // Get player display name from leaderboard

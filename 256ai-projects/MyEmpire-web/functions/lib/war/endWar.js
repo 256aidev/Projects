@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.endWar = void 0;
-const functions = __importStar(require("firebase-functions"));
+const scheduler_1 = require("firebase-functions/v2/scheduler");
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 // War bonuses
@@ -46,10 +46,7 @@ const LOSER_XP = 25;
  * End war — runs every Saturday at 00:00 UTC.
  * Tallies final scores, distributes bonuses, clears war state.
  */
-exports.endWar = functions.pubsub
-    .schedule('every saturday 00:00')
-    .timeZone('UTC')
-    .onRun(async () => {
+exports.endWar = (0, scheduler_1.onSchedule)({ schedule: 'every saturday 00:00', timeZone: 'UTC' }, async () => {
     const warsSnap = await db.collection('wars').where('status', '==', 'active').get();
     for (const warDoc of warsSnap.docs) {
         const warData = warDoc.data();
@@ -99,6 +96,5 @@ exports.endWar = functions.pubsub
         await batch.commit();
     }
     console.log(`Wars ended: ${warsSnap.size} wars resolved`);
-    return null;
 });
 //# sourceMappingURL=endWar.js.map

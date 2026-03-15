@@ -34,28 +34,28 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.leaveSyndicate = void 0;
-const functions = __importStar(require("firebase-functions"));
+const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 /**
  * Leave current syndicate. If leader leaves, promotes first underboss or oldest member.
  * If last member, deletes the syndicate.
  */
-exports.leaveSyndicate = functions.https.onCall(async (data, context) => {
+exports.leaveSyndicate = (0, https_1.onCall)({ cors: true }, async (request) => {
     var _a, _b, _c;
-    if (!context.auth)
-        throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
-    const uid = context.auth.uid;
-    const { syndicateId } = data;
+    if (!request.auth)
+        throw new https_1.HttpsError('unauthenticated', 'Must be logged in');
+    const uid = request.auth.uid;
+    const { syndicateId } = request.data;
     if (!syndicateId)
-        throw new functions.https.HttpsError('invalid-argument', 'Missing syndicateId');
+        throw new https_1.HttpsError('invalid-argument', 'Missing syndicateId');
     const syndicateRef = db.collection('syndicates').doc(syndicateId);
     const syndicate = await syndicateRef.get();
     if (!syndicate.exists)
-        throw new functions.https.HttpsError('not-found', 'Syndicate not found');
+        throw new https_1.HttpsError('not-found', 'Syndicate not found');
     const syndicateData = syndicate.data();
     if (!syndicateData.memberIds.includes(uid)) {
-        throw new functions.https.HttpsError('permission-denied', 'You are not in this syndicate');
+        throw new https_1.HttpsError('permission-denied', 'You are not in this syndicate');
     }
     const memberRef = syndicateRef.collection('members').doc(uid);
     const memberDoc = await memberRef.get();

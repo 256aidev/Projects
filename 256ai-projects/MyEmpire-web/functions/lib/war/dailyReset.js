@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.dailyWarReset = void 0;
-const functions = __importStar(require("firebase-functions"));
+const scheduler_1 = require("firebase-functions/v2/scheduler");
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 /**
@@ -42,10 +42,7 @@ const db = admin.firestore();
  * Resets fight counts for all members in active wars.
  * Records daily results.
  */
-exports.dailyWarReset = functions.pubsub
-    .schedule('every day 00:00')
-    .timeZone('UTC')
-    .onRun(async () => {
+exports.dailyWarReset = (0, scheduler_1.onSchedule)({ schedule: 'every day 00:00', timeZone: 'UTC' }, async () => {
     // Get all active wars
     const warsSnap = await db.collection('wars').where('status', '==', 'active').get();
     for (const warDoc of warsSnap.docs) {
@@ -64,6 +61,5 @@ exports.dailyWarReset = functions.pubsub
         }
     }
     console.log(`Daily reset: ${warsSnap.size} wars processed`);
-    return null;
 });
 //# sourceMappingURL=dailyReset.js.map

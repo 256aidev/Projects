@@ -34,38 +34,38 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.kickMember = void 0;
-const functions = __importStar(require("firebase-functions"));
+const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 /**
  * Kick a member from the syndicate. Only leader or underboss can kick.
  * Cannot kick the leader. Underbosses can only kick regular members.
  */
-exports.kickMember = functions.https.onCall(async (data, context) => {
+exports.kickMember = (0, https_1.onCall)({ cors: true }, async (request) => {
     var _a, _b;
-    if (!context.auth)
-        throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
-    const uid = context.auth.uid;
-    const { syndicateId, targetUid } = data;
+    if (!request.auth)
+        throw new https_1.HttpsError('unauthenticated', 'Must be logged in');
+    const uid = request.auth.uid;
+    const { syndicateId, targetUid } = request.data;
     if (!syndicateId || !targetUid)
-        throw new functions.https.HttpsError('invalid-argument', 'Missing fields');
+        throw new https_1.HttpsError('invalid-argument', 'Missing fields');
     if (uid === targetUid)
-        throw new functions.https.HttpsError('invalid-argument', 'Cannot kick yourself');
+        throw new https_1.HttpsError('invalid-argument', 'Cannot kick yourself');
     const syndicateRef = db.collection('syndicates').doc(syndicateId);
     const syndicate = await syndicateRef.get();
     if (!syndicate.exists)
-        throw new functions.https.HttpsError('not-found', 'Syndicate not found');
+        throw new https_1.HttpsError('not-found', 'Syndicate not found');
     const sd = syndicate.data();
     const isLeader = sd.leaderId === uid;
     const isUnderboss = sd.underbossIds.includes(uid);
     if (!isLeader && !isUnderboss) {
-        throw new functions.https.HttpsError('permission-denied', 'Only leaders and underbosses can kick');
+        throw new https_1.HttpsError('permission-denied', 'Only leaders and underbosses can kick');
     }
     if (sd.leaderId === targetUid) {
-        throw new functions.https.HttpsError('permission-denied', 'Cannot kick the leader');
+        throw new https_1.HttpsError('permission-denied', 'Cannot kick the leader');
     }
     if (isUnderboss && sd.underbossIds.includes(targetUid)) {
-        throw new functions.https.HttpsError('permission-denied', 'Underbosses cannot kick other underbosses');
+        throw new https_1.HttpsError('permission-denied', 'Underbosses cannot kick other underbosses');
     }
     const memberRef = syndicateRef.collection('members').doc(targetUid);
     const memberDoc = await memberRef.get();
