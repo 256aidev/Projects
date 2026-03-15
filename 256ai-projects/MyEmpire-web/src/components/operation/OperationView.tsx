@@ -89,8 +89,7 @@ export default function OperationView() {
                 <span className="text-yellow-500 text-[10px]">${entry.pricePerUnit}/oz</span>
               </div>
               );
-            })
-            ))}
+            })}
           </div>
         )}
 
@@ -309,8 +308,8 @@ export default function OperationView() {
                         }
                       }}
                       disabled={!canUpgrade}
-                      className={`text-xs px-3 py-1.5 rounded border border-white/30 font-semibold transition ${
-                        canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-gray-700 text-white cursor-not-allowed'
+                      className={`text-sm px-8 py-2.5 rounded-lg border-2 border-white/30 font-bold transition whitespace-nowrap ${
+                        canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white shadow-lg shadow-purple-900/40' : 'bg-gray-700 text-white cursor-not-allowed'
                       }`}
                     >
                       + Slot · {formatMoney(nextUpgradeCost)}
