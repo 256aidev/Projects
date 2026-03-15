@@ -1,276 +1,211 @@
-# MyEmpire: Kingpin — Web Architecture
+# MyEmpire: Kingpin — Architecture Guide
 
-A mobile-first browser tycoon game built with React + TypeScript + Vite.
-Players run a cannabis grow operation, launder money through front businesses,
-manage heat, and expand across city districts.
+This document explains how the game engine is organized so future developers (or Claude instances) can navigate, modify, and extend it without breaking things.
 
 ---
 
-## Stack
+## Engine Type: Tick-Based State Machine
 
-| Layer | Technology |
-|---|---|
-| Framework | React 19 + TypeScript |
-| Bundler | Vite 7 |
-| State | Zustand 5 (with `persist` middleware) |
-| Styling | Tailwind CSS 4 |
-| Auth | Firebase Auth (Google Sign-In) |
-| Cloud save | Firebase Firestore |
-| Sound | 256ai Sound Engine (FastAPI @ 10.0.1.147:5200) → static WAV files |
+The game runs on a synchronous tick loop. Every 625-1000ms (depending on game speed), `tick()` runs all game systems in order and produces a new state. React re-renders from state changes via Zustand selectors.
+
+```
+setInterval (useGameTick.ts)
+  → gameStore.tick()
+    → for each system in GAME_SYSTEMS:
+        system(tickState, context)
+    → return new state → React re-renders
+```
 
 ---
 
-## Project Structure
+## File Structure
 
 ```
 src/
-├── main.tsx                 React entry point
-├── App.tsx                  Root component — view routing, cloud sync, music init
-├── firebase.ts              Firebase app + Auth + Firestore init
+├── data/              # Pure data definitions (no logic)
+│   ├── types.ts       # Core interfaces, constants, INITIAL_GAME_STATE
+│   ├── businesses.ts  # Business definitions (BUSINESS_MAP)
+│   ├── districts.ts   # District & city layout definitions
+│   ├── carDefs.ts     # Car definitions + getCarBonuses()
+│   ├── currencies.ts  # Currency definitions (dirty/clean)
+│   ├── theme.ts       # Game theme labels/icons (for re-skinning)
+│   ├── techDefs.ts    # Prestige tech upgrade definitions
+│   ├── sessionTechDefs.ts # Per-run tech definitions
+│   ├── rivals.ts      # Rival generation
+│   ├── resources.ts   # Supply chain resources
+│   ├── lawyers.ts     # Lawyer definitions
+│   ├── tutorial.ts    # Tutorial step definitions
+│   ├── events/        # 400 random events (types, life, criminal, business, vice)
+│   └── ...
 │
-├── data/                    Static game data (never mutated at runtime)
-│   ├── types.ts             All TypeScript interfaces + balance constants
-│   ├── businesses.ts        BusinessDef array + BUSINESS_MAP lookup
-│   ├── districts.ts         DistrictDef array + DISTRICT_MAP lookup
-│   ├── resources.ts         ResourceDef array + RESOURCE_MAP lookup
-│   ├── techDefs.ts          Prestige tech upgrades (7 tracks, 5 levels)
-│   ├── sessionTechDefs.ts   Session tech upgrades (7 tracks, 3 levels — resets on prestige)
-│   ├── carDefs.ts           15 car definitions, tier colors, gameplay bonuses
-│   ├── jewelryDefs.ts       Jewelry pieces with tier upgrades
-│   ├── rivals.ts            Rival syndicate generation + Royal Rumble entry
-│   ├── lawyers.ts           Lawyer tiers
-│   └── events/              400 random events (life, criminal, business, vice)
+├── engine/            # Pure game logic functions (no state, no UI)
+│   ├── economy.ts     # Income, laundering, harvesting, dealer math
+│   ├── heat.ts        # Police + rival heat calculations
+│   ├── rivals.ts      # Rival AI tick, attacks, defense
+│   ├── events.ts      # Event triggering, resolution, buffs
+│   ├── tech.ts        # Prestige tech bonus aggregation
+│   ├── sessionTech.ts # Session tech bonus aggregation
+│   ├── difficulty.ts  # Difficulty multiplier for leaderboard
+│   ├── sound.ts       # Audio engine
+│   └── systems/       # ★ MODULAR TICK PIPELINE
+│       ├── types.ts       # TickState, TickContext, GameSystem interface
+│       ├── registry.ts    # Ordered list of all systems
+│       ├── criminalOp.ts  # Grow ops, dealer sales
+│       ├── businesses.ts  # Laundering, dispensaries, revenue
+│       ├── cashFlow.ts    # Reverse flow, net cash
+│       ├── streetEconomy.ts # Street sell quota
+│       ├── legal.ts       # Lawyer cost, heat calculation
+│       ├── jobs.ts        # Job income, hitman upkeep
+│       ├── rivalSystem.ts # Rival AI attacks
+│       └── eventSystem.ts # Random event triggering
 │
-├── engine/                  Pure calculation functions (no React, no state)
-│   ├── economy.ts           Tick logic, launder math, harvest calc, formatters
-│   ├── heat.ts              Heat level tiers + police event logic
-│   ├── tech.ts              Prestige tech bonus calculator
-│   ├── sessionTech.ts       Session tech bonus calculator
-│   ├── difficulty.ts        Difficulty multiplier for leaderboard scoring
-│   ├── rivals.ts            Rival AI tick logic, attacks, defense
-│   ├── events.ts            Event engine (selection, resolution, buffs)
-│   ├── jewelry.ts           Jewelry bonus calculator
-│   └── sound.ts             SoundEngine class — plays WAV SFX + loops music
+├── store/             # Zustand state management
+│   ├── gameStore.ts   # ★ Main store (tick + event actions + action spreads)
+│   ├── actions/       # ★ MODULAR GAME ACTIONS
+│   │   ├── operation.ts   # Harvest, plant, seeds, sell, grow rooms
+│   │   ├── dealers.ts     # Hire/fire dealers, tier upgrades
+│   │   ├── business.ts    # Buy/sell/upgrade businesses, resources
+│   │   ├── territory.ts   # Unlock lots, districts, generated blocks
+│   │   ├── legal.ts       # Jobs, lawyers
+│   │   ├── combat.ts      # Hitmen, rival attacks
+│   │   ├── prestige.ts    # Prestige, tech, reset, wipe
+│   │   ├── luxury.ts      # Casino, jewelry, cars
+│   │   └── game.ts        # Start/continue, tutorial
+│   ├── uiStore.ts     # UI-only state (views, panels, speed)
+│   ├── authStore.ts   # Firebase auth + cloud sync
+│   ├── cloudSave.ts   # Firestore save/load/leaderboard
+│   └── leaderboardStore.ts # Leaderboard data
 │
-├── store/                   Zustand stores — all mutable runtime state
-│   ├── gameStore.ts         Main game state + 26 actions (see below)
-│   ├── authStore.ts         Firebase user, sign-in/out, cloud sync
-│   ├── uiStore.ts           Active view, panels, overlays, notifications
-│   └── cloudSave.ts         Firestore read/write helpers
+├── hooks/             # Custom React hooks
+│   ├── useGameTick.ts      # Game tick loop (setInterval)
+│   ├── useTheme.ts         # Access game theme config
+│   ├── useOperationStats.ts # Computed grow/dealer stats
+│   ├── useCashFlow.ts      # Computed cash flow
+│   ├── useHeatStatus.ts    # Computed heat tiers
+│   ├── useRivalStatus.ts   # Computed rival status
+│   └── useBusinessStats.ts # Computed business financials
 │
-├── hooks/
-│   └── useGameTick.ts       setInterval(1000ms) → calls gameStore.tick()
+├── components/        # React UI components
+│   ├── layout/        # HUD, NavBar
+│   ├── operation/     # Grow room management
+│   ├── city/          # City map, district blocks, lots
+│   ├── panels/        # Business/market/building panels
+│   ├── legal/         # Heat, lawyers, hitmen
+│   ├── finance/       # Stats dashboard
+│   ├── tech/          # Tech lab, prestige
+│   ├── casino/        # Casino games
+│   ├── jewelry/       # Jewelry store
+│   ├── cars/          # Car dealership
+│   ├── auth/          # Login, account
+│   ├── ui/            # Tooltip, Tutorial, Notifications, Events, Leaderboard
+│   └── warehouse/     # Product inventory
 │
-└── components/
-    ├── auth/
-    │   ├── LoginScreen.tsx  Guest / Google sign-in gate
-    │   └── AccountScreen.tsx Bottom sheet: user info, stats, sign out
-    ├── layout/
-    │   ├── HUD.tsx          Top bar: dirty cash, clean cash, inventory, mute
-    │   └── NavBar.tsx       Bottom tabs: Operation / City / Warehouse / Legal
-    ├── city/
-    │   ├── CityMap.tsx      District slot grid
-    │   ├── BuildingLot.tsx  Single lot tile
-    │   └── DistrictSelector.tsx
-    ├── operation/
-    │   └── OperationView.tsx Grow rooms, dealers, seeds, auto-harvest
-    ├── panels/
-    │   ├── BuyBusinessPanel.tsx  Purchase a front business
-    │   ├── BuildingMenu.tsx      Manage / upgrade an owned business
-    │   └── ResourceMarketPanel.tsx Buy supplies
-    ├── warehouse/
-    │   └── WarehouseView.tsx  Inventory management
-    ├── legal/
-    │   └── LegalView.tsx      Lawyer hire / heat reduction
-    ├── finance/
-    │   └── FinanceView.tsx    Full stats dashboard
-    ├── tech/
-    │   ├── TechMenu.tsx       Prestige tech lab (permanent upgrades)
-    │   ├── SessionTechMenu.tsx Street upgrades (temporary, 3-currency cost)
-    │   └── PrestigeConfirmModal.tsx Prestige reset confirmation
-    ├── casino/
-    │   └── CasinoView.tsx     Casino games (poker, roulette, blackjack)
-    ├── jewelry/
-    │   └── JewelryStoreView.tsx Jewelry store with tier upgrades
-    ├── cars/
-    │   └── CarDealershipView.tsx Car dealership with tier categories
-    └── ui/
-        ├── CannabisLeaf.tsx   Neon SVG icon component
-        ├── Notifications.tsx  Toast notification overlay
-        ├── EventPopup.tsx     Random event popup with choices
-        ├── LeaderboardView.tsx Firestore-powered rankings
-        ├── StartGameScreen.tsx Game setup (rivals, difficulty)
-        ├── TutorialOverlay.tsx Step-by-step tutorial
-        └── Tooltip.tsx        Reusable tooltip component
-
-public/
-└── sounds/                  Synthesized WAV files (via Node.js script)
-    ├── notify_success.wav   notify_warning.wav   plant.wav
-    ├── harvest.wav          cash.wav             buy.wav
-    ├── sell.wav             dealer_hire.wav      upgrade.wav
-    ├── click.wav            fire.wav             attack.wav
-    ├── casino_bet.wav       casino_win.wav       casino_lose.wav
-    ├── event_popup.wav      prestige.wav
-    └── bg_lofi.wav          (background music, loops)
+└── firebase.ts        # Firebase config
 ```
 
 ---
 
-## Game Loop
+## How to Add a New Game System
 
-```
-useGameTick (hook)
-  └─ setInterval(1000ms)
-       └─ gameStore.tick()
-            ├─ tickCriminalOperation(op)       ← engine/economy.ts
-            │    ├─ Dealers sell product → dirty cash earned
-            │    ├─ Grow timers decrement on all slots
-            │    └─ Auto-harvest: collect + replant if enabled + seeds available
-            ├─ For each BusinessInstance:
-            │    ├─ calculateLaunderTick()     ← dirty → clean conversion
-            │    └─ calculateBusinessRevenue() ← legit clean income
-            ├─ Update dirtyCash, cleanCash, heat
-            └─ lastTickDirtyProfit / lastTickCleanProfit → HUD sparkline
-```
-
----
-
-## State Architecture
-
-### gameStore (Zustand + localStorage persist, version 7)
-
-**Shape:**
+1. Create `src/engine/systems/myNewSystem.ts`:
 ```typescript
-{
-  dirtyCash, cleanCash              // current wallets
-  totalDirtyEarned, totalCleanEarned, totalSpent   // lifetime stats
-  heat                              // 0–100, triggers police events
-  operation: CriminalOperation      // entire grow op state
-  businesses: BusinessInstance[]    // front businesses
-  unlockedDistricts: string[]
-  inventory: Record<string, number> // supply resources
-  storageCapacity: number
-  activeLawyerId: string | null
-  tickCount: number
-  lastTickDirtyProfit, lastTickCleanProfit
+import type { TickState, TickContext } from './types';
+
+export function tickMyNewSystem(ts: TickState, ctx: TickContext): void {
+  // Read from ts (mutable accumulator) and ctx (immutable context)
+  // Mutate ts directly — e.g. ts.dirtyCash += 100;
 }
 ```
 
-**Key actions:**
-| Action | Description |
-|---|---|
-| `tick()` | Main game loop — called every second |
-| `plantSeeds(roomId, slotIndex)` | Start grow timer (reads canonical timer from GROW_ROOM_TYPE_MAP) |
-| `harvestGrowRoom(roomId, slotIndex)` | Collect yield, optionally replant |
-| `buyAutoHarvest(roomId)` | Enable auto-harvest for a room |
-| `buySeed(qty)` | Deduct dirty cash (reads canonical price from INITIAL_OPERATION) |
-| `hireDealers(count)` | Add dealers for current tier |
-| `upgradeDealerTier()` | Advance to next dealer tier |
-| `purchaseBusiness(defId, districtId, slot)` | Buy a front business |
-| `upgradeBusiness(instanceId)` | Tier up a business |
-| `resetGame()` | Wipe save and start fresh |
-
-**Canonical values pattern:**
-Saved localStorage data can become stale across game balance updates. To avoid
-needing migration every time a value changes, actions always read balance
-constants from the canonical definition maps at action time:
-- `plantSeeds` → `GROW_ROOM_TYPE_MAP[typeId].strainSlots[i].growTimerTicks`
-- `buySeed` → `INITIAL_OPERATION.seedCostPerUnit`
-
-### authStore
-Firebase Auth state. Handles Google sign-in, guest mode, and cloud sync.
-Guest users get `uid = 'guest'` — state is localStorage-only.
-
-### uiStore
-Ephemeral UI state: active view, open panels, overlay flags, notification queue.
-`addNotification()` also triggers the appropriate SFX via `sound.play()`.
-
----
-
-## Two-Currency Economy
-
-```
-Criminal Operation
-  └─ Grow rooms produce product (oz)
-  └─ Dealers sell product → DIRTY CASH
-
-Dirty Cash
-  └─ Front Businesses launder it → CLEAN CASH
-  └─ Heat increases as dirty cash flows
-
-Clean Cash
-  └─ Used to buy businesses, upgrades, lawyers
+2. Add it to `src/engine/systems/registry.ts`:
+```typescript
+import { tickMyNewSystem } from './myNewSystem';
+// Add to GAME_SYSTEMS array in the correct position
 ```
 
----
+3. If your system needs new state fields, add them to `TickState` in `types.ts` and `GameState` in `data/types.ts`.
 
-## Sound System
-
-**Source:** 256ai Sound Engine (FastAPI @ `http://10.0.1.147:5200`)
-**Endpoints used:** `/generate/sfx`, `/generate/music`
-**Model:** MusicGen (facebook/musicgen-small) + Kokoro TTS (unused in-game)
-
-Sounds are pre-generated and shipped as static WAV files in `public/sounds/`.
-The in-game `SoundEngine` class (`src/engine/sound.ts`) uses `HTMLAudioElement`
-pools for zero-latency SFX playback and a single looping `<audio>` for music.
-
-**Sound events:**
-| Event | File | Triggered by |
-|---|---|---|
-| Notification success | notify_success.wav | `uiStore.addNotification(..., 'success')` |
-| Notification warning | notify_warning.wav | `uiStore.addNotification(..., 'warning')` |
-| Plant seed | plant.wav | Plant button in OperationView |
-| Harvest | harvest.wav | Harvest button in OperationView |
-| Buy seeds | buy.wav | Buy seeds button in OperationView |
-| Hire dealer | dealer_hire.wav | Hire dealer button in OperationView |
-| Background music | bg_lofi.wav | First click/touch on App root |
-
-Mute is toggled via the 🔊/🔇 button in the HUD. Preference persists in
-`localStorage` as `myempire-muted`.
+**To remove a system:** Delete it from the registry array. That's it.
 
 ---
 
-## Save System
+## How to Add a New Game Action
 
-| Layer | Mechanism | Scope |
-|---|---|---|
-| Local | Zustand `persist` → `localStorage['myempire-save']` | Always |
-| Cloud | Firestore doc `saves/{uid}` | Signed-in users only |
-| Auto-sync | Every 60 game ticks (≈ 1 min) via `useEffect` in App.tsx | Signed-in users |
-| Manual sync | On sign-out | Signed-in users |
+1. Find the right domain file in `src/store/actions/`:
+   - Growing/harvesting → `operation.ts`
+   - Buying/selling businesses → `business.ts`
+   - Combat/hitmen → `combat.ts`
+   - etc.
 
-Cloud save serializes the full `GameState` snapshot and merges it on load via
-`cloudSave.ts`. Guest saves are local-only and lost on browser clear.
+2. Add your action to the return object of `createXxxActions()`:
+```typescript
+export function createOperationActions(set: SetState, get: GetState) {
+  return {
+    // existing actions...
+    myNewAction: (param: string) => {
+      const state = get();
+      // do stuff
+      set({ someField: newValue });
+    },
+  };
+}
+```
 
----
-
-## Key Data Files
-
-### src/data/types.ts
-Single source of truth for all game balance. Contains:
-- `GROW_ROOM_TYPE_DEFS` — 5 grow rooms (Closet → Grow Facility), each with strain slots, costs, capacities
-- `DEALER_TIERS` — 5 tiers (Corner Boys → Regional Cartel)
-- `WATER_TIERS` / `LIGHT_TIERS` — 4 upgrade tiers each
-- `INITIAL_OPERATION` — starting state (canonical seed price, starting room)
-- `INITIAL_GAME_STATE` — starting wallet ($500 dirty, $1500 clean)
-
-### src/data/businesses.ts
-~20 front business types (Car Wash, Pizza Shop, Nightclub, etc.) each with:
-base launder capacity, base revenue, upgrade tier multipliers, district affinity.
-
-### src/data/districts.ts
-6 city districts, each with a revenue/launder multiplier and unlock cost.
+3. Add the type signature to `GameActions` interface in `gameStore.ts`.
 
 ---
 
-## Adding New Features
+## How to Add Content (Data-Driven)
 
-**New game balance value:** Add to `types.ts` constants. Read at action time
-from the canonical constant (never from saved state) to avoid migration issues.
+These are **zero-code-change** additions — just add data entries:
 
-**New sound:** Generate via `POST http://10.0.1.147:5200/generate/sfx`, copy
-WAV to `public/sounds/`, add key to `SoundKey` union and `SOUND_PATHS` in
-`src/engine/sound.ts`, call `sound.play('your_key')` at the right event.
+- **New grow room:** Add to `GROW_ROOM_TYPE_DEFS` in `data/types.ts`
+- **New business:** Add to `BUSINESSES` array in `data/businesses.ts`
+- **New car:** Add to `CAR_DEFS` in `data/carDefs.ts`
+- **New job:** Add to `JOB_DEFS` in `data/types.ts`
+- **New lawyer:** Add to `LAWYER_DEFS` in `data/lawyers.ts`
+- **New hitman:** Add to `HITMAN_DEFS` in `data/types.ts`
+- **New event:** Add to the appropriate file in `data/events/`
+- **New tech upgrade:** Add to `TECH_UPGRADE_DEFS` in `data/techDefs.ts`
+- **New district:** Add to `DISTRICTS` in `data/districts.ts`
 
-**New view/screen:** Add to `ViewName` in `uiStore.ts`, add tab in `NavBar.tsx`,
-render conditionally in `App.tsx`.
+---
+
+## How to Add/Rename a Currency
+
+1. Edit `src/data/currencies.ts` — change name, icon, color
+2. Components using `<CurrencyDisplay id="dirty" />` auto-update
+3. State fields (`dirtyCash`, `cleanCash`) remain unchanged in code
+
+---
+
+## How to Re-Theme the Game
+
+Edit `src/data/theme.ts` to change all game-specific labels:
+- `product.name`: "Product" → "Coffee" or "Widgets"
+- `workers.name`: "Dealers" → "Sales Reps"
+- `production.name`: "Grow Room" → "Kitchen"
+- Components using `useTheme()` hook auto-update
+
+---
+
+## State & Persistence
+
+- **Local:** Zustand `persist()` middleware → localStorage (`myempire-save`)
+- **Cloud:** Firebase Firestore → `saves/{uid}` (on auth)
+- **Leaderboard:** Firebase Firestore → `leaderboard/{uid}` (auto-sync)
+- **Save version:** Incremented in `gameStore.ts` → `migrate()` handles old saves
+- **Migration:** Always adds new fields with defaults, never removes data
+
+---
+
+## Key Patterns
+
+| Pattern | Where | Why |
+|---------|-------|-----|
+| **Mutable accumulator** | Tick systems | Systems are order-dependent; each reads/writes shared TickState |
+| **Pure functions** | Engine files | No side effects, testable in isolation |
+| **Data-driven content** | Data files | Add content without code changes |
+| **Selector pattern** | Components | `useGameStore((s) => s.field)` for minimal re-renders |
+| **Action creators** | Store actions | `createXxxActions(set, get)` for domain separation |
+| **Portal tooltips** | Tooltip component | `display: contents` + createPortal to avoid layout breakage |
