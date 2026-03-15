@@ -94,52 +94,66 @@ export default function RivalsView() {
         </div>
       )}
 
-      {/* Crime Family — Your Crew */}
-      <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3">
+      {/* Crime Family — Your Crew (2-col layout matching Syndicate style) */}
+      <div>
         <div className="flex items-center justify-between mb-2">
           <div>
             <h3 className="text-white font-semibold text-sm">👑 Your Crew</h3>
-            <p className="text-gray-400 text-[10px]">{playerCrewCount} members · ATK {getCrewAttack(crew)} · DEF {getCrewDefense(crew)} · <span className="text-red-400">-{formatMoney(crewUpkeep)}/tick</span></p>
+            <p className="text-gray-400 text-[10px]">{playerCrewCount} members · {formatMoney(crewUpkeep)}/tick</p>
           </div>
           {playerCrewCount > 0 && (
             <div className="flex flex-wrap gap-1 justify-end">
-              {crewBonuses.heatReduction > 0 && <span className="text-[8px] bg-blue-900/40 text-blue-300 px-1.5 py-0.5 rounded-full">-{Math.round(crewBonuses.heatReduction * 100)}% heat</span>}
-              {crewBonuses.costReduction > 0 && <span className="text-[8px] bg-green-900/40 text-green-300 px-1.5 py-0.5 rounded-full">-{Math.round(crewBonuses.costReduction * 100)}% costs</span>}
-              {crewBonuses.incomeMultiplier > 0 && <span className="text-[8px] bg-yellow-900/40 text-yellow-300 px-1.5 py-0.5 rounded-full">+{Math.round(crewBonuses.incomeMultiplier * 100)}% income</span>}
-              {crewBonuses.dealerBoost > 0 && <span className="text-[8px] bg-purple-900/40 text-purple-300 px-1.5 py-0.5 rounded-full">+{Math.round(crewBonuses.dealerBoost * 100)}% dealers</span>}
-              {crewBonuses.launderBoost > 0 && <span className="text-[8px] bg-red-900/40 text-red-300 px-1.5 py-0.5 rounded-full">+{Math.round(crewBonuses.launderBoost * 100)}% launder</span>}
+              {crewBonuses.heatReduction > 0 && <span className="text-[9px] bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">-{Math.round(crewBonuses.heatReduction * 100)}% heat</span>}
+              {crewBonuses.costReduction > 0 && <span className="text-[9px] bg-green-900/40 text-green-300 px-2 py-0.5 rounded-full">-{Math.round(crewBonuses.costReduction * 100)}% costs</span>}
+              {crewBonuses.incomeMultiplier > 0 && <span className="text-[9px] bg-yellow-900/40 text-yellow-300 px-2 py-0.5 rounded-full">+{Math.round(crewBonuses.incomeMultiplier * 100)}% income</span>}
+              {crewBonuses.dealerBoost > 0 && <span className="text-[9px] bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">+{Math.round(crewBonuses.dealerBoost * 100)}% dealers</span>}
+              {crewBonuses.launderBoost > 0 && <span className="text-[9px] bg-red-900/40 text-red-300 px-2 py-0.5 rounded-full">+{Math.round(crewBonuses.launderBoost * 100)}% launder</span>}
             </div>
           )}
         </div>
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-2 gap-3">
           {CREW_DEFS.map(def => {
             const owned = crew.find(h => h.defId === def.id)?.count ?? 0;
             const atMax = owned >= def.maxCount;
             const canAfford = dirtyCash >= def.cost && !atMax;
+            const bonusLines = Object.entries(def.bonuses).filter(([, v]) => v && v > 0).map(([k, v]) => {
+              const label = k === 'heatReduction' ? 'heat gain' : k === 'costReduction' ? 'costs' : k === 'incomeMultiplier' ? 'income' : k === 'dealerBoost' ? 'dealer sales' : 'launder';
+              const sign = k === 'heatReduction' || k === 'costReduction' ? '-' : '+';
+              return `${sign}${Math.round((v ?? 0) * 100)}% ${label}`;
+            });
             return (
-              <Tooltip key={def.id} text={`${def.description} | ATK: ${def.attack} · DEF: ${def.defense} · Upkeep: ${formatMoney(def.upkeep)}/tick`}>
-              <div className="bg-gray-900/60 rounded-lg p-1.5 text-center border border-gray-700/50">
-                <span className="text-sm">{def.icon}</span>
-                <p className="text-white font-bold text-[9px]">{def.name}</p>
-                <p className="text-gray-400 text-[8px]">×{owned}/{def.maxCount}</p>
-                {owned > 0 && (
-                  <p className="text-red-400 text-[8px] font-mono">-{formatMoney(def.upkeep * owned)}/tick</p>
-                )}
-                <div className="flex gap-0.5 mt-1">
+              <Tooltip key={def.id} text={def.description}>
+              <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{def.icon}</span>
+                  <div>
+                    <p className="text-white font-bold text-sm">{def.name}</p>
+                    <p className="text-gray-400 text-[10px]">×{owned} / {def.maxCount}</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 text-[10px]">
+                  <span className="text-red-400">ATK {def.attack}</span>
+                  <span className="text-blue-400">DEF {def.defense}</span>
+                  <span className="text-yellow-400">${def.upkeep}/tick</span>
+                </div>
+                <div className="text-[10px] text-cyan-300 space-y-0.5">
+                  {bonusLines.map((line, i) => <p key={i}>{line}</p>)}
+                </div>
+                <div className="flex gap-1.5 mt-auto">
                   <button
                     onClick={() => {
                       if (hireCrew(def.id)) { sound.play('dealer_hire'); addNotification(`Recruited ${def.name}!`, 'success'); }
-                      else addNotification(atMax ? 'Max reached' : `Need ${formatMoney(def.cost)}`, 'warning');
+                      else addNotification(atMax ? `Max ${def.name}s reached` : `Need ${formatMoney(def.cost)}`, 'warning');
                     }}
                     disabled={!canAfford}
-                    className={`flex-1 py-0.5 rounded text-[8px] font-bold transition ${canAfford ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 text-white cursor-not-allowed'}`}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${canAfford ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
                   >
-                    {atMax ? 'MAX' : formatMoney(def.cost)}
+                    {atMax ? 'MAX' : `Hire · ${formatMoney(def.cost)}`}
                   </button>
                   {owned > 0 && (
                     <button onClick={() => { fireCrew(def.id); sound.play('fire'); addNotification(`Fired a ${def.name}`, 'warning'); }}
-                      className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-900/60 hover:bg-red-800 text-red-300 border border-red-700/50">
-                      FIRE
+                      className="px-3 py-2 rounded-lg text-xs font-semibold bg-gray-700 hover:bg-gray-600 text-red-400 transition">
+                      Fire
                     </button>
                   )}
                 </div>
