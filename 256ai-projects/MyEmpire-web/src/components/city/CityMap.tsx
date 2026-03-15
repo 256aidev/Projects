@@ -22,8 +22,6 @@ const ROAD_W = 22;
 /** Operations spans 2 block rows (removes road between them) */
 const OPS_DISTRICT_ID = 'operations';
 const OPS_SPAN_ROWS = 2; // how many block-rows operations covers
-const CAR_DISTRICT_ID = 'car_district';
-const CAR_SPAN_ROWS = 2; // car + bank spans 2 rows
 
 function blockName(col: number, row: number): string {
   const dirs = ['East', 'West', 'North', 'South', 'Old', 'New', 'Upper', 'Lower', 'Central'];
@@ -305,15 +303,6 @@ export default function CityMap() {
     }
   }
 
-  // Compute car district span positions (car + bank below)
-  const carDef = DISTRICT_MAP[CAR_DISTRICT_ID];
-  const carPos = carDef?.gridPosition;
-  const carSpanKeys = new Set<string>();
-  if (carPos) {
-    for (let dr = 1; dr < CAR_SPAN_ROWS; dr++) {
-      carSpanKeys.add(`${carPos.col},${carPos.row + dr}`);
-    }
-  }
 
   for (const d of DISTRICTS) {
     const key = `${d.gridPosition.col},${d.gridPosition.row}`;
@@ -355,7 +344,6 @@ export default function CityMap() {
   const covered = new Set(positionMap.keys());
   // Also mark operations-span cells as covered so gen-locked blocks aren't placed there
   for (const sk of opsSpanKeys) covered.add(sk);
-  for (const sk of carSpanKeys) covered.add(sk);
 
   for (const districtId of unlockedDistricts) {
     let pos: { col: number; row: number } | undefined;
@@ -413,15 +401,6 @@ export default function CityMap() {
       opsSkipVirtual.add(`${opsVc},${opsVr + dr * 2}`);
     }
   }
-  // Car district span skip
-  if (carPos) {
-    const carVc = (carPos.col - minCol) * 2;
-    const carVr = (carPos.row - minRow) * 2;
-    for (let dr = 1; dr < CAR_SPAN_ROWS; dr++) {
-      opsSkipVirtual.add(`${carVc},${carVr + dr * 2 - 1}`);
-      opsSkipVirtual.add(`${carVc},${carVr + dr * 2}`);
-    }
-  }
 
   type GridItem =
     | { type: 'block'; cell: Cell; key: string; gc: number; gr: number }
@@ -464,8 +443,6 @@ export default function CityMap() {
 
   // Compute the grid-row span value for operations: block + road + block = 3 virtual rows
   const opsGridSpan = OPS_SPAN_ROWS * 2 - 1; // 2 blocks + 1 road = 3
-  const carGridSpan = CAR_SPAN_ROWS * 2 - 1; // 2 blocks + 1 road = 3
-
   return (
     <div
       className="flex-1 relative overflow-hidden bg-gray-950 select-none"
@@ -577,7 +554,7 @@ export default function CityMap() {
                 }
                 if (cell.id === 'car_district') {
                   return (
-                    <div key={cell.id} style={{ ...placement, gridRow: `${item.gr + 1} / span ${carGridSpan}` }}>
+                    <div key={cell.id} style={placement}>
                       <CarDealershipBlock />
                     </div>
                   );
