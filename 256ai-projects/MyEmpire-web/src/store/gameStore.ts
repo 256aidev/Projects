@@ -27,6 +27,7 @@ import { createLegalActions } from './actions/legal';
 import { createCombatActions } from './actions/combat';
 import { createPrestigeActions } from './actions/prestige';
 import { createLuxuryActions } from './actions/luxury';
+import { createHouseActions } from './actions/house';
 import { createGameActions } from './actions/game';
 
 // ── City block helpers (used by migration) ────────────────────────────
@@ -243,6 +244,7 @@ export const useGameStore = create<GameStore>()(
       ...createCombatActions(set, get),
       ...createPrestigeActions(set, get),
       ...createLuxuryActions(set, get),
+      ...createHouseActions(set, get),
       ...createGameActions(set, get),
     }),
     {
@@ -336,6 +338,9 @@ export const useGameStore = create<GameStore>()(
         if (!merged.hiredLawyers) {
           merged.hiredLawyers = merged.activeLawyerId ? [{ defId: merged.activeLawyerId, count: 1 }] : [];
         }
+
+        if (merged.houseLevel === undefined) merged.houseLevel = 0;
+        if (merged.hqLevel === undefined) merged.hqLevel = 0;
 
         for (const biz of merged.businesses) {
           if (biz.cleanToDirtyPerTick === undefined) (biz as any).cleanToDirtyPerTick = 0;
