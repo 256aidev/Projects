@@ -4,11 +4,12 @@ import { JOB_MAP } from '../../data/types';
 
 /**
  * Street economy system: manages street sell quota based on
- * current job + business count + session tech demand bonus.
+ * active jobs + business count + session tech demand bonus.
  */
 export function tickStreetEconomySystem(ts: TickState, ctx: TickContext): void {
-  const currentJobDef = ctx.prevState.currentJobId ? JOB_MAP[ctx.prevState.currentJobId] ?? null : null;
-  const baseDemand = getMaxStreetDemand(currentJobDef, ctx.prevState.businesses, ctx.carBonuses.streetDemand) + ctx.sessionTech.demandBonus;
+  const activeJobs = ctx.prevState.activeJobIds ?? [];
+  const jobDefs = activeJobs.map(id => JOB_MAP[id]).filter(Boolean);
+  const baseDemand = getMaxStreetDemand(jobDefs, ctx.prevState.businesses, ctx.carBonuses.streetDemand) + ctx.sessionTech.demandBonus;
   const maxDemand = Math.floor(baseDemand * ctx.season.demandMultiplier);
   const refillRate = getStreetRefillRate(maxDemand);
   ts.streetSellQuotaOz = Math.min(

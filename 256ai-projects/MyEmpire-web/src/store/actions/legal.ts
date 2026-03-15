@@ -20,19 +20,29 @@ export function createLegalActions(set: SetState, get: GetState) {
       if ((state.jobFiredCooldown ?? 0) > 0) return false;
       if (state.heat > jobDef.maxHeat) return false;
       if (state.dirtyCash < jobDef.bribeCost) return false;
+      const activeJobs = state.activeJobIds ?? [];
+      if (activeJobs.includes(jobId)) return false; // already have this job
       const jobIndex = JOB_DEFS.findIndex(j => j.id === jobId);
       const heatBump = 5 + (jobIndex >= 0 ? jobIndex : 0) * 5;
       set({
         dirtyCash: state.dirtyCash - jobDef.bribeCost,
         totalSpent: state.totalSpent + jobDef.bribeCost,
-        currentJobId: jobId,
+        activeJobIds: [...activeJobs, jobId],
+        currentJobId: jobId, // backward compat
         heat: Math.min(HEAT_MAX, state.heat + heatBump),
       });
       return true;
     },
 
-    quitJob: () => {
-      set({ currentJobId: null });
+    quitJob: (jobId?: string) => {
+      const state = get();
+      const activeJobs = state.activeJobIds ?? [];
+      if (jobId) {
+        const filtered = activeJobs.filter(id => id !== jobId);
+        set({ activeJobIds: filtered, currentJobId: filtered.length > 0 ? filtered[0] : null });
+      } else {
+        set({ activeJobIds: [], currentJobId: null });
+      }
     },
 
     hireLawyer: (lawyerId: string) => {

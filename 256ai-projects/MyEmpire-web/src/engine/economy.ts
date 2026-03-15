@@ -9,10 +9,13 @@ import type { TechBonuses } from './tech';
 const BASE_STREET_DEMAND_OZ = 160;  // 10 lbs
 const BASE_REFILL_PER_MIN = 16;     // 1 lb per minute = 16 oz
 
-/** Calculate max street sell quota (oz) based on job + owned businesses + car bonuses */
-export function getMaxStreetDemand(currentJob: JobDef | null, businesses: BusinessInstance[], carStreetDemand = 0): number {
+/** Calculate max street sell quota (oz) based on jobs + owned businesses + car bonuses */
+export function getMaxStreetDemand(jobs: JobDef | JobDef[] | null, businesses: BusinessInstance[], carStreetDemand = 0): number {
   let max = BASE_STREET_DEMAND_OZ;
-  if (currentJob) max += currentJob.streetDemandBonus;
+  if (jobs) {
+    const jobArray = Array.isArray(jobs) ? jobs : [jobs];
+    for (const job of jobArray) max += job.streetDemandBonus;
+  }
   for (const biz of businesses) {
     const def = BUSINESS_MAP[biz.businessDefId];
     if (def?.streetDemandBonus) max += def.streetDemandBonus;

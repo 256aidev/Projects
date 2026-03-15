@@ -156,7 +156,7 @@ export const useGameStore = create<GameStore>()(
             rivalHeat: state.rivalHeat ?? 0,
             operation: state.operation,
             activeLawyerId: state.activeLawyerId,
-            currentJobId: state.currentJobId,
+            activeJobIds: state.activeJobIds ?? (state.currentJobId ? [state.currentJobId] : []),
             jobFiredCooldown: Math.max(0, (state.jobFiredCooldown ?? 0) - 1),
             streetSellQuotaOz: state.streetSellQuotaOz ?? 160,
             rivals: state.rivals ?? [],
@@ -193,7 +193,8 @@ export const useGameStore = create<GameStore>()(
             tickCount: ts.tickCount,
             heatNoticeShown: ts.heatNoticeShown,
             streetSellQuotaOz: ts.streetSellQuotaOz,
-            currentJobId: ts.currentJobId,
+            activeJobIds: ts.activeJobIds,
+            currentJobId: ts.activeJobIds.length > 0 ? ts.activeJobIds[0] : null,
             jobFiredCooldown: ts.jobFiredCooldown,
             rivals: ts.rivals,
             rivalAttackLog: ts.rivalAttackLog,
@@ -326,6 +327,10 @@ export const useGameStore = create<GameStore>()(
 
         if (merged.currentJobId === undefined) merged.currentJobId = null;
         if (merged.jobFiredCooldown === undefined) merged.jobFiredCooldown = 0;
+        // Migrate single currentJobId → activeJobIds array
+        if (!merged.activeJobIds || !Array.isArray(merged.activeJobIds)) {
+          merged.activeJobIds = merged.currentJobId ? [merged.currentJobId] : [];
+        }
         if (merged.activeLawyerId === undefined) (merged as any).activeLawyerId = null;
         // Migrate single activeLawyerId → hiredLawyers array
         if (!merged.hiredLawyers) {

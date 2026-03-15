@@ -681,7 +681,8 @@ export interface GameState {
   streetSellCooldownTicks: number; // ticks until quota refills (600 = 10 min)
   generatedBlocks: Record<string, GeneratedBlock>; // dynamically discovered city blocks
   nextBlockCost: number;           // cost of next generated block (doubles each purchase)
-  currentJobId: string | null;     // current job ID or null (from JOB_DEFS)
+  currentJobId: string | null;     // DEPRECATED — kept for migration compat
+  activeJobIds: string[];          // all active bribed jobs (can hold multiple)
   jobFiredCooldown: number;        // ticks remaining before can get new job (0 = ready)
   // Rivals & crew
   gameSettings: GameSettings;
@@ -882,6 +883,7 @@ export const INITIAL_GAME_STATE: GameState = {
   generatedBlocks: {},
   nextBlockCost: 2000,
   currentJobId: null,
+  activeJobIds: [],
   jobFiredCooldown: 0,
   gameSettings: { rivalCount: 3, rivalEntryDelay: 10, gameStarted: false, tutorialActive: false, tutorialStep: 0 },
   rivals: [],

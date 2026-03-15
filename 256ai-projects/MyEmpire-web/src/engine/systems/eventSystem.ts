@@ -27,7 +27,7 @@ export function tickEventSystem(ts: TickState, ctx: TickContext): void {
       dealerCount: ts.operation.dealerCount,
       prestigeCount: ctx.prevState.prestigeCount,
       hitmenCount: (ctx.prevState.crew ?? []).reduce((s, h) => s + h.count, 0),
-      hasJob: !!ts.currentJobId,
+      hasJob: (ts.activeJobIds ?? []).length > 0,
       hasLawyer: !!ts.activeLawyerId,
       productOz: totalProductOz,
       rivalsDefeated: ts.rivals.filter((r) => r.isDefeated).length,

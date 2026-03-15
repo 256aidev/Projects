@@ -68,9 +68,9 @@ export function createOperationActions(set: SetState, get: GetState) {
 
     sellProduct: (units: number) => {
       const state = get();
-      const currentJobDef = state.currentJobId ? JOB_MAP[state.currentJobId] ?? null : null;
+      const activeJobDefs = (state.activeJobIds ?? []).map(id => JOB_MAP[id]).filter(Boolean);
       const carSD = getCarBonuses(state.cars ?? []).streetDemand;
-      const maxDemand = getMaxStreetDemand(currentJobDef, state.businesses, carSD);
+      const maxDemand = getMaxStreetDemand(activeJobDefs, state.businesses, carSD);
       const quotaOz = Math.min(state.streetSellQuotaOz ?? maxDemand, maxDemand);
       if (quotaOz <= 0) return 0;
       const inventoryEntries = Object.entries(state.operation.productInventory);

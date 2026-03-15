@@ -40,12 +40,12 @@ export default function OperationView() {
   const plantSeeds = useGameStore((s) => s.plantSeeds);
   const sellProduct = useGameStore((s) => s.sellProduct);
   const streetSellQuotaOz = useGameStore((s) => s.streetSellQuotaOz ?? 160);
-  const currentJobId = useGameStore((s) => s.currentJobId);
+  const activeJobIds = useGameStore((s) => s.activeJobIds ?? []);
   const businesses = useGameStore((s) => s.businesses);
   const cars = useGameStore((s) => s.cars ?? []);
-  const currentJobDef = currentJobId ? JOB_MAP[currentJobId] ?? null : null;
+  const activeJobDefs = activeJobIds.map(id => JOB_MAP[id]).filter(Boolean);
   const carBonuses = getCarBonuses(cars);
-  const maxDemandOz = getMaxStreetDemand(currentJobDef, businesses, carBonuses.streetDemand);
+  const maxDemandOz = getMaxStreetDemand(activeJobDefs, businesses, carBonuses.streetDemand);
   const refillRate = getStreetRefillRate(maxDemandOz);
   const prestigeBonus = useGameStore((s) => s.prestigeBonus ?? 0);
   const addNotification = useUIStore((s) => s.addNotification);

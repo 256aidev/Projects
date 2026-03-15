@@ -5,26 +5,33 @@ import { JOB_MAP } from '../../data/types';
 /**
  * Jobs + crew system: job income (clean cash), heat-based firing,
  * and crew upkeep (dirty cash).
+ * Players can hold multiple jobs simultaneously (bribed ghost jobs).
  */
 export function tickJobsSystem(ts: TickState, ctx: TickContext): void {
-  // Job income (clean cash) + heat-based firing
   let jobIncome = 0;
-  let currentJobId = ctx.prevState.currentJobId;
+  let activeJobIds = [...(ctx.prevState.activeJobIds ?? [])];
   let jobFiredCooldown = Math.max(0, (ctx.prevState.jobFiredCooldown ?? 0) - 1);
 
-  if (currentJobId) {
-    const jobDef = JOB_MAP[currentJobId];
-    if (jobDef && ts.heat > jobDef.maxHeat) {
-      // FIRED — heat too high
-      currentJobId = null;
-      jobFiredCooldown = 60; // 1 minute cooldown
-    } else if (jobDef) {
-      jobIncome = jobDef.cleanPerTick;
+  // Process each active job — fire individually if heat too high
+  const firedJobs: string[] = [];
+  for (const jobId of activeJobIds) {
+    const jobDef = JOB_MAP[jobId];
+    if (!jobDef) continue;
+    if (ts.heat > jobDef.maxHeat) {
+      firedJobs.push(jobId);
+    } else {
+      jobIncome += jobDef.cleanPerTick;
     }
   }
 
+  // Remove fired jobs
+  if (firedJobs.length > 0) {
+    activeJobIds = activeJobIds.filter(id => !firedJobs.includes(id));
+    jobFiredCooldown = 60; // 1 minute cooldown
+  }
+
   ts.cleanCash += jobIncome;
-  ts.currentJobId = currentJobId;
+  ts.activeJobIds = activeJobIds;
   ts.jobFiredCooldown = jobFiredCooldown;
   ts.jobIncome = jobIncome;
 

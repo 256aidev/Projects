@@ -20,7 +20,7 @@ export interface TickState {
   rivalHeat: number;
   operation: CriminalOperation;
   activeLawyerId: string | null;
-  currentJobId: string | null;
+  activeJobIds: string[];
   jobFiredCooldown: number;
   streetSellQuotaOz: number;
   rivals: GameState['rivals'];
