@@ -290,10 +290,10 @@ export default function OperationView() {
                   )}
                 </div>
 
-                {/* Body: grow slots 1/3 | upgrades 1/3 (3×2 grid) */}
+                {/* Body: grow slots 50% | upgrades 50% */}
                 <div className="flex">
-                  {/* LEFT 1/3 — Strain slots in 2-column grid */}
-                  <div className="w-1/3 p-1.5 grid grid-cols-2 gap-1 border-r border-gray-700/50">
+                  {/* LEFT — Strain slots in 2-column grid */}
+                  <div className="w-1/2 p-1.5 grid grid-cols-2 gap-1 border-r border-gray-700/50">
                     {room.slots.map((slot, slotIndex) => {
                       const progress = slot.isHarvesting && slot.growTimerTicks > 0
                         ? 1 - slot.ticksRemaining / slot.growTimerTicks
@@ -333,7 +333,8 @@ export default function OperationView() {
                   </div>
 
                   {/* RIGHT 2/3 — Upgrades in 3×2 grid, wider & more descriptive */}
-                  <div className="w-2/3 p-1.5 grid grid-cols-3 grid-rows-2 gap-1">
+                  {/* RIGHT — Upgrades 3×2 grid */}
+                  <div className="w-1/2 p-1.5 grid grid-cols-3 grid-rows-2 gap-1">
                     {ROOM_UPGRADE_DEFS.map((upgDef) => {
                       const level = room.upgradeLevels?.[upgDef.id] ?? 0;
                       const maxLevel = upgDef.levels.length;
