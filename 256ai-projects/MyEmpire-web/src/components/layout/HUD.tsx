@@ -35,6 +35,7 @@ export default function HUD() {
   const { user, syncing } = useAuthStore();
   const setShowAccountScreen = useUIStore((s) => s.setShowAccountScreen);
   const setShowTechMenu = useUIStore((s) => s.setShowTechMenu);
+  const setShowSessionTechMenu = useUIStore((s) => s.setShowSessionTechMenu);
   const setShowPrestigeConfirm = useUIStore((s) => s.setShowPrestigeConfirm);
   const setPanel = useUIStore((s) => s.setPanel);
   const activePanel = useUIStore((s) => s.activePanel);
@@ -92,8 +93,8 @@ export default function HUD() {
         </div>
       </Tooltip>
 
-      {/* Tech Lab button */}
-      <Tooltip text="Spend Tech Points on permanent upgrades that survive prestige.">
+      {/* Tech Lab button (prestige tech) */}
+      <Tooltip text="Permanent upgrades (survive prestige). Costs Tech Points.">
         <button
           onClick={() => setShowTechMenu(true)}
           className="flex items-center gap-1 hover:opacity-80 transition relative"
@@ -104,6 +105,16 @@ export default function HUD() {
               {techPoints > 9 ? '9+' : techPoints}
             </span>
           )}
+        </button>
+      </Tooltip>
+
+      {/* Street Upgrades button (session tech) */}
+      <Tooltip text="Temporary upgrades (reset on prestige). Costs cash + product.">
+        <button
+          onClick={() => setShowSessionTechMenu(true)}
+          className="flex items-center gap-1 hover:opacity-80 transition"
+        >
+          <span className="text-xl">🛠️</span>
         </button>
       </Tooltip>
 

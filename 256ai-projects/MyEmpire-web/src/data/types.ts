@@ -1,5 +1,7 @@
 import type { TechUpgradeId } from './techDefs';
 import { INITIAL_TECH_UPGRADES } from './techDefs';
+import type { SessionTechId } from './sessionTechDefs';
+import { INITIAL_SESSION_TECH } from './sessionTechDefs';
 
 // ─────────────────────────────────────────
 // CRIMINAL OPERATION
@@ -651,6 +653,7 @@ export interface GameState {
   techPoints: number;                             // unspent Tech Points
   totalTechPointsEarned: number;                  // lifetime Tech Points earned
   techUpgrades: Record<TechUpgradeId, number>;    // upgrade ID → current level (0-5)
+  sessionTechUpgrades: Record<SessionTechId, number>; // session tech → current level (resets on prestige/game reset)
   streetSellQuotaOz: number;       // oz remaining in current sell window (max 160 = 10 lbs)
   streetSellCooldownTicks: number; // ticks until quota refills (600 = 10 min)
   generatedBlocks: Record<string, GeneratedBlock>; // dynamically discovered city blocks
@@ -837,6 +840,7 @@ export const INITIAL_GAME_STATE: GameState = {
   techPoints: 0,
   totalTechPointsEarned: 0,
   techUpgrades: { ...INITIAL_TECH_UPGRADES },
+  sessionTechUpgrades: { ...INITIAL_SESSION_TECH },
   streetSellQuotaOz: 160,
   streetSellCooldownTicks: 0,
   generatedBlocks: {},

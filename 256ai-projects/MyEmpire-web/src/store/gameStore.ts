@@ -5,6 +5,9 @@ import { INITIAL_GAME_STATE, GROW_ROOM_TYPE_MAP, DEALER_TIERS, ROOM_UPGRADE_MAP,
 import type { TechUpgradeId } from '../data/techDefs';
 import { TECH_UPGRADE_MAP, INITIAL_TECH_UPGRADES, calculatePrestigeTP } from '../data/techDefs';
 import { getTechBonuses } from '../engine/tech';
+import type { SessionTechId } from '../data/sessionTechDefs';
+import { SESSION_TECH_MAP, INITIAL_SESSION_TECH } from '../data/sessionTechDefs';
+import { getSessionTechBonuses } from '../engine/sessionTech';
 import { generateRivals } from '../data/rivals';
 import { BUSINESS_MAP } from '../data/businesses';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
@@ -94,6 +97,7 @@ interface GameActions {
   fireLawyer: () => void;
   prestige: () => boolean;
   purchaseTechUpgrade: (upgradeId: TechUpgradeId) => boolean;
+  purchaseSessionTech: (upgradeId: SessionTechId) => boolean;
   resetGame: () => void;
   wipeGame: () => void;
   // Rivals & hitmen
@@ -138,10 +142,18 @@ export const useGameStore = create<GameStore>()(
           let { dirtyCash, cleanCash } = state;
 
           const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
+          const sTech = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
           const carBonus = getCarBonuses(state.cars ?? []);
 
-          // Apply car grow speed bonus to tech speed
-          const effectiveTech = { ...tech, speedBonus: tech.speedBonus + carBonus.growSpeed };
+          // Combine prestige tech + session tech + car bonuses
+          const effectiveTech = {
+            ...tech,
+            yieldBonus: tech.yieldBonus + sTech.yieldBonus,
+            speedBonus: tech.speedBonus + sTech.speedBonus + carBonus.growSpeed,
+            dealerMultiplier: tech.dealerMultiplier * sTech.dealerMultiplier,
+            launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier,
+            heatReduction: tech.heatReduction + sTech.heatReduction,
+          };
           const { newOp, dirtyEarned: rawDirtyEarned, maintenanceCost } = tickCriminalOperation(state.operation, effectiveTech);
           // Apply car income multiplier + dealer boost to dirty income
           const dirtyEarned = Math.floor(rawDirtyEarned * (1 + carBonus.incomeMultiplier + carBonus.dealerBoost));
@@ -173,7 +185,7 @@ export const useGameStore = create<GameStore>()(
             } else if (bizDef?.isRental) {
               // rental revenue is 100% clean cash — already counted in totalRevenue above
             } else {
-              const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed, tech.launderMultiplier * (1 + carBonus.launderBoost));
+              const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed, effectiveTech.launderMultiplier * (1 + carBonus.launderBoost));
               totalDirtyConsumed += dirtyConsumed;
               totalCleanProduced += cleanProduced;
             }
@@ -215,7 +227,7 @@ export const useGameStore = create<GameStore>()(
 
           // Street sell quota: dynamic max based on job + businesses
           const currentJobDef = state.currentJobId ? JOB_MAP[state.currentJobId] ?? null : null;
-          const maxDemand = getMaxStreetDemand(currentJobDef, state.businesses);
+          const maxDemand = getMaxStreetDemand(currentJobDef, state.businesses) + sTech.demandBonus;
           const refillRate = getStreetRefillRate(maxDemand);
           const streetSellQuotaOz = Math.min(maxDemand, (state.streetSellQuotaOz ?? maxDemand) + refillRate);
 
@@ -236,7 +248,7 @@ export const useGameStore = create<GameStore>()(
           const heatDelta = calculateHeatTick(
             state.heat, dirtyCash,
             state.operation.dealerCount, state.operation.dealerTierIndex,
-            state.businesses, activeLawyerId, tech.heatReduction + carBonus.heatReduction,
+            state.businesses, activeLawyerId, effectiveTech.heatReduction + carBonus.heatReduction,
           );
           const newHeat = Math.max(0, Math.min(HEAT_MAX, state.heat + heatDelta));
 
@@ -384,7 +396,13 @@ export const useGameStore = create<GameStore>()(
       harvestGrowRoom: (roomId, slotIndex) => {
         const state = get();
         const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
-        const { newOp, unitsHarvested, cycleCost, speedBonus } = harvestSlot(state.operation, roomId, slotIndex, tech);
+        const sTech2 = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
+        const combinedTech = {
+          ...tech,
+          yieldBonus: tech.yieldBonus + sTech2.yieldBonus,
+          speedBonus: tech.speedBonus + sTech2.speedBonus,
+        };
+        const { newOp, unitsHarvested, cycleCost, speedBonus } = harvestSlot(state.operation, roomId, slotIndex, combinedTech);
         if (unitsHarvested > 0) {
           const updates: Partial<typeof state> = { dirtyCash: Math.max(0, state.dirtyCash - cycleCost) };
           if (newOp.seedStock > 0) {
@@ -589,7 +607,8 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         const base = INITIAL_GAME_STATE.operation.seedCostPerUnit; // $5
         const discount = quantity >= 30000 ? 3 : quantity >= 20000 ? 2 : quantity >= 10000 ? 1 : 0;
-        const pricePerSeed = base - discount;
+        const seedTech = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
+        const pricePerSeed = Math.max(1, Math.floor((base - discount) * (1 - seedTech.seedDiscount)));
         const cost = pricePerSeed * quantity;
         if (state.dirtyCash < cost) return false;
         set({
@@ -893,6 +912,40 @@ export const useGameStore = create<GameStore>()(
           techPoints: (state.techPoints ?? 0) - cost,
           techUpgrades: {
             ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES),
+            [upgradeId]: currentLevel + 1,
+          },
+        });
+        return true;
+      },
+
+      purchaseSessionTech: (upgradeId: SessionTechId) => {
+        const state = get();
+        const def = SESSION_TECH_MAP[upgradeId];
+        if (!def) return false;
+        const currentLevel = (state.sessionTechUpgrades ?? INITIAL_SESSION_TECH)[upgradeId] ?? 0;
+        if (currentLevel >= def.maxLevel) return false;
+        const cost = def.costs[currentLevel];
+        if (state.dirtyCash < cost.dirtyCash) return false;
+        if (state.cleanCash < cost.cleanCash) return false;
+        // Check total product inventory
+        const totalOz = Object.values(state.operation.productInventory).reduce((s, e) => s + e.oz, 0);
+        if (totalOz < cost.productOz) return false;
+        // Deduct product from inventory (drain from each strain proportionally)
+        let remaining = cost.productOz;
+        const newInv = { ...state.operation.productInventory };
+        for (const strain of Object.keys(newInv)) {
+          if (remaining <= 0) break;
+          const take = Math.min(newInv[strain].oz, remaining);
+          newInv[strain] = { ...newInv[strain], oz: newInv[strain].oz - take };
+          remaining -= take;
+        }
+        set({
+          dirtyCash: state.dirtyCash - cost.dirtyCash,
+          cleanCash: state.cleanCash - cost.cleanCash,
+          totalSpent: state.totalSpent + cost.dirtyCash + cost.cleanCash,
+          operation: { ...state.operation, productInventory: newInv },
+          sessionTechUpgrades: {
+            ...(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH),
             [upgradeId]: currentLevel + 1,
           },
         });
