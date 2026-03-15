@@ -89,7 +89,8 @@ export function createOperationActions(set: SetState, get: GetState) {
       dirtyEarned = Math.floor(dirtyEarned);
       const newQuota = quotaOz - toSell;
       // Tiny heat from street selling
-      const sellHeat = getStreetSellHeat(toSell, currentJobDef);
+      const topJob = activeJobDefs.length > 0 ? activeJobDefs.reduce((a, b) => a.streetDemandBonus > b.streetDemandBonus ? a : b) : null;
+      const sellHeat = getStreetSellHeat(toSell, topJob);
       set({
         dirtyCash: state.dirtyCash + dirtyEarned,
         totalDirtyEarned: state.totalDirtyEarned + dirtyEarned,
