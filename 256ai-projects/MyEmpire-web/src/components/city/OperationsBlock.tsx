@@ -210,34 +210,34 @@ export default function OperationsBlock() {
           />
         ))}
 
-        {/* Garage — opens car dealership (right of legal_distribution) */}
+        {/* Large Garage — right of legal_distribution */}
         <button
           onClick={() => setPanel('cars')}
           className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-gray-700/30 transition relative overflow-hidden"
           style={{ backgroundColor: '#71717A20', borderColor: '#71717A60' }}
         >
           <span className="text-xl leading-none">🚗</span>
-          <span className="text-[9px] font-bold text-gray-300 text-center leading-tight">My Garage</span>
+          <span className="text-[9px] font-bold text-gray-300 text-center leading-tight">Large Garage</span>
           <span className="text-[8px] text-gray-500">View Cars</span>
         </button>
 
-        {/* House — upgradeable */}
-        <HouseBuilding />
-
-        {/* Backyard — visual indicator of house level */}
+        {/* Backyard — left side, upgrades with house */}
         <HouseBackyard />
 
-        {/* HQ — upgradeable */}
+        {/* House — right of backyard */}
+        <HouseBuilding />
+
+        {/* HQ — left side */}
         <HQBuilding />
 
-        {/* Stash House */}
+        {/* Warehouse / Stash House — right of HQ */}
         <button
           onClick={() => setPanel('warehouse')}
           className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-amber-900/20 transition relative overflow-hidden"
           style={{ backgroundColor: '#92400E20', borderColor: '#92400E60' }}
         >
           <span className="text-xl leading-none">📦</span>
-          <span className="text-[9px] font-bold text-amber-400 text-center leading-tight">Stash House</span>
+          <span className="text-[9px] font-bold text-amber-400 text-center leading-tight">Warehouse</span>
           <span className="text-[8px] text-gray-400">
             {totalOz > 0 ? `${formatUnits(totalOz)} stored` : 'Empty'}
           </span>
