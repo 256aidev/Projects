@@ -8,19 +8,20 @@ const TABS: { id: ViewName; label: string; icon: string | null }[] = [
   { id: 'city',      label: 'City',      icon: '🏙️' },
   { id: 'legal',     label: 'Legal',     icon: '⚖️' },
   { id: 'finance',   label: 'Stats',     icon: '📊' },
+  { id: 'ranks',     label: 'Ranks',     icon: '🏆' },
 ];
 
-const TAB_TOOLTIPS: Record<ViewName, string> = {
+const TAB_TOOLTIPS: Record<string, string> = {
   operation: 'Manage your grow operation, seeds, dealers, and product sales.',
   city: 'View the city map, buy lots, and build front businesses.',
   legal: 'Monitor police and rival heat, hire lawyers and hitmen.',
   finance: 'View detailed financial stats and game metrics.',
+  ranks: 'Leaderboards, rankings, and empire score breakdown.',
 };
 
 export default function NavBar() {
   const activeView = useUIStore((s) => s.activeView);
   const setActiveView = useUIStore((s) => s.setActiveView);
-  const setShowLeaderboard = useUIStore((s) => s.setShowLeaderboard);
   const heatNoticeShown = useGameStore((s) => s.heatNoticeShown);
 
   return (
@@ -56,16 +57,6 @@ export default function NavBar() {
         );
       })}
 
-      {/* Leaderboard button */}
-      <Tooltip text="View the leaderboard and your ranking.">
-        <button
-          onClick={() => setShowLeaderboard(true)}
-          className="flex flex-col items-center justify-center py-4 gap-1 px-10 text-gray-500 hover:text-yellow-400 transition bg-gray-800/50 border-l border-gray-700/60"
-        >
-          <span className="text-3xl">🏆</span>
-          <span className="text-sm font-semibold">Ranks</span>
-        </button>
-      </Tooltip>
     </div>
   );
 }

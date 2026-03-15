@@ -58,7 +58,6 @@ export default function App() {
   const selectedBusinessId = useUIStore((s) => s.selectedBusinessId);
   const activePanel = useUIStore((s) => s.activePanel);
   const showAccountScreen = useUIStore((s) => s.showAccountScreen);
-  const showLeaderboard = useUIStore((s) => s.showLeaderboard);
   const showTechMenu = useUIStore((s) => s.showTechMenu);
   const showPrestigeConfirm = useUIStore((s) => s.showPrestigeConfirm);
   const showCasino = useUIStore((s) => s.showCasino);
@@ -122,6 +121,7 @@ export default function App() {
 
         {activeView === 'legal' && <LegalView />}
         {activeView === 'finance' && <FinanceView />}
+        {activeView === 'ranks' && <LeaderboardView />}
       </div>
 
       {/* Bottom nav tabs */}
@@ -149,7 +149,6 @@ export default function App() {
 
       <Notifications />
       {showAccountScreen && <AccountScreen />}
-      {showLeaderboard && <LeaderboardView />}
       {showTechMenu && <TechMenu />}
       {showSessionTechMenu && <SessionTechMenu />}
       {showPrestigeConfirm && <PrestigeConfirmModal />}

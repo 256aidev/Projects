@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { sound } from '../engine/sound';
 
 type PanelName = 'buy' | 'market' | 'lawyer' | 'event' | 'settings' | 'warehouse' | null;
-export type ViewName = 'operation' | 'city' | 'warehouse' | 'legal' | 'finance';
+export type ViewName = 'operation' | 'city' | 'warehouse' | 'legal' | 'finance' | 'ranks';
 
 export type GameSpeed = 0 | 1 | 2 | 4 | 8;
 

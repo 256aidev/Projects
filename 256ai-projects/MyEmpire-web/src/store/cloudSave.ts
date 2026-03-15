@@ -30,10 +30,25 @@ export async function updateLeaderboardEntry(
   state: Record<string, unknown>,
 ): Promise<void> {
   const gs = state as unknown as GameState;
-  const totalEarned = (gs.totalDirtyEarned ?? 0) + (gs.totalCleanEarned ?? 0);
-  const baseScore = totalEarned + (gs.prestigeCount ?? 0) * 500_000;
 
-  // Apply difficulty multiplier based on game settings
+  // Category point calculations — must match LeaderboardView
+  const moneyPts = Math.floor(((gs.totalDirtyEarned ?? 0) + (gs.totalCleanEarned ?? 0)) / 1000);
+  const bizCount = Array.isArray(gs.businesses) ? gs.businesses.length : 0;
+  const districtCount = Array.isArray(gs.unlockedDistricts) ? gs.unlockedDistricts.length : 0;
+  const territoryPts = bizCount * 5000 + districtCount * 2000;
+  const rooms = gs.operation?.growRooms?.length ?? 0;
+  const dealers = gs.operation?.dealerCount ?? 0;
+  const tierIndex = gs.operation?.dealerTierIndex ?? 0;
+  const criminalPts = rooms * 10000 + dealers * 1000 + tierIndex * 15000;
+  const defeated = Array.isArray(gs.rivals) ? gs.rivals.filter((r: { isDefeated?: boolean }) => r.isDefeated).length : 0;
+  const hitmenCount = Array.isArray(gs.hitmen) ? gs.hitmen.reduce((s: number, h: { count: number }) => s + h.count, 0) : 0;
+  const combatPts = defeated * 50000 + hitmenCount * 5000;
+  const prestigePts = (gs.prestigeCount ?? 0) * 500000 + (gs.totalTechPointsEarned ?? 0) * 10000;
+  const carCount = Array.isArray(gs.cars) ? gs.cars.length : 0;
+  const jewelryCount = Array.isArray(gs.jewelry) ? gs.jewelry.length : 0;
+  const collectionPts = carCount * 20000 + jewelryCount * 15000;
+
+  const baseScore = moneyPts + territoryPts + criminalPts + combatPts + prestigePts + collectionPts;
   const settings = gs.gameSettings;
   const diffMultiplier = settings
     ? getDifficultyMultiplier(settings.rivalCount, settings.rivalEntryDelay)
@@ -44,10 +59,19 @@ export async function updateLeaderboardEntry(
   await setDoc(ref, {
     displayName: displayName || 'Anonymous',
     score,
+    moneyPts,
+    territoryPts,
+    criminalPts,
+    combatPts,
+    prestigePts,
+    collectionPts,
     totalDirtyEarned: gs.totalDirtyEarned ?? 0,
     totalCleanEarned: gs.totalCleanEarned ?? 0,
     prestigeCount: gs.prestigeCount ?? 0,
-    businessCount: Array.isArray(gs.businesses) ? gs.businesses.length : 0,
+    businessCount: bizCount,
+    rivalsDefeated: defeated,
+    carCount,
+    jewelryCount,
     tickCount: gs.tickCount ?? 0,
     difficultyMultiplier: diffMultiplier,
     rivalCount: settings?.rivalCount ?? 0,
