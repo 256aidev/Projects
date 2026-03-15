@@ -686,11 +686,14 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     id: 'closet',
     name: 'Closet',
     purchaseCost: 0,          // free starter (virtual base = $500 for formula coherence)
-    strainUnlockBase: 0,      // can't be upgraded — starter room only
+    strainUnlockBase: 500,    // cheap upgrades: $500, $1K, $2K to unlock more Basic Bud slots
     autoHarvestCost: 500,     // = virtual base
     upgradeCostMultiplier: 1, // ×1 (base tier)
     strainSlots: [
-      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 48 },
+      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12 },
+      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12 },
+      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12 },
+      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12 },
     ],
   },
   {
@@ -803,7 +806,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
       upgradeLevel: 0,
       upgradeLevels: {},
       slots: [
-        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 48, isHarvesting: true, ticksRemaining: 30 },
+        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12, isHarvesting: true, ticksRemaining: 30 },
       ],
     },
   ],
