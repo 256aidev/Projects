@@ -12,6 +12,7 @@ export type TechUpgradeId =
   | 'tech_dealer'
   | 'tech_launder'
   | 'tech_heat'
+  | 'tech_price'
   | 'tech_flora_gro'
   | 'tech_flora_micro'
   | 'tech_flora_bloom'
@@ -27,7 +28,7 @@ export interface TechUpgradeDef {
   costs: number[];          // TP cost per level [L1, L2, L3, L4, L5]
   effectPerLevel: number;   // the numeric bonus per level
   effectLabel: string;      // human-readable per-level effect
-  bonusType: 'yield' | 'speed' | 'double' | 'capacity' | 'dealer' | 'launder' | 'heat' | 'flora_gro' | 'flora_micro' | 'flora_bloom' | 'water' | 'light';
+  bonusType: 'yield' | 'speed' | 'double' | 'capacity' | 'dealer' | 'launder' | 'heat' | 'price' | 'flora_gro' | 'flora_micro' | 'flora_bloom' | 'water' | 'light';
 }
 
 /** Generate doubling cost array: baseCost, baseCost*2, baseCost*4, ... */
@@ -115,6 +116,17 @@ export const TECH_UPGRADE_DEFS: TechUpgradeDef[] = [
     effectLabel: '-8% heat gain',
     bonusType: 'heat',
   },
+  {
+    id: 'tech_price',
+    name: 'Premium Branding',
+    icon: '💲',
+    description: 'Reputation & packaging — higher price per ounce',
+    maxLevel: 5,
+    costs: [2, 4, 7, 11, 18],
+    effectPerLevel: 0.10,
+    effectLabel: '+10% sell price',
+    bonusType: 'price',
+  },
   // ─── ROOM UPGRADE BOOSTERS — infinite +1% per level, cost doubles ───
   {
     id: 'tech_flora_gro',
@@ -185,6 +197,7 @@ export const INITIAL_TECH_UPGRADES: Record<TechUpgradeId, number> = {
   tech_dealer: 0,
   tech_launder: 0,
   tech_heat: 0,
+  tech_price: 0,
   tech_flora_gro: 0,
   tech_flora_micro: 0,
   tech_flora_bloom: 0,

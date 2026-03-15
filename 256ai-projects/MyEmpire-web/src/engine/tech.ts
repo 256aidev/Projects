@@ -9,6 +9,7 @@ export interface TechBonuses {
   dealerMultiplier: number;  // e.g. 1.2 for +20% dealer sales
   launderMultiplier: number; // e.g. 1.1 for +10% launder efficiency
   heatReduction: number;     // e.g. 0.16 means 16% less heat gain
+  priceMultiplier: number;   // e.g. 1.2 for +20% sell price per oz
   // Room upgrade tech boosters (each +1% per level, stacks with room upgrades)
   floraGroBonus: number;     // extra grow speed from FloraGro research
   floraMicroBonus: number;   // extra yield from FloraMicro research
@@ -27,6 +28,7 @@ export function getTechBonuses(techUpgrades: Record<TechUpgradeId, number>): Tec
     dealerMultiplier: 1 + techUpgrades.tech_dealer * TECH_UPGRADE_MAP.tech_dealer.effectPerLevel,
     launderMultiplier: 1 + techUpgrades.tech_launder * TECH_UPGRADE_MAP.tech_launder.effectPerLevel,
     heatReduction: techUpgrades.tech_heat * TECH_UPGRADE_MAP.tech_heat.effectPerLevel,
+    priceMultiplier: 1 + (techUpgrades.tech_price ?? 0) * TECH_UPGRADE_MAP.tech_price.effectPerLevel,
     floraGroBonus: (techUpgrades.tech_flora_gro ?? 0) * TECH_UPGRADE_MAP.tech_flora_gro.effectPerLevel,
     floraMicroBonus: (techUpgrades.tech_flora_micro ?? 0) * TECH_UPGRADE_MAP.tech_flora_micro.effectPerLevel,
     floraBloomBonus: (techUpgrades.tech_flora_bloom ?? 0) * TECH_UPGRADE_MAP.tech_flora_bloom.effectPerLevel,

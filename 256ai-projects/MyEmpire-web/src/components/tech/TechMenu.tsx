@@ -40,7 +40,7 @@ export default function TechMenu() {
 
       {/* Upgrade Grid */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
           {TECH_UPGRADE_DEFS.map((def) => {
             const level = techUpgrades[def.id] ?? 0;
             const isMaxed = level >= def.maxLevel;
@@ -128,6 +128,7 @@ function formatBonus(bonusType: string, value: number): string {
     case 'dealer': return `+${Math.round(value * 100)}% dealer sales`;
     case 'launder': return `+${Math.round(value * 100)}% launder eff.`;
     case 'heat': return `-${Math.round(value * 100)}% heat gain`;
+    case 'price': return `+${Math.round(value * 100)}% sell price`;
     case 'flora_gro': return `+${Math.round(value * 100)}% grow speed`;
     case 'flora_micro': return `+${Math.round(value * 100)}% yield`;
     case 'flora_bloom': return `+${Math.round(value * 100)}% double chance`;

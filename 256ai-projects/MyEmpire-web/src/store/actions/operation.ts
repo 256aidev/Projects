@@ -78,12 +78,14 @@ export function createOperationActions(set: SetState, get: GetState) {
       const toSell = Math.min(units, totalOz, quotaOz);
       if (toSell <= 0) return 0;
       // Sell proportionally from each strain at its actual price
+      const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
+      const priceMult = tech.priceMultiplier ?? 1;
       let dirtyEarned = 0;
       const newInventory = { ...state.operation.productInventory };
       for (const [strainName, entry] of inventoryEntries) {
         const fraction = totalOz > 0 ? entry.oz / totalOz : 0;
         const strainSold = Math.min(entry.oz, toSell * fraction);
-        dirtyEarned += strainSold * entry.pricePerUnit * 0.7;
+        dirtyEarned += strainSold * entry.pricePerUnit * priceMult * 0.7;
         newInventory[strainName] = { ...entry, oz: entry.oz - strainSold };
       }
       dirtyEarned = Math.floor(dirtyEarned);

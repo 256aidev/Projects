@@ -21,10 +21,11 @@ export function tickBusinessesSystem(ts: TickState, ctx: TickContext): void {
   // Compute total oz and weighted avg price from per-strain inventory
   const invEntries = Object.entries(ts.operation.productInventory);
   const totalInventoryOz = invEntries.reduce((sum, [, e]) => sum + e.oz, 0);
-  const weightedAvgPrice =
+  const rawAvgPrice =
     totalInventoryOz > 0
       ? invEntries.reduce((sum, [, e]) => sum + e.oz * e.pricePerUnit, 0) / totalInventoryOz
       : 10;
+  const weightedAvgPrice = rawAvgPrice * (ctx.tech.priceMultiplier ?? 1);
   let totalProductConsumed = 0;
 
   for (const biz of ctx.prevState.businesses) {
