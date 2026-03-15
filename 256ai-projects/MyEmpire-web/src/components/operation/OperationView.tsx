@@ -308,7 +308,8 @@ export default function OperationView() {
                         }
                       }}
                       disabled={!canUpgrade}
-                      className={`text-sm px-16 py-2.5 rounded-lg border-2 border-white/30 font-bold transition whitespace-nowrap ${
+                      style={{ minWidth: '200px' }}
+                      className={`text-xs px-3 py-1.5 rounded-lg border-2 border-white/30 font-bold transition whitespace-nowrap ${
                         canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white shadow-lg shadow-purple-900/40' : 'bg-gray-700 text-white cursor-not-allowed'
                       }`}
                     >
