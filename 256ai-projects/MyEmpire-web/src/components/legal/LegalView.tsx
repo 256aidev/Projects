@@ -100,7 +100,7 @@ export default function LegalView() {
       {/* Legal Representation — Multiple Lawyers */}
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
         <h3 className="text-white font-semibold mb-1">⚖️ Legal Representation</h3>
-        <p className="text-gray-500 text-xs mb-3">Hire multiple lawyers to stack heat decay. Cost doubles per additional hire of the same type. Max 5 each.</p>
+        <p className="text-gray-500 text-xs mb-3">Hire multiple lawyers to stack heat decay. Cost doubles per additional hire of the same type. No limit.</p>
 
         {/* Total lawyer stats */}
         {hiredLawyers.length > 0 && (
@@ -121,11 +121,9 @@ export default function LegalView() {
           {LAWYER_DEFS.map((lawyer) => {
             const hiredEntry = hiredLawyers.find(h => h.defId === lawyer.id);
             const count = hiredEntry?.count ?? 0;
-            const maxCount = 5;
-            const atMax = count >= maxCount;
             const meetsHeatTier = heatTier >= lawyer.requiredHeatTier;
             const nextCost = Math.floor(lawyer.unlockCost * Math.pow(2, count));
-            const canAfford = cleanCash >= nextCost && !atMax;
+            const canAfford = cleanCash >= nextCost;
             const canHire = meetsHeatTier && canAfford;
             return (
               <div key={lawyer.id} className={`rounded-lg border p-3 transition ${count > 0 ? 'border-indigo-500/60 bg-indigo-900/20' : !meetsHeatTier ? 'border-gray-700/50 bg-gray-800/20 opacity-40' : 'border-gray-700 bg-gray-800/40'}`}>
@@ -140,7 +138,7 @@ export default function LegalView() {
                   <span className="text-green-400">Decay: -{lawyer.heatDecayBonus.toFixed(3)}/s each</span>
                 </div>
                 <div className="flex gap-2">
-                  {meetsHeatTier && !atMax && (
+                  {meetsHeatTier && (
                     <Tooltip text={`Hire another ${lawyer.name}. Cost doubles each time.`}>
                     <button disabled={!canHire} onClick={() => { if (hireLawyer(lawyer.id)) { sound.play('dealer_hire'); } }}
                       className={`flex-1 py-2 rounded-lg border border-white/30 text-xs font-bold transition ${canHire ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-700 text-white cursor-not-allowed'}`}>
@@ -148,7 +146,6 @@ export default function LegalView() {
                     </button>
                     </Tooltip>
                   )}
-                  {atMax && <span className="flex-1 py-2 text-center text-yellow-500 text-xs font-bold">MAX (×5)</span>}
                   {count > 0 && (
                     <Tooltip text="Fire one lawyer of this type. No refund.">
                     <button onClick={() => { fireLawyer(lawyer.id); sound.play('fire'); }}

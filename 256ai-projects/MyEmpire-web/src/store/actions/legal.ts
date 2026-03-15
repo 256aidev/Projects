@@ -54,8 +54,6 @@ export function createLegalActions(set: SetState, get: GetState) {
       const hired = state.hiredLawyers ?? [];
       const existing = hired.find(h => h.defId === lawyerId);
       const currentCount = existing?.count ?? 0;
-      const maxCount = 5;
-      if (currentCount >= maxCount) return false;
 
       const cost = getLawyerHireCost(lawyer.unlockCost, currentCount);
       if (state.cleanCash < cost) return false;
