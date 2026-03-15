@@ -174,7 +174,7 @@ export default function OperationView() {
                     else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
                   }}
                   disabled={!canAfford}
-                  className={`flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition ${
+                  className={`flex-1 py-2.5 rounded border border-white/30 text-sm font-semibold transition ${
                     canAfford ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200' : 'bg-gray-700 text-white cursor-not-allowed'
                   }`}
                 >
@@ -190,7 +190,7 @@ export default function OperationView() {
                 <button
                   onClick={() => { fireDealers(qty); sound.play('fire'); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
                   disabled={!canFire}
-                  className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
+                  className={`flex-1 py-2.5 rounded border border-white/30 text-sm font-semibold transition ${
                     canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-white cursor-not-allowed'
                   }`}
                 >
@@ -212,7 +212,7 @@ export default function OperationView() {
                   onClick={() => {
                     if (downgradeDealerTier()) { sound.play('fire'); addNotification(`Downgraded to ${prevTier.name} (+${formatMoney(refund)} refund)`, 'warning'); }
                   }}
-                  className="flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition bg-red-900/60 hover:bg-red-800/70 text-red-300"
+                  className="flex-1 py-2.5 rounded border border-white/30 text-sm font-semibold transition bg-red-900/60 hover:bg-red-800/70 text-red-300"
                 >
                   ▼ {prevTier.name}<br />
                   <span className="font-normal opacity-75">
@@ -233,7 +233,7 @@ export default function OperationView() {
                     else addNotification(`Need ${formatMoney(nextDealerTier.hireCost * 3)} dirty cash`, 'warning');
                   }}
                   disabled={!canUpgrade}
-                  className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
+                  className={`flex-1 py-2.5 rounded border border-white/30 text-sm font-semibold transition ${
                     canUpgrade ? 'bg-purple-800 hover:bg-purple-700 text-purple-200' : 'bg-gray-700 text-white cursor-not-allowed'
                   }`}
                 >
@@ -291,7 +291,7 @@ export default function OperationView() {
                         }
                       }}
                       disabled={!canUpgrade}
-                      className={`text-[9px] px-1.5 py-0.5 rounded border border-white/30 font-semibold transition ${
+                      className={`text-xs px-3 py-1.5 rounded border border-white/30 font-semibold transition ${
                         canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-gray-700 text-white cursor-not-allowed'
                       }`}
                     >
@@ -421,7 +421,7 @@ export default function OperationView() {
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
-                              className={`w-full py-0.5 rounded border border-white/20 text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-white cursor-not-allowed'}`}
+                              className={`w-full py-1.5 rounded border border-white/20 text-xs font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-white cursor-not-allowed'}`}
                             >
                               {nextBonusText} · {nextLvl.name} · {formatMoney(scaledCost)}
                               {nextLvl.costPerCycle > 0 && <span className="text-red-300"> · ${nextLvl.costPerCycle}/cyc</span>}
