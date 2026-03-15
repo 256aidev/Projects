@@ -16,8 +16,10 @@ export function createPrestigeActions(set: SetState, get: GetState) {
       if (state.totalDirtyEarned < PRESTIGE_THRESHOLD) return false;
       const { total: earnedTP } = calculatePrestigeTP(state);
       const newCount = (state.prestigeCount ?? 0) + 1;
+      const startOp = { ...INITIAL_GAME_STATE.operation, productInventory: { 'Basic Bud': { oz: 12, pricePerUnit: 8 } } };
       set({
         ...INITIAL_GAME_STATE,
+        operation: startOp,
         prestigeCount: newCount,
         prestigeBonus: 0,
         techPoints: (state.techPoints ?? 0) + earnedTP,
@@ -85,8 +87,10 @@ export function createPrestigeActions(set: SetState, get: GetState) {
 
     resetGame: () => {
       const state = get();
+      const startOp = { ...INITIAL_GAME_STATE.operation, productInventory: { 'Basic Bud': { oz: 12, pricePerUnit: 8 } } };
       set({
         ...INITIAL_GAME_STATE,
+        operation: startOp,
         prestigeCount: state.prestigeCount ?? 0,
         prestigeBonus: 0,
         techPoints: state.techPoints ?? 0,

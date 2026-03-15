@@ -6,19 +6,16 @@ import { generateRivals } from '../../data/rivals';
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
 type GetState = () => GameState;
 
+// Starting stash so the player has something to sell immediately
+const STARTING_INVENTORY: Record<string, { oz: number; pricePerUnit: number }> = {
+  'Basic Bud': { oz: 12, pricePerUnit: 8 },
+};
+
 export function createGameActions(set: SetState, get: GetState) {
   return {
     startNewGame: (rivalCount: number, entryDelayMinutes: number = 10) => {
       const state = get();
-      const isFirstEver = (state.prestigeCount ?? 0) === 0 && (state.tickCount ?? 0) === 0;
-      // First-ever game: first harvest is free (ticksRemaining = 0) so new players
-      // can immediately harvest, sell, and understand the loop.
-      const startOp = { ...INITIAL_GAME_STATE.operation };
-      if (isFirstEver && startOp.growRooms[0]?.slots[0]) {
-        startOp.growRooms = [
-          { ...startOp.growRooms[0], slots: [{ ...startOp.growRooms[0].slots[0], ticksRemaining: 0 }] },
-        ];
-      }
+      const startOp = { ...INITIAL_GAME_STATE.operation, productInventory: { ...STARTING_INVENTORY } };
       set({
         ...INITIAL_GAME_STATE,
         operation: startOp,
@@ -44,13 +41,7 @@ export function createGameActions(set: SetState, get: GetState) {
     // ── Tutorial ─────────────────────────────────────────────────────────
     startTutorial: () => {
       const state = get();
-      const isFirstEver = (state.prestigeCount ?? 0) === 0 && (state.tickCount ?? 0) === 0;
-      const startOp = { ...INITIAL_GAME_STATE.operation };
-      if (isFirstEver && startOp.growRooms[0]?.slots[0]) {
-        startOp.growRooms = [
-          { ...startOp.growRooms[0], slots: [{ ...startOp.growRooms[0].slots[0], ticksRemaining: 0 }] },
-        ];
-      }
+      const startOp = { ...INITIAL_GAME_STATE.operation, productInventory: { ...STARTING_INVENTORY } };
       set({
         ...INITIAL_GAME_STATE,
         operation: startOp,
