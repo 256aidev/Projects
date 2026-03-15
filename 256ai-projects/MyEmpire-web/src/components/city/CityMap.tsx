@@ -13,6 +13,7 @@ import JobDistrictBlock from './JobDistrictBlock';
 import CasinoBlock from './CasinoBlock';
 import JewelryBlock from './JewelryBlock';
 import CarDealershipBlock from './CarDealershipBlock';
+import RivalOperationsBlock from './RivalOperationsBlock';
 import Tooltip from '../ui/Tooltip';
 
 const BLOCK_W = 164;
@@ -556,6 +557,15 @@ export default function CityMap() {
                   return (
                     <div key={cell.id} style={placement}>
                       <CarDealershipBlock />
+                    </div>
+                  );
+                }
+                // Rival operations blocks
+                const rivalMatch = cell.id.match(/^rival_ops_(\d+)$/);
+                if (rivalMatch) {
+                  return (
+                    <div key={cell.id} style={placement}>
+                      <RivalOperationsBlock rivalIndex={parseInt(rivalMatch[1])} />
                     </div>
                   );
                 }

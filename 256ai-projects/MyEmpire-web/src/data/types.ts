@@ -873,7 +873,7 @@ export const INITIAL_GAME_STATE: GameState = {
   heatNoticeShown: false,
   operation: INITIAL_OPERATION,
   businesses: [],
-  unlockedDistricts: ['starter', 'operations', 'dealer_network', 'job_district', 'casino_district', 'jewelry_district', 'car_district', 'bank_district'],
+  unlockedDistricts: ['starter', 'operations', 'dealer_network', 'job_district', 'casino_district', 'jewelry_district', 'car_district', 'bank_district', 'rival_ops_0', 'rival_ops_1', 'rival_ops_2', 'rival_ops_3', 'rival_ops_4'],
   unlockedSlots: { starter: 0 },
   lotBuildTimers: {},
   inventory: {},

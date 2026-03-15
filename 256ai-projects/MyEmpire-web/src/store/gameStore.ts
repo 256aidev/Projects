@@ -361,6 +361,10 @@ export const useGameStore = create<GameStore>()(
         if (merged.bankBalance === undefined) merged.bankBalance = 0;
         if (merged.bankLoans === undefined) merged.bankLoans = [];
         if (!merged.unlockedDistricts.includes('bank_district')) merged.unlockedDistricts.push('bank_district');
+        for (let i = 0; i < 5; i++) {
+          const rId = `rival_ops_${i}`;
+          if (!merged.unlockedDistricts.includes(rId)) merged.unlockedDistricts.push(rId);
+        }
         if (merged.bankLastInterestTick === undefined) merged.bankLastInterestTick = merged.tickCount ?? 0;
 
         for (const biz of merged.businesses) {
