@@ -16,9 +16,12 @@ export function tickCriminalOpSystem(ts: TickState, ctx: TickContext): void {
     rawDirtyEarned * (1 + ctx.carBonuses.incomeMultiplier + ctx.carBonuses.dealerBoost) * ctx.season.yieldMultiplier,
   );
 
+  // Apply jewelry operation discount to maintenance
+  const discountedMaintenance = Math.floor(maintenanceCost * (1 - ctx.jewelryBonuses.operationDiscount));
+
   ts.dirtyCash += dirtyEarned;
-  ts.dirtyCash = Math.max(0, ts.dirtyCash - maintenanceCost);
+  ts.dirtyCash = Math.max(0, ts.dirtyCash - discountedMaintenance);
   ts.operation = newOp;
   ts.dirtyEarned = dirtyEarned;
-  ts.maintenanceCost = maintenanceCost;
+  ts.maintenanceCost = discountedMaintenance;
 }

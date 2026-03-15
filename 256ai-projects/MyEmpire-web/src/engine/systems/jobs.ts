@@ -35,8 +35,9 @@ export function tickJobsSystem(ts: TickState, ctx: TickContext): void {
   ts.jobFiredCooldown = jobFiredCooldown;
   ts.jobIncome = jobIncome;
 
-  // Crew upkeep (dirty cash per tick)
-  const crewCost = getCrewUpkeep(ctx.prevState.crew ?? []);
+  // Crew upkeep (dirty cash per tick) — reduced by jewelry hitman discount
+  const rawCrewCost = getCrewUpkeep(ctx.prevState.crew ?? []);
+  const crewCost = Math.floor(rawCrewCost * (1 - ctx.jewelryBonuses.hitmanDiscount));
   ts.dirtyCash = Math.max(0, ts.dirtyCash - crewCost);
   ts.hitmanCost = crewCost;
 }

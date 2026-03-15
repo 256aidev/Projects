@@ -12,6 +12,7 @@ import { resolveEventChoice as resolveChoice, getEventDef } from '../engine/even
 import { INITIAL_EVENT_STATE } from '../data/events/types';
 import { getCarBonuses } from '../data/carDefs';
 import { getCrewBonuses } from '../data/crewDefs';
+import { getJewelryBonuses } from '../engine/jewelry';
 import { GAME_SYSTEMS } from '../engine/systems/registry';
 import type { TickState, TickContext } from '../engine/systems/types';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
@@ -28,6 +29,7 @@ import { createCombatActions } from './actions/combat';
 import { createPrestigeActions } from './actions/prestige';
 import { createLuxuryActions } from './actions/luxury';
 import { createHouseActions } from './actions/house';
+import { createBankActions } from './actions/bank';
 import { createGameActions } from './actions/game';
 
 // ── City block helpers (used by migration) ────────────────────────────
@@ -131,14 +133,15 @@ export const useGameStore = create<GameStore>()(
           const sTech = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
           const carBonus = getCarBonuses(state.cars ?? []);
           const crewBonus = getCrewBonuses(state.crew ?? []);
+          const jewBonus = getJewelryBonuses(state.jewelry ?? []);
           const effectiveTech = {
             ...tech,
-            yieldBonus: tech.yieldBonus + sTech.yieldBonus + tech.floraMicroBonus + sTech.floraMicroBonus,
+            yieldBonus: tech.yieldBonus + sTech.yieldBonus + tech.floraMicroBonus + sTech.floraMicroBonus + jewBonus.yieldBoost,
             speedBonus: tech.speedBonus + sTech.speedBonus + carBonus.growSpeed + tech.floraGroBonus + tech.waterBonus + tech.lightBonus + sTech.floraGroBonus + sTech.waterBonus + sTech.lightBonus,
             doubleChance: tech.doubleChance + tech.floraBloomBonus + sTech.floraBloomBonus,
             dealerMultiplier: tech.dealerMultiplier * sTech.dealerMultiplier * (1 + crewBonus.dealerBoost),
-            launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier * (1 + crewBonus.launderBoost),
-            heatReduction: tech.heatReduction + sTech.heatReduction + crewBonus.heatReduction,
+            launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier * (1 + crewBonus.launderBoost) * (1 + jewBonus.launderBoost),
+            heatReduction: tech.heatReduction + sTech.heatReduction + crewBonus.heatReduction + jewBonus.heatDecay,
           };
           const { seasonDef } = getSeasonFromTick(state.tickCount + 1);
           const ctx: TickContext = {
@@ -146,6 +149,7 @@ export const useGameStore = create<GameStore>()(
             tech: effectiveTech,
             sessionTech: sTech,
             carBonuses: carBonus,
+            jewelryBonuses: jewBonus,
             gameSpeed: useUIStore.getState().gameSpeed,
             season: seasonDef,
           };
@@ -174,6 +178,9 @@ export const useGameStore = create<GameStore>()(
             heatNoticeShown: state.heatNoticeShown,
             totalDirtyEarned: state.totalDirtyEarned,
             totalCleanEarned: state.totalCleanEarned,
+            bankBalance: state.bankBalance ?? 0,
+            bankLoans: (state.bankLoans ?? []).map(l => ({ ...l })),
+            bankLastInterestTick: state.bankLastInterestTick ?? 0,
           };
 
           for (const system of GAME_SYSTEMS) {
@@ -200,6 +207,9 @@ export const useGameStore = create<GameStore>()(
             rivals: ts.rivals,
             rivalAttackLog: ts.rivalAttackLog,
             eventSystem: ts.eventSystem,
+            bankBalance: ts.bankBalance,
+            bankLoans: ts.bankLoans,
+            bankLastInterestTick: ts.bankLastInterestTick,
             ...(ts.unlockedDistricts !== state.unlockedDistricts ? { unlockedDistricts: ts.unlockedDistricts } : {}),
           };
         });
@@ -245,6 +255,7 @@ export const useGameStore = create<GameStore>()(
       ...createPrestigeActions(set, get),
       ...createLuxuryActions(set, get),
       ...createHouseActions(set, get),
+      ...createBankActions(set, get),
       ...createGameActions(set, get),
     }),
     {
@@ -341,6 +352,9 @@ export const useGameStore = create<GameStore>()(
 
         if (merged.houseLevel === undefined) merged.houseLevel = 0;
         if (merged.hqLevel === undefined) merged.hqLevel = 0;
+        if (merged.bankBalance === undefined) merged.bankBalance = 0;
+        if (merged.bankLoans === undefined) merged.bankLoans = [];
+        if (merged.bankLastInterestTick === undefined) merged.bankLastInterestTick = merged.tickCount ?? 0;
 
         for (const biz of merged.businesses) {
           if (biz.cleanToDirtyPerTick === undefined) (biz as any).cleanToDirtyPerTick = 0;

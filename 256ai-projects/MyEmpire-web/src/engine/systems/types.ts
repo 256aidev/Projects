@@ -2,6 +2,7 @@ import type { GameState, CriminalOperation, BusinessInstance } from '../../data/
 import type { TechBonuses } from '../tech';
 import type { SessionTechBonuses } from '../sessionTech';
 import type { SeasonDef } from '../../data/seasons';
+import type { JewelryBonuses } from '../jewelry';
 
 export interface CarBonuses {
   heatReduction: number;
@@ -38,6 +39,10 @@ export interface TickState {
   heatNoticeShown: boolean;
   totalDirtyEarned: number;
   totalCleanEarned: number;
+  // Bank
+  bankBalance: number;
+  bankLoans: import('../../data/bankDefs').ActiveLoan[];
+  bankLastInterestTick: number;
 }
 
 export interface TickContext {
@@ -45,6 +50,7 @@ export interface TickContext {
   tech: TechBonuses;             // merged tech bonuses
   sessionTech: SessionTechBonuses;
   carBonuses: CarBonuses;
+  jewelryBonuses: JewelryBonuses;
   gameSpeed: number;
   season: SeasonDef;             // current season with multipliers
 }
