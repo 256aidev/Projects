@@ -41,8 +41,17 @@ export function tickBusinessesSystem(ts: TickState, ctx: TickContext): void {
       );
       totalProductConsumed += productConsumed;
       totalCleanProduced += cleanProduced;
+    } else if (bizDef?.isRental && (bizDef.baseLaunderPerTick ?? 0) > 0) {
+      // Rental with laundering capability (apartments with tenants as cover)
+      const { dirtyConsumed, cleanProduced } = calculateLaunderTick(
+        biz,
+        ts.dirtyCash - totalDirtyConsumed,
+        ctx.tech.launderMultiplier * (1 + ctx.carBonuses.launderBoost),
+      );
+      totalDirtyConsumed += dirtyConsumed;
+      totalCleanProduced += cleanProduced;
     } else if (bizDef?.isRental) {
-      // rental revenue is 100% clean cash — already counted in totalRevenue above
+      // Pure rental — no laundering, revenue already counted above
     } else {
       const { dirtyConsumed, cleanProduced } = calculateLaunderTick(
         biz,

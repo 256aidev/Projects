@@ -37,7 +37,7 @@ export function createBusinessActions(set: SetState, get: GetState) {
         upgradeLevel: 0,
         isOperating: true,
         supplyModifier: 1,
-        dirtyQueuedPerTick: (def.isDispensary || def.isRental) ? 0 : 5,
+        dirtyQueuedPerTick: def.isDispensary ? 0 : (def.baseLaunderPerTick > 0 ? 5 : 0),
         cleanToDirtyPerTick: 0,
         ...(def.isDispensary ? { productQueuedPerTick: 2 } : {}),
       };
