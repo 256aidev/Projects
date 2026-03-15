@@ -8,7 +8,7 @@ import { JOB_MAP } from '../../data/types';
  */
 export function tickStreetEconomySystem(ts: TickState, ctx: TickContext): void {
   const currentJobDef = ctx.prevState.currentJobId ? JOB_MAP[ctx.prevState.currentJobId] ?? null : null;
-  const baseDemand = getMaxStreetDemand(currentJobDef, ctx.prevState.businesses) + ctx.sessionTech.demandBonus;
+  const baseDemand = getMaxStreetDemand(currentJobDef, ctx.prevState.businesses, ctx.carBonuses.streetDemand) + ctx.sessionTech.demandBonus;
   const maxDemand = Math.floor(baseDemand * ctx.season.demandMultiplier);
   const refillRate = getStreetRefillRate(maxDemand);
   ts.streetSellQuotaOz = Math.min(

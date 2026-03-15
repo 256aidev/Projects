@@ -1,35 +1,37 @@
 import type { GameState, RivalActionType } from '../../data/types';
-import { HITMAN_MAP, RIVAL_ACTIONS } from '../../data/types';
+import { RIVAL_ACTIONS } from '../../data/types';
+import { CREW_MAP, getCrewAttack } from '../../data/crewDefs';
 
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
 type GetState = () => GameState;
 
 export function createCombatActions(set: SetState, get: GetState) {
   return {
-    hireHitman: (defId: string) => {
+    hireCrew: (defId: string) => {
       const state = get();
-      const def = HITMAN_MAP[defId];
+      const def = CREW_MAP[defId];
       if (!def || state.dirtyCash < def.cost) return false;
-      const existing = state.hitmen.find(h => h.defId === defId);
-      const newHitmen = existing
-        ? state.hitmen.map(h => h.defId === defId ? { ...h, count: h.count + 1 } : h)
-        : [...state.hitmen, { defId, count: 1 }];
+      const existing = state.crew.find(h => h.defId === defId);
+      if (existing && existing.count >= def.maxCount) return false;
+      const newCrew = existing
+        ? state.crew.map(h => h.defId === defId ? { ...h, count: h.count + 1 } : h)
+        : [...state.crew, { defId, count: 1 }];
       set({
         dirtyCash: state.dirtyCash - def.cost,
         totalSpent: state.totalSpent + def.cost,
-        hitmen: newHitmen,
+        crew: newCrew,
       });
       return true;
     },
 
-    fireHitman: (defId: string) => {
+    fireCrew: (defId: string) => {
       const state = get();
-      const existing = state.hitmen.find(h => h.defId === defId);
+      const existing = state.crew.find(h => h.defId === defId);
       if (!existing || existing.count <= 0) return false;
-      const newHitmen = existing.count <= 1
-        ? state.hitmen.filter(h => h.defId !== defId)
-        : state.hitmen.map(h => h.defId === defId ? { ...h, count: h.count - 1 } : h);
-      set({ hitmen: newHitmen });
+      const newCrew = existing.count <= 1
+        ? state.crew.filter(h => h.defId !== defId)
+        : state.crew.map(h => h.defId === defId ? { ...h, count: h.count - 1 } : h);
+      set({ crew: newCrew });
       return true;
     },
 
@@ -45,12 +47,9 @@ export function createCombatActions(set: SetState, get: GetState) {
         return { success: false, message: `Need $${action.cost.toLocaleString()} dirty cash` };
       }
 
-      const playerHitmen = state.hitmen.reduce((sum, h) => {
-        const def = HITMAN_MAP[h.defId];
-        return sum + (def ? h.count : 0);
-      }, 0);
-      if (playerHitmen < action.hitmenRequired) {
-        return { success: false, message: `Need at least ${action.hitmenRequired} hitmen` };
+      const playerCrewCount = state.crew.reduce((sum, h) => sum + h.count, 0);
+      if (playerCrewCount < action.hitmenRequired) {
+        return { success: false, message: `Need at least ${action.hitmenRequired} crew members` };
       }
 
       // Assassination special requirements
@@ -64,10 +63,7 @@ export function createCombatActions(set: SetState, get: GetState) {
       }
 
       // Calculate success chance
-      const playerAttack = state.hitmen.reduce((sum, h) => {
-        const def = HITMAN_MAP[h.defId];
-        return sum + (def ? h.count * def.attack : 0);
-      }, 0);
+      const playerAttack = getCrewAttack(state.crew);
       const rivalDefense = rival.hitmen * 15;
       const powerRatio = Math.min(2, playerAttack / Math.max(1, rivalDefense));
 
@@ -95,7 +91,7 @@ export function createCombatActions(set: SetState, get: GetState) {
         if (!success) {
           // Failed attack — rival gets angry, weakness drops slightly on assassination
           if (action.type === 'assassinate') {
-            message = `Assassination attempt on ${rival.name} FAILED! Lost hitmen in the process.`;
+            message = `Assassination attempt on ${rival.name} FAILED! Lost crew members in the process.`;
             playerHitmenLost = 1 + Math.floor(Math.random() * 2); // lose 1-2 hitmen
             return { ...r, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.max(0, weakness - 10) };
           }
@@ -164,11 +160,11 @@ export function createCombatActions(set: SetState, get: GetState) {
         dirtyCashGain = stolen;
       }
 
-      // Handle player hitmen lost on failed assassination
-      let newPlayerHitmen = state.hitmen;
+      // Handle player crew lost on failed assassination
+      let newPlayerCrew = state.crew;
       if (playerHitmenLost > 0) {
         let remaining = playerHitmenLost;
-        newPlayerHitmen = state.hitmen.map(h => {
+        newPlayerCrew = state.crew.map(h => {
           if (remaining <= 0) return h;
           const lose = Math.min(h.count, remaining);
           remaining -= lose;
@@ -183,7 +179,7 @@ export function createCombatActions(set: SetState, get: GetState) {
         rivalHeat: newRivalHeat,
         rivalAttackLog: log,
         dirtyCash: newDirtyCash,
-        hitmen: newPlayerHitmen,
+        crew: newPlayerCrew,
       });
       return { success, message };
     },

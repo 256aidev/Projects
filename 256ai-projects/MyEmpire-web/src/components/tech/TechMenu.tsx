@@ -92,7 +92,7 @@ export default function TechMenu() {
                     className={`w-full py-1.5 rounded-lg text-xs font-bold transition ${
                       canAfford
                         ? 'bg-cyan-700 hover:bg-cyan-600 text-white'
-                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        : 'bg-gray-700 text-white cursor-not-allowed'
                     }`}
                   >
                     Upgrade &middot; {nextCost} TP

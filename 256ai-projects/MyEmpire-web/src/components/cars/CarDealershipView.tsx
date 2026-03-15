@@ -59,6 +59,7 @@ export default function CarDealershipView() {
               {carBonuses.dealerBoost > 0 && <span className="text-[9px] bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">+{Math.round(carBonuses.dealerBoost * 100)}% dealer sales</span>}
               {carBonuses.incomeMultiplier > 0 && <span className="text-[9px] bg-yellow-900/40 text-yellow-300 px-2 py-0.5 rounded-full">+{Math.round(carBonuses.incomeMultiplier * 100)}% dirty income</span>}
               {carBonuses.launderBoost > 0 && <span className="text-[9px] bg-red-900/40 text-red-300 px-2 py-0.5 rounded-full">+{Math.round(carBonuses.launderBoost * 100)}% launder</span>}
+              {carBonuses.streetDemand > 0 && <span className="text-[9px] bg-emerald-900/40 text-emerald-300 px-2 py-0.5 rounded-full">+{carBonuses.streetDemand} street demand</span>}
             </div>
           )}
         </div>
@@ -96,13 +97,14 @@ export default function CarDealershipView() {
                             {isDirty ? '💵' : '🏦'} {formatMoney(car.cost)}
                           </span>
                           <span className="text-[9px]" style={{ color: tierColor }}>+{Math.round(car.bonusValue * 100)}% {car.bonusType === 'heatReduction' ? 'heat reduction' : car.bonusType === 'growSpeed' ? 'grow speed' : car.bonusType === 'dealerBoost' ? 'dealer sales' : car.bonusType === 'incomeMultiplier' ? 'dirty income' : 'launder'}</span>
+                          {car.streetDemandBonus && <span className="text-[9px] text-emerald-400">+{car.streetDemandBonus} street demand</span>}
                         </div>
                       </div>
                       {!owned && (
                         <Tooltip text={car.description}><button onClick={() => handleBuy(car.id)}
                           disabled={!canAfford}
                           className={`px-5 py-3 rounded-xl text-sm font-black shrink-0 transition ${
-                            canAfford ? 'bg-red-600 text-white active:bg-red-500 hover:bg-red-500' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                            canAfford ? 'bg-red-600 text-white active:bg-red-500 hover:bg-red-500' : 'bg-gray-800 text-white cursor-not-allowed'
                           }`}
                         >BUY</button></Tooltip>
                       )}

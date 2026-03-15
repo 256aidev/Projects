@@ -11,6 +11,7 @@ import { getSessionTechBonuses } from '../engine/sessionTech';
 import { resolveEventChoice as resolveChoice, getEventDef } from '../engine/events';
 import { INITIAL_EVENT_STATE } from '../data/events/types';
 import { getCarBonuses } from '../data/carDefs';
+import { getCrewBonuses } from '../data/crewDefs';
 import { GAME_SYSTEMS } from '../engine/systems/registry';
 import type { TickState, TickContext } from '../engine/systems/types';
 import { DISTRICTS, DISTRICT_MAP } from '../data/districts';
@@ -101,8 +102,8 @@ interface GameActions {
   wipeGame: () => void;
   startNewGame: (rivalCount: number, entryDelayMinutes?: number) => void;
   continueGame: () => void;
-  hireHitman: (defId: string) => boolean;
-  fireHitman: (defId: string) => boolean;
+  hireCrew: (defId: string) => boolean;
+  fireCrew: (defId: string) => boolean;
   attackRival: (rivalId: string, actionType: string) => { success: boolean; message: string } | null;
   settleCasinoBet: (betAmount: number, grossPayout: number) => void;
   buyJewelry: (defId: string) => boolean;
@@ -128,13 +129,14 @@ export const useGameStore = create<GameStore>()(
           const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
           const sTech = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
           const carBonus = getCarBonuses(state.cars ?? []);
+          const crewBonus = getCrewBonuses(state.crew ?? []);
           const effectiveTech = {
             ...tech,
             yieldBonus: tech.yieldBonus + sTech.yieldBonus,
             speedBonus: tech.speedBonus + sTech.speedBonus + carBonus.growSpeed,
-            dealerMultiplier: tech.dealerMultiplier * sTech.dealerMultiplier,
-            launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier,
-            heatReduction: tech.heatReduction + sTech.heatReduction,
+            dealerMultiplier: tech.dealerMultiplier * sTech.dealerMultiplier * (1 + crewBonus.dealerBoost),
+            launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier * (1 + crewBonus.launderBoost),
+            heatReduction: tech.heatReduction + sTech.heatReduction + crewBonus.heatReduction,
           };
           const { seasonDef } = getSeasonFromTick(state.tickCount + 1);
           const ctx: TickContext = {
@@ -353,7 +355,18 @@ export const useGameStore = create<GameStore>()(
         if (!merged.rivals) merged.rivals = [];
         // Backfill weakness for existing rivals
         merged.rivals = merged.rivals.map((r: any) => ({ ...r, weakness: r.weakness ?? 0 }));
-        if (!merged.hitmen) merged.hitmen = [];
+        // Migrate hitmen → crew (v28)
+        if (!merged.crew || merged.crew.length === 0) {
+          const oldHitmen = (merged as any).hitmen ?? [];
+          if (oldHitmen.length > 0) {
+            merged.crew = oldHitmen.map((h: any) => ({
+              defId: h.defId === 'thug' ? 'soldier' : h.defId === 'enforcer' ? 'lieutenant' : h.defId === 'assassin' ? 'captain' : h.defId === 'spec_ops' ? 'consigliere' : h.defId,
+              count: h.count,
+            }));
+          } else {
+            merged.crew = [];
+          }
+        }
         if (!merged.rivalAttackLog) merged.rivalAttackLog = [];
 
         if (!merged.casinoHistory) merged.casinoHistory = { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 };

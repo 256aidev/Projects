@@ -1,10 +1,10 @@
 import type { TickState, TickContext } from './types';
-import { getHitmanUpkeep } from '../rivals';
+import { getCrewUpkeep } from '../../data/crewDefs';
 import { JOB_MAP } from '../../data/types';
 
 /**
- * Jobs + hitmen system: job income (clean cash), heat-based firing,
- * and hitman upkeep (dirty cash).
+ * Jobs + crew system: job income (clean cash), heat-based firing,
+ * and crew upkeep (dirty cash).
  */
 export function tickJobsSystem(ts: TickState, ctx: TickContext): void {
   // Job income (clean cash) + heat-based firing
@@ -28,8 +28,8 @@ export function tickJobsSystem(ts: TickState, ctx: TickContext): void {
   ts.jobFiredCooldown = jobFiredCooldown;
   ts.jobIncome = jobIncome;
 
-  // Hitman upkeep (dirty cash per tick)
-  const hitmanCost = getHitmanUpkeep(ctx.prevState.hitmen ?? []);
-  ts.dirtyCash = Math.max(0, ts.dirtyCash - hitmanCost);
-  ts.hitmanCost = hitmanCost;
+  // Crew upkeep (dirty cash per tick)
+  const crewCost = getCrewUpkeep(ctx.prevState.crew ?? []);
+  ts.dirtyCash = Math.max(0, ts.dirtyCash - crewCost);
+  ts.hitmanCost = crewCost;
 }

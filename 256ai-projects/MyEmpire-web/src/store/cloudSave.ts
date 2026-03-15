@@ -41,7 +41,7 @@ export async function updateLeaderboardEntry(
   const tierIndex = gs.operation?.dealerTierIndex ?? 0;
   const criminalPts = rooms * 10000 + dealers * 1000 + tierIndex * 15000;
   const defeated = Array.isArray(gs.rivals) ? gs.rivals.filter((r: { isDefeated?: boolean }) => r.isDefeated).length : 0;
-  const hitmenCount = Array.isArray(gs.hitmen) ? gs.hitmen.reduce((s: number, h: { count: number }) => s + h.count, 0) : 0;
+  const hitmenCount = Array.isArray(gs.crew) ? gs.crew.reduce((s: number, h: { count: number }) => s + h.count, 0) : 0;
   const combatPts = defeated * 50000 + hitmenCount * 5000;
   const prestigePts = (gs.prestigeCount ?? 0) * 500000 + (gs.totalTechPointsEarned ?? 0) * 10000;
   const carCount = Array.isArray(gs.cars) ? gs.cars.length : 0;

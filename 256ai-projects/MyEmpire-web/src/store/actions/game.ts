@@ -29,7 +29,7 @@ export function createGameActions(set: SetState, get: GetState) {
         techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
         gameSettings: { rivalCount, rivalEntryDelay: entryDelayMinutes, gameStarted: true, tutorialActive: false, tutorialStep: 0 },
         rivals: generateRivals(rivalCount, entryDelayMinutes),
-        hitmen: [],
+        crew: [],
         rivalAttackLog: [],
       });
     },
@@ -61,7 +61,7 @@ export function createGameActions(set: SetState, get: GetState) {
         techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
         gameSettings: { rivalCount: 0, rivalEntryDelay: 0, gameStarted: true, tutorialActive: true, tutorialStep: 0 },
         rivals: [],
-        hitmen: [],
+        crew: [],
         rivalAttackLog: [],
       });
     },

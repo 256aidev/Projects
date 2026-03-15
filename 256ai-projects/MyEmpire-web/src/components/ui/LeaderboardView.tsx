@@ -30,8 +30,8 @@ function calcCriminalPoints(state: ReturnType<typeof useGameStore.getState>): nu
 
 function calcCombatPoints(state: ReturnType<typeof useGameStore.getState>): number {
   const defeated = (state.rivals ?? []).filter(r => r.isDefeated).length;
-  const hitmen = (state.hitmen ?? []).reduce((s, h) => s + h.count, 0);
-  return defeated * 50000 + hitmen * 5000;
+  const crewCount = (state.crew ?? []).reduce((s, h) => s + h.count, 0);
+  return defeated * 50000 + crewCount * 5000;
 }
 
 function calcPrestigePoints(state: ReturnType<typeof useGameStore.getState>): number {
@@ -224,7 +224,7 @@ export default function LeaderboardView() {
         {activeTab === 'combat' && (
           <div className="bg-gray-800/40 rounded-xl p-3 space-y-0.5">
             <StatRow label="Rivals Defeated" value={`${(state.rivals ?? []).filter(r => r.isDefeated).length} / ${(state.rivals ?? []).length}`} pts={(state.rivals ?? []).filter(r => r.isDefeated).length * 50000} color="text-amber-400" />
-            <StatRow label="Hitmen Employed" value={`${(state.hitmen ?? []).reduce((s, h) => s + h.count, 0)}`} pts={(state.hitmen ?? []).reduce((s, h) => s + h.count, 0) * 5000} color="text-red-400" />
+            <StatRow label="Crew Members" value={`${(state.crew ?? []).reduce((s, h) => s + h.count, 0)}`} pts={(state.crew ?? []).reduce((s, h) => s + h.count, 0) * 5000} color="text-red-400" />
           </div>
         )}
 

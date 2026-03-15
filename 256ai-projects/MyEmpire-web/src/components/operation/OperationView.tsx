@@ -6,6 +6,7 @@ import { getRoomBonus, getRoomCycleCost, getMaxStreetDemand, getStreetRefillRate
 import { formatMoney, formatUnits } from '../../engine/economy';
 import { JOB_MAP } from '../../data/types';
 import { sound } from '../../engine/sound';
+import { getCarBonuses } from '../../data/carDefs';
 import CannabisLeaf from '../ui/CannabisLeaf';
 import Tooltip from '../ui/Tooltip';
 
@@ -33,8 +34,10 @@ export default function OperationView() {
   const streetSellQuotaOz = useGameStore((s) => s.streetSellQuotaOz ?? 160);
   const currentJobId = useGameStore((s) => s.currentJobId);
   const businesses = useGameStore((s) => s.businesses);
+  const cars = useGameStore((s) => s.cars ?? []);
   const currentJobDef = currentJobId ? JOB_MAP[currentJobId] ?? null : null;
-  const maxDemandOz = getMaxStreetDemand(currentJobDef, businesses);
+  const carBonuses = getCarBonuses(cars);
+  const maxDemandOz = getMaxStreetDemand(currentJobDef, businesses, carBonuses.streetDemand);
   const refillRate = getStreetRefillRate(maxDemandOz);
   const prestigeBonus = useGameStore((s) => s.prestigeBonus ?? 0);
   const addNotification = useUIStore((s) => s.addNotification);
@@ -112,7 +115,7 @@ export default function OperationView() {
                     else addNotification('Street demand exhausted — use dealers!', 'warning');
                   }}
                   disabled={!canSell}
-                  className={`flex-1 py-2 rounded-lg border border-white/30 text-xs font-semibold transition ${canSell ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}`}
+                  className={`flex-1 py-2 rounded-lg border border-white/30 text-xs font-semibold transition ${canSell ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-800 text-white cursor-not-allowed'}`}
                 >
                   Sell {label}<br />
                   <span className={canSell ? 'text-green-400' : 'text-gray-600'}>{formatMoney(earned)}</span>
@@ -164,7 +167,7 @@ export default function OperationView() {
                   }}
                   disabled={!canAfford}
                   className={`flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition ${
-                    canAfford ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    canAfford ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200' : 'bg-gray-700 text-white cursor-not-allowed'
                   }`}
                 >
                   +{qty} ({formatMoney(cost)})
@@ -180,7 +183,7 @@ export default function OperationView() {
                   onClick={() => { fireDealers(qty); sound.play('fire'); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
                   disabled={!canFire}
                   className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
-                    canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-gray-600 cursor-not-allowed'
+                    canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-white cursor-not-allowed'
                   }`}
                 >
                   −{qty} Fire
@@ -223,7 +226,7 @@ export default function OperationView() {
                   }}
                   disabled={!canUpgrade}
                   className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
-                    canUpgrade ? 'bg-purple-800 hover:bg-purple-700 text-purple-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    canUpgrade ? 'bg-purple-800 hover:bg-purple-700 text-purple-200' : 'bg-gray-700 text-white cursor-not-allowed'
                   }`}
                 >
                   ▲ {nextDealerTier.name} — {formatMoney(nextDealerTier.hireCost * 3)} 💵<br />
@@ -281,7 +284,7 @@ export default function OperationView() {
                       }}
                       disabled={!canUpgrade}
                       className={`text-[9px] px-1.5 py-0.5 rounded border border-white/30 font-semibold transition ${
-                        canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-gray-700 text-white cursor-not-allowed'
                       }`}
                     >
                       + Slot · {formatMoney(nextUpgradeCost)}
@@ -321,7 +324,7 @@ export default function OperationView() {
                           ) : idle ? (
                             <button data-tutorial="plant-btn" onClick={() => { if (plantSeeds(room.id, slotIndex)) { sound.play('plant'); addNotification(`Planted!`, 'success'); } else addNotification('No seeds', 'warning'); }}
                               disabled={op.seedStock < 1}
-                              className={`w-full py-0.5 rounded text-[8px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
+                              className={`w-full py-0.5 rounded text-[8px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-white cursor-not-allowed'}`}>
                               Plant
                             </button>
                           ) : (
@@ -410,7 +413,7 @@ export default function OperationView() {
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
-                              className={`w-full py-0.5 rounded border border-white/20 text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                              className={`w-full py-0.5 rounded border border-white/20 text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-white cursor-not-allowed'}`}
                             >
                               {nextBonusText} · {nextLvl.name} · {formatMoney(scaledCost)}
                               {nextLvl.costPerCycle > 0 && <span className="text-red-300"> · ${nextLvl.costPerCycle}/cyc</span>}
@@ -515,7 +518,7 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
                 onClick={() => handleBuy(qty)}
                 disabled={!canAfford}
                 className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
-                  canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
+                  canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-white/30' : 'bg-gray-700 text-white cursor-not-allowed border-white/30'
                 }`}
               >
                 x{fmtQty(qty)} ({formatMoney(cost)})
@@ -536,7 +539,7 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
               onClick={() => handleBuy(qty)}
               disabled={!canAfford}
               className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
-                canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-white/30' : 'bg-gray-700 text-gray-500 cursor-not-allowed border-white/30'
+                canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200 border-white/30' : 'bg-gray-700 text-white cursor-not-allowed border-white/30'
               }`}
             >
               x{fmtQty(qty)} ({formatMoney(cost)})
@@ -572,7 +575,7 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
                 onClick={() => { if (qty > 0) handleBuy(qty); setCustomQty(''); setShowCustom(false); }}
                 disabled={!canAfford}
                 className={`flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition ${
-                  canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  canAfford ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-700 text-white cursor-not-allowed'
                 }`}
               >
                 Buy {qty > 0 ? fmtQty(qty) : '...'} ({formatMoney(cost)})

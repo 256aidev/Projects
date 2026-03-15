@@ -248,7 +248,7 @@ export default function BuildingMenu() {
                 }
               }}
               disabled={!canUpgrade}
-              className={`w-full py-2.5 rounded-xl text-sm font-bold transition ${canUpgrade ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
+              className={`w-full py-2.5 rounded-xl text-sm font-bold transition ${canUpgrade ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-800 text-white cursor-not-allowed'}`}
             >
               Upgrade to {nextTier.name} ({formatMoney(nextTier.upgradeCost)} 🏦)
               <br />

@@ -1,6 +1,7 @@
 import type { GameState } from '../../data/types';
 import { GROW_ROOM_TYPE_MAP, ROOM_UPGRADE_MAP, INITIAL_GAME_STATE, getStrainUnlockCost } from '../../data/types';
 import { harvestSlot, getMaxStreetDemand, getStreetSellHeat } from '../../engine/economy';
+import { getCarBonuses } from '../../data/carDefs';
 import { getTechBonuses } from '../../engine/tech';
 import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
 import { INITIAL_SESSION_TECH } from '../../data/sessionTechDefs';
@@ -68,7 +69,8 @@ export function createOperationActions(set: SetState, get: GetState) {
     sellProduct: (units: number) => {
       const state = get();
       const currentJobDef = state.currentJobId ? JOB_MAP[state.currentJobId] ?? null : null;
-      const maxDemand = getMaxStreetDemand(currentJobDef, state.businesses);
+      const carSD = getCarBonuses(state.cars ?? []).streetDemand;
+      const maxDemand = getMaxStreetDemand(currentJobDef, state.businesses, carSD);
       const quotaOz = Math.min(state.streetSellQuotaOz ?? maxDemand, maxDemand);
       if (quotaOz <= 0) return 0;
       const inventoryEntries = Object.entries(state.operation.productInventory);

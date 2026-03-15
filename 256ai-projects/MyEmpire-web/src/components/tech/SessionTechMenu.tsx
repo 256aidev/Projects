@@ -130,7 +130,7 @@ export default function SessionTechMenu() {
                       className={`w-full py-1.5 rounded-lg text-xs font-bold transition ${
                         canAfford
                           ? 'bg-amber-700 hover:bg-amber-600 text-white'
-                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          : 'bg-gray-700 text-white cursor-not-allowed'
                       }`}
                     >
                       Upgrade

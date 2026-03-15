@@ -41,7 +41,7 @@ export default function DistrictSelector() {
                   ? 'text-gray-300 hover:text-white bg-gray-700/50 hover:bg-gray-700'
                   : canAfford
                     ? 'text-gray-400 bg-gray-800 hover:bg-gray-700 border border-dashed border-gray-600'
-                    : 'text-gray-600 bg-gray-800/50 cursor-not-allowed'
+                    : 'text-white bg-gray-800/50 cursor-not-allowed'
               }
             `}
             style={active ? { backgroundColor: d.themeColor } : undefined}

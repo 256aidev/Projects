@@ -1,10 +1,10 @@
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { getHeatTier, getHeatBreakdown, getRivalHeatTier, getRivalHeatBreakdown, HEAT_MAX } from '../../engine/heat';
-import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS, HITMAN_DEFS, RIVAL_ACTIONS } from '../../data/types';
+import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS, RIVAL_ACTIONS } from '../../data/types';
 import { LAWYER_DEFS, LAWYER_MAP } from '../../data/lawyers';
+import { CREW_DEFS, getCrewBonuses, getCrewCount, getCrewUpkeep, CREW_MAP } from '../../data/crewDefs';
 import { formatMoney } from '../../engine/economy';
-import { getPlayerHitmanCount, getHitmanUpkeep } from '../../engine/rivals';
 import { sound } from '../../engine/sound';
 import Tooltip from '../ui/Tooltip';
 
@@ -22,15 +22,16 @@ export default function LegalView() {
 
   const rivalHeat = useGameStore((s) => s.rivalHeat ?? 0);
   const rivals = useGameStore((s) => s.rivals ?? []);
-  const hitmen = useGameStore((s) => s.hitmen ?? []);
+  const crew = useGameStore((s) => s.crew ?? []);
   const rivalAttackLog = useGameStore((s) => s.rivalAttackLog ?? []);
-  const hireHitman = useGameStore((s) => s.hireHitman);
-  const fireHitman = useGameStore((s) => s.fireHitman);
+  const hireCrew = useGameStore((s) => s.hireCrew);
+  const fireCrew = useGameStore((s) => s.fireCrew);
   const attackRival = useGameStore((s) => s.attackRival);
   const addNotification = useUIStore((s) => s.addNotification);
 
-  const playerHitmanCount = getPlayerHitmanCount(hitmen);
-  const hitmanUpkeep = getHitmanUpkeep(hitmen);
+  const playerCrewCount = getCrewCount(crew);
+  const crewUpkeep = getCrewUpkeep(crew);
+  const crewBonuses = getCrewBonuses(crew);
 
   const heatTier = getHeatTier(heat);
   const tierName = HEAT_TIER_NAMES[heatTier];
@@ -181,64 +182,78 @@ export default function LegalView() {
         </div>
       </div>
 
-      {/* Hitmen */}
+      {/* Crime Family */}
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <div>
-            <h3 className="text-white font-semibold">Hitmen</h3>
+            <h3 className="text-white font-semibold">Your Crime Family</h3>
             <p className="text-gray-400 text-[10px]">
-              {playerHitmanCount} hired · Upkeep: {formatMoney(hitmanUpkeep)}/tick
+              {playerCrewCount} members · Upkeep: {formatMoney(crewUpkeep)}/tick
             </p>
           </div>
-          <span className="text-3xl">🔫</span>
+          <span className="text-2xl">👑</span>
         </div>
 
-        <div className="space-y-2">
-          {HITMAN_DEFS.map(def => {
-            const owned = hitmen.find(h => h.defId === def.id)?.count ?? 0;
-            const canAfford = dirtyCash >= def.cost;
+        {/* Active bonuses pills */}
+        {playerCrewCount > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {crewBonuses.heatReduction > 0 && <span className="text-[9px] bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">-{Math.round(crewBonuses.heatReduction * 100)}% heat</span>}
+            {crewBonuses.costReduction > 0 && <span className="text-[9px] bg-green-900/40 text-green-300 px-2 py-0.5 rounded-full">-{Math.round(crewBonuses.costReduction * 100)}% costs</span>}
+            {crewBonuses.incomeMultiplier > 0 && <span className="text-[9px] bg-yellow-900/40 text-yellow-300 px-2 py-0.5 rounded-full">+{Math.round(crewBonuses.incomeMultiplier * 100)}% income</span>}
+            {crewBonuses.dealerBoost > 0 && <span className="text-[9px] bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">+{Math.round(crewBonuses.dealerBoost * 100)}% dealers</span>}
+            {crewBonuses.launderBoost > 0 && <span className="text-[9px] bg-red-900/40 text-red-300 px-2 py-0.5 rounded-full">+{Math.round(crewBonuses.launderBoost * 100)}% launder</span>}
+          </div>
+        )}
+
+        {/* Compact crew grid */}
+        <div className="grid grid-cols-4 gap-1.5">
+          {CREW_DEFS.map(def => {
+            const owned = crew.find(h => h.defId === def.id)?.count ?? 0;
+            const atMax = owned >= def.maxCount;
+            const canAfford = dirtyCash >= def.cost && !atMax;
+            const bonusLines = Object.entries(def.bonuses).filter(([, v]) => v && v > 0).map(([k, v]) => {
+              const label = k === 'heatReduction' ? 'heat' : k === 'costReduction' ? 'costs' : k === 'incomeMultiplier' ? 'income' : k === 'dealerBoost' ? 'dealers' : 'launder';
+              const sign = k === 'heatReduction' || k === 'costReduction' ? '-' : '+';
+              return `${sign}${Math.round((v ?? 0) * 100)}% ${label}`;
+            });
             return (
-              <div key={def.id} className="bg-gray-900/60 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white font-semibold text-sm">{def.name}</span>
-                      {owned > 0 && <span className="text-[10px] bg-red-600/80 text-white px-2 py-0.5 rounded-full">×{owned}</span>}
-                    </div>
-                    <div className="flex gap-3 text-[11px] mt-0.5">
-                      <span className="text-red-400">ATK {def.attack}</span>
-                      <span className="text-blue-400">DEF {def.defense}</span>
-                      <span className="text-yellow-400">{formatMoney(def.upkeep)}/tick</span>
-                    </div>
-                  </div>
+              <Tooltip key={def.id} text={def.description}>
+              <div className="bg-gray-900/60 rounded-lg p-2 flex flex-col gap-1 text-center border border-gray-700/50">
+                <span className="text-lg">{def.icon}</span>
+                <p className="text-white font-bold text-[10px] leading-tight">{def.name}</p>
+                <p className="text-gray-400 text-[9px]">×{owned}/{def.maxCount}</p>
+                <div className="text-[8px] space-y-0.5">
+                  <p className="text-red-400">ATK {def.attack}</p>
+                  <p className="text-blue-400">DEF {def.defense}</p>
+                  <p className="text-yellow-400">${def.upkeep}/tick</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="text-[8px] text-cyan-300 space-y-0">
+                  {bonusLines.map((line, i) => <p key={i}>{line}</p>)}
+                </div>
+                <div className="flex flex-col gap-0.5 mt-auto">
+                  <button
+                    onClick={() => {
+                      if (hireCrew(def.id)) { sound.play('dealer_hire'); addNotification(`Recruited ${def.name}!`, 'success'); }
+                      else addNotification(atMax ? `Max ${def.name}s reached` : `Need ${formatMoney(def.cost)}`, 'warning');
+                    }}
+                    disabled={!canAfford}
+                    className={`w-full py-1 rounded text-[9px] font-bold transition ${
+                      canAfford ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 text-white cursor-not-allowed'
+                    }`}
+                  >
+                    {atMax ? 'MAX' : formatMoney(def.cost)}
+                  </button>
                   {owned > 0 && (
-                    <Tooltip text="Dismiss a hitman. No refund.">
                     <button
-                      onClick={() => { fireHitman(def.id); sound.play('fire'); }}
-                      className="flex-1 py-2 rounded-lg border border-white/30 bg-gray-700 hover:bg-gray-600 text-red-400 text-xs font-bold transition"
+                      onClick={() => { fireCrew(def.id); sound.play('fire'); }}
+                      className="w-full py-0.5 rounded text-[8px] font-semibold bg-gray-700 hover:bg-gray-600 text-red-400 transition"
                     >
                       Fire
                     </button>
-                    </Tooltip>
                   )}
-                  <Tooltip text="Hire muscle to defend against rival attacks and launch your own.">
-                  <button
-                    onClick={() => {
-                      if (hireHitman(def.id)) { sound.play('dealer_hire'); addNotification(`Hired ${def.name}!`, 'success'); }
-                      else addNotification(`Need ${formatMoney(def.cost)} dirty cash`, 'warning');
-                    }}
-                    disabled={!canAfford}
-                    className={`flex-1 py-2 rounded-lg border border-white/30 text-xs font-bold transition ${
-                      canAfford ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    Hire · {formatMoney(def.cost)}
-                  </button>
-                  </Tooltip>
                 </div>
               </div>
+              </Tooltip>
             );
           })}
         </div>
@@ -281,7 +296,7 @@ export default function LegalView() {
                 {!rival.isDefeated && (
                   <div className="flex gap-1 flex-wrap">
                     {RIVAL_ACTIONS.map(action => {
-                      const hasEnough = playerHitmanCount >= action.hitmenRequired;
+                      const hasEnough = playerCrewCount >= action.hitmenRequired;
                       const canAffordAction = dirtyCash >= action.cost;
                       const canDo = hasEnough && canAffordAction;
                       return (
@@ -293,7 +308,7 @@ export default function LegalView() {
                           }}
                           disabled={!canDo}
                           className={`px-2 py-1.5 rounded text-[9px] font-semibold transition ${
-                            canDo ? 'bg-red-900/60 hover:bg-red-800/60 text-red-300' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                            canDo ? 'bg-red-900/60 hover:bg-red-800/60 text-red-300' : 'bg-gray-800 text-white cursor-not-allowed'
                           }`}
                         >
                           {action.name} · {formatMoney(action.cost)}
@@ -389,7 +404,7 @@ export default function LegalView() {
                       className={`w-full py-2 rounded-lg border border-white/30 text-xs font-bold transition ${
                         canHire
                           ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          : 'bg-gray-700 text-white cursor-not-allowed'
                       }`}
                     >
                       Hire · {formatMoney(lawyer.unlockCost)}

@@ -1,10 +1,10 @@
 import type { CarDef, CarTier, CarBonusType } from './types';
 
 export const CAR_DEFS: CarDef[] = [
-  // ─── ECONOMY — Heat Reduction (blend in, look normal) ──────────
-  { id: 'corolla',    name: 'Toyota Corolla',     tier: 'economy',  cost: 150000,    currency: 'dirty', bonusType: 'heatReduction', bonusValue: 0.03, icon: '🚗', description: 'Blend in. -3% police heat gain.' },
-  { id: 'camry',      name: 'Toyota Camry',       tier: 'economy',  cost: 150000,    currency: 'dirty', bonusType: 'heatReduction', bonusValue: 0.05, icon: '🚗', description: 'Nothing to see here. -5% police heat gain.' },
-  { id: 'civic',      name: 'Honda Civic',        tier: 'economy',  cost: 200000,    currency: 'dirty', bonusType: 'heatReduction', bonusValue: 0.08, icon: '🚗', description: 'Perfect cover car. -8% police heat gain.' },
+  // ─── ECONOMY — Heat Reduction + Street Demand (blend in, move product) ──────────
+  { id: 'corolla',    name: 'Toyota Corolla',     tier: 'economy',  cost: 150000,    currency: 'dirty', bonusType: 'heatReduction', bonusValue: 0.03, streetDemandBonus: 8,  icon: '🚗', description: 'Blend in. -3% police heat gain. +8 street demand.' },
+  { id: 'camry',      name: 'Toyota Camry',       tier: 'economy',  cost: 150000,    currency: 'dirty', bonusType: 'heatReduction', bonusValue: 0.05, streetDemandBonus: 12, icon: '🚗', description: 'Nothing to see here. -5% police heat gain. +12 street demand.' },
+  { id: 'civic',      name: 'Honda Civic',        tier: 'economy',  cost: 200000,    currency: 'dirty', bonusType: 'heatReduction', bonusValue: 0.08, streetDemandBonus: 16, icon: '🚗', description: 'Perfect cover car. -8% police heat gain. +16 street demand.' },
 
   // ─── SPORT — Grow Speed (performance = faster cycles) ───────────
   { id: 'mustang',    name: 'Ford Mustang GT',    tier: 'sport',    cost: 35000,     bonusType: 'growSpeed', bonusValue: 0.05, icon: '🏎️', description: 'Fast runs, fast grows. -5% grow time.' },
@@ -30,17 +30,21 @@ export const CAR_DEFS: CarDef[] = [
 export const CAR_DEF_MAP = Object.fromEntries(CAR_DEFS.map(c => [c.id, c]));
 
 /** Calculate total bonuses from all owned cars */
-export function getCarBonuses(ownedCars: { defId: string }[]): Record<CarBonusType, number> {
-  const bonuses: Record<CarBonusType, number> = {
+export function getCarBonuses(ownedCars: { defId: string }[]): Record<CarBonusType, number> & { streetDemand: number } {
+  const bonuses: Record<CarBonusType, number> & { streetDemand: number } = {
     heatReduction: 0,
     growSpeed: 0,
     dealerBoost: 0,
     incomeMultiplier: 0,
     launderBoost: 0,
+    streetDemand: 0,
   };
   for (const car of ownedCars) {
     const def = CAR_DEF_MAP[car.defId];
-    if (def) bonuses[def.bonusType] += def.bonusValue;
+    if (def) {
+      bonuses[def.bonusType] += def.bonusValue;
+      if (def.streetDemandBonus) bonuses.streetDemand += def.streetDemandBonus;
+    }
   }
   return bonuses;
 }

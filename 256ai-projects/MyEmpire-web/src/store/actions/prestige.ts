@@ -25,7 +25,7 @@ export function createPrestigeActions(set: SetState, get: GetState) {
         techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
         gameSettings: { ...state.gameSettings },
         rivals: generateRivals(state.gameSettings.rivalCount, state.gameSettings.rivalEntryDelay ?? 2),
-        hitmen: [],
+        crew: [],
         rivalAttackLog: [],
       });
       return true;

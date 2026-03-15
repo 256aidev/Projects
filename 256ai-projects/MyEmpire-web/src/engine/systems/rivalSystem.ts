@@ -21,7 +21,7 @@ export function tickRivalSystem(ts: TickState, ctx: TickContext): void {
       ts.dirtyCash,
       totalProductOz,
       ctx.prevState.businesses,
-      getPlayerDefense(ctx.prevState.hitmen ?? []),
+      getPlayerDefense(ctx.prevState.crew ?? []),
       ts.tickCount,
       ctx.prevState.unlockedSlots,
     );

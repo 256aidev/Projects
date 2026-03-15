@@ -1,7 +1,9 @@
-import type { RivalSyndicate, HiredHitman, BusinessInstance } from '../data/types';
-import { HITMAN_MAP, ARSON_DURATION, ARSON_INSURANCE } from '../data/types';
+import type { RivalSyndicate, BusinessInstance } from '../data/types';
+import { ARSON_DURATION, ARSON_INSURANCE } from '../data/types';
 import { BUSINESSES } from '../data/businesses';
 import { DISTRICTS } from '../data/districts';
+import type { HiredCrew } from '../data/crewDefs';
+import { getCrewDefense, getCrewUpkeep, getCrewCount } from '../data/crewDefs';
 
 // Rival AI runs every N ticks to avoid per-tick overhead
 export const RIVAL_TICK_INTERVAL = 10;
@@ -9,25 +11,19 @@ export const RIVAL_TICK_INTERVAL = 10;
 // Legacy fallback — each rival now has its own activeAtTick for staggered entry
 export const RIVAL_HEAD_START_TICKS = 300;
 
-/** Get total player defense power from hitmen */
-export function getPlayerDefense(hitmen: HiredHitman[]): number {
-  return hitmen.reduce((sum, h) => {
-    const def = HITMAN_MAP[h.defId];
-    return sum + (def ? h.count * def.defense : 0);
-  }, 0);
+/** Get total player defense power from crew */
+export function getPlayerDefense(crew: HiredCrew[]): number {
+  return getCrewDefense(crew);
 }
 
-/** Get total hitman upkeep cost per tick */
-export function getHitmanUpkeep(hitmen: HiredHitman[]): number {
-  return hitmen.reduce((sum, h) => {
-    const def = HITMAN_MAP[h.defId];
-    return sum + (def ? h.count * def.upkeep : 0);
-  }, 0);
+/** Get total crew upkeep cost per tick */
+export function getCrewUpkeepTotal(crew: HiredCrew[]): number {
+  return getCrewUpkeep(crew);
 }
 
-/** Get total player hitman count */
-export function getPlayerHitmanCount(hitmen: HiredHitman[]): number {
-  return hitmen.reduce((sum, h) => sum + h.count, 0);
+/** Get total crew member count */
+export function getCrewMemberCount(crew: HiredCrew[]): number {
+  return getCrewCount(crew);
 }
 
 interface RivalTickResult {
@@ -186,7 +182,7 @@ export function tickRivals(
           messages.push(`${r.icon} ${r.name} attacked your business!`);
         }
       } else {
-        messages.push(`${r.icon} ${r.name} tried to attack but your hitmen held them off!`);
+        messages.push(`${r.icon} ${r.name} tried to attack but your crew held them off!`);
       }
     }
 

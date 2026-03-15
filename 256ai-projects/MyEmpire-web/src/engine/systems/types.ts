@@ -9,6 +9,7 @@ export interface CarBonuses {
   dealerBoost: number;
   incomeMultiplier: number;
   launderBoost: number;
+  streetDemand: number;
 }
 
 // Mutable accumulator that passes through all systems

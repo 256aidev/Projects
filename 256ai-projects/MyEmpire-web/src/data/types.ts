@@ -634,6 +634,7 @@ export interface CarDef {
   currency?: 'clean' | 'dirty'; // default 'clean'
   bonusType: CarBonusType;
   bonusValue: number;           // percentage as decimal (0.05 = 5%)
+  streetDemandBonus?: number;   // extra oz added to max street demand (economy cars)
   icon: string;
   description: string;
 }
@@ -681,10 +682,11 @@ export interface GameState {
   nextBlockCost: number;           // cost of next generated block (doubles each purchase)
   currentJobId: string | null;     // current job ID or null (from JOB_DEFS)
   jobFiredCooldown: number;        // ticks remaining before can get new job (0 = ready)
-  // Rivals & hitmen
+  // Rivals & crew
   gameSettings: GameSettings;
   rivals: RivalSyndicate[];
-  hitmen: HiredHitman[];           // player's hired hitmen
+  crew: import('../data/crewDefs').HiredCrew[];  // player's crime family members
+  hitmen?: HiredHitman[];          // DEPRECATED — kept for migration only
   rivalAttackLog: string[];        // recent attack messages (last 10)
   // Casino, Jewelry, Cars
   casinoHistory: CasinoHistory;
@@ -881,6 +883,7 @@ export const INITIAL_GAME_STATE: GameState = {
   jobFiredCooldown: 0,
   gameSettings: { rivalCount: 3, rivalEntryDelay: 10, gameStarted: false, tutorialActive: false, tutorialStep: 0 },
   rivals: [],
+  crew: [],
   hitmen: [],
   rivalAttackLog: [],
   casinoHistory: { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 },

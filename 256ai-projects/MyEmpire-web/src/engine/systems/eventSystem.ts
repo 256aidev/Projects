@@ -26,7 +26,7 @@ export function tickEventSystem(ts: TickState, ctx: TickContext): void {
       growRoomCount: ts.operation.growRooms.length,
       dealerCount: ts.operation.dealerCount,
       prestigeCount: ctx.prevState.prestigeCount,
-      hitmenCount: (ctx.prevState.hitmen ?? []).length,
+      hitmenCount: (ctx.prevState.crew ?? []).reduce((s, h) => s + h.count, 0),
       hasJob: !!ts.currentJobId,
       hasLawyer: !!ts.activeLawyerId,
       productOz: totalProductOz,
