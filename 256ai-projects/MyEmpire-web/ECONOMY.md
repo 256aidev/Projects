@@ -16,7 +16,7 @@ Each building type can be purchased once. Prices follow a x4 progression per tie
 
 | Room | Cost | Currency | Plants | Yield/Harvest | upgradeCostMultiplier |
 |------|------|----------|--------|--------------|----------------------|
-| Closet | $0 (free) | dirty | 4 | 48 oz (3 lbs) | 1x |
+| Closet | $0 (free) | dirty | 1 | 12 oz (¾ lb) | 1x |
 | Shed | $2,000 | dirty | 2 | 24 oz (1.5 lbs) | 4x |
 | Garage | $8,000 | dirty | 4 | 48 oz (3 lbs) | 16x |
 | Small Grow | $32,000 | dirty | 10 | 120 oz (7.5 lbs) | 64x |
@@ -48,7 +48,7 @@ Each room starts with 1 strain slot (free). Additional strain slots cost progres
 
 | Room | purchaseCost | strainUnlockBase | Slot 1 (free) | Slot 2 | Slot 3 | Slot 4 |
 |------|-------------|-----------------|---------------|--------|--------|--------|
-| Closet | $0 | $0 | Basic Bud | -- | -- | -- |
+| Closet | $0 | $500 | Basic Bud | $500 | $1,000 | $2,000 |
 | Shed | $2,000 | $4,000 | OG Kush | $4,000 | $8,000 | $16,000 |
 | Garage | $8,000 | $16,000 | Sour Diesel | $16,000 | $32,000 | $64,000 |
 | Small Grow | $32,000 | $64,000 | Durban Poison | $64,000 | $128,000 | $256,000 |
