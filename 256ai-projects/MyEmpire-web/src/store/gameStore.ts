@@ -697,10 +697,11 @@ export const useGameStore = create<GameStore>()(
         const isGenBlock = !district && districtId.startsWith('gen_') && state.unlockedDistricts.includes(districtId);
         if (!district && !isGenBlock) return false;
         const maxSlots = district?.maxBusinessSlots ?? 6;
-        const currentUnlocked = state.unlockedSlots?.[districtId] ?? 2;
+        const currentUnlocked = state.unlockedSlots?.[districtId] ?? 0;
         if (currentUnlocked >= maxSlots) return false;
-        // Linear lot pricing: $2K per lot, increasing by $2K each (lot 3=$2K, lot 4=$4K, lot 5=$6K...)
-        const cost = 2000 * (currentUnlocked - 1);
+        // Linear lot pricing: $2K for first lot, $4K for second, etc.
+        const baseCost = district?.lotBaseCost ?? 2000;
+        const cost = baseCost * (currentUnlocked + 1);
         if (state.cleanCash < cost) return false;
         set({
           cleanCash: state.cleanCash - cost,
@@ -801,7 +802,7 @@ export const useGameStore = create<GameStore>()(
           totalSpent: state.totalSpent + district.unlockCost,
           unlockedDistricts: [...state.unlockedDistricts, districtId],
           generatedBlocks: { ...state.generatedBlocks, ...newNeighbors },
-          unlockedSlots: { ...(state.unlockedSlots ?? {}), [districtId]: state.unlockedSlots?.[districtId] ?? 2 },
+          unlockedSlots: { ...(state.unlockedSlots ?? {}), [districtId]: state.unlockedSlots?.[districtId] ?? 0 },
         });
         return true;
       },
@@ -830,7 +831,7 @@ export const useGameStore = create<GameStore>()(
           unlockedDistricts: [...state.unlockedDistricts, blockId],
           generatedBlocks: { ...newGenBlocks, ...newNeighbors },
           nextBlockCost: nextCost,
-          unlockedSlots: { ...(state.unlockedSlots ?? {}), [blockId]: 2 },
+          unlockedSlots: { ...(state.unlockedSlots ?? {}), [blockId]: 0 },
         });
         return true;
       },
@@ -1251,7 +1252,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 22,
+      version: 23,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
