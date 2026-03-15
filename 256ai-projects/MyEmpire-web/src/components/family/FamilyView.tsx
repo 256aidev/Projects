@@ -251,7 +251,7 @@ export default function FamilyView() {
               if (amt > 0 && amt <= cleanCash) {
                 if (await contributeTreasury(amt)) {
                   // Deduct from player's clean cash
-                  useGameStore.getState().set?.({ cleanCash: cleanCash - amt } as any);
+                  useGameStore.setState({ cleanCash: cleanCash - amt });
                   addNotification(`Contributed ${formatMoney(amt)} to treasury`, 'success');
                   setContributeAmount('');
                 }
