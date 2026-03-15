@@ -71,8 +71,8 @@ export function tickRivals(
     }
     r.productOz += Math.floor(r.power * 0.3);
     r.power = Math.min(20, r.power + 0.0005); // 10x slower power creep
-    // Weakness decays slowly — you can't take forever to finish a rival
-    if ((r.weakness ?? 0) > 0) r.weakness = Math.max(0, (r.weakness ?? 0) - 0.1);
+    // Weakness decays very slowly — 0.005/tick ≈ 0.3%/min so attacks accumulate
+    if ((r.weakness ?? 0) > 0) r.weakness = Math.max(0, (r.weakness ?? 0) - 0.005);
 
     // ── Process burned businesses — fire clears after ARSON_DURATION ticks ──
     const stillBurning: typeof r.businesses = [];

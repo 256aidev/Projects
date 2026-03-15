@@ -93,7 +93,7 @@ export function createCombatActions(set: SetState, get: GetState) {
           if (action.type === 'assassinate') {
             message = `Assassination attempt on ${rival.name} FAILED! Lost crew members in the process.`;
             playerHitmenLost = 1 + Math.floor(Math.random() * 2); // lose 1-2 hitmen
-            return { ...r, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.max(0, weakness - 10) };
+            return { ...r, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.max(0, weakness - 3) };
           }
           return { ...r, aggression: Math.min(1, r.aggression + 0.1) };
         }
