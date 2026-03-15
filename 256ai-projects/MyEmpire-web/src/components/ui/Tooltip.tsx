@@ -11,21 +11,25 @@ export default function Tooltip({ text, children, delay = 300 }: TooltipProps) {
   const [show, setShow] = useState(false);
   const [coords, setCoords] = useState({ x: 0, y: 0, above: false });
   const timeoutRef = useRef<number>(0);
-  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const mouseRef = useRef({ x: 0, y: 0 });
 
-  const handleEnter = useCallback(() => {
+  const handleEnter = useCallback((e: React.MouseEvent) => {
+    mouseRef.current = { x: e.clientX, y: e.clientY };
     timeoutRef.current = window.setTimeout(() => {
-      if (!wrapperRef.current) return;
-      const rect = wrapperRef.current.getBoundingClientRect();
-      const above = rect.bottom > window.innerHeight - 80;
+      const { x, y } = mouseRef.current;
+      const above = y > window.innerHeight - 80;
       setCoords({
-        x: rect.left + rect.width / 2,
-        y: above ? rect.top - 8 : rect.bottom + 8,
+        x,
+        y: above ? y - 16 : y + 20,
         above,
       });
       setShow(true);
     }, delay);
   }, [delay]);
+
+  const handleMove = useCallback((e: React.MouseEvent) => {
+    mouseRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
 
   const handleLeave = useCallback(() => {
     clearTimeout(timeoutRef.current);
@@ -34,9 +38,9 @@ export default function Tooltip({ text, children, delay = 300 }: TooltipProps) {
 
   return (
     <span
-      ref={wrapperRef}
       style={{ display: 'contents' }}
       onMouseEnter={handleEnter}
+      onMouseMove={handleMove}
       onMouseLeave={handleLeave}
     >
       {children}
