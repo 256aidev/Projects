@@ -309,7 +309,7 @@ export default function OperationView() {
                             <p className="text-green-400 font-semibold text-[9px] truncate">{slot.strainName}</p>
                             <span className="text-[9px] ml-0.5">{ready ? <CannabisLeaf size={12} /> : idle ? '💤' : '🌱'}</span>
                           </div>
-                          <p className="text-gray-600 text-[8px]">${slot.pricePerUnit}/oz · {formatUnits(effectiveYield)}</p>
+                          <p className="text-white text-[8px]">${slot.pricePerUnit}/oz · {formatUnits(effectiveYield)}</p>
                           <div className="w-full h-0.5 bg-gray-700 rounded-full overflow-hidden my-0.5">
                             <div className="h-full rounded-full transition-all" style={{ width: `${progress * 100}%`, backgroundColor: ready ? '#22c55e' : '#65a30d' }} />
                           </div>
@@ -325,7 +325,7 @@ export default function OperationView() {
                               Plant
                             </button>
                           ) : (
-                            <p className="text-center text-gray-500 text-[8px]">{slot.ticksRemaining}s</p>
+                            <p className="text-center text-white text-[8px]">{slot.ticksRemaining}s</p>
                           )}
                         </div>
                       );
@@ -370,9 +370,9 @@ export default function OperationView() {
                       if (cappedMaxLevel === 0 && !isToggle) {
                         return (
                           <Tooltip key={upgDef.id} text={`${upgDef.name} is not available for ${room.name}. Upgrade to a bigger room to unlock.`}>
-                          <div className="flex flex-col items-center justify-center p-1.5 rounded-lg border border-gray-800 bg-gray-900/30 opacity-40">
-                            <span className="text-[10px] font-bold text-gray-600">{upgDef.icon} {upgDef.name}</span>
-                            <span className="text-[9px] text-gray-600 mt-1">—</span>
+                          <div className="flex flex-col items-center justify-center p-1.5 rounded-lg border border-gray-800 bg-gray-900/30">
+                            <span className="text-[10px] font-bold text-white">{upgDef.icon} {upgDef.name}</span>
+                            <span className="text-[9px] text-white mt-1">—</span>
                           </div>
                           </Tooltip>
                         );
@@ -395,10 +395,10 @@ export default function OperationView() {
                           {/* Current status */}
                           <p className={`text-[9px] ${upgDef.color} font-semibold`}>
                             {isToggle
-                              ? (isActive ? null : <span className="text-gray-600">{bonusDesc}</span>)
+                              ? (isActive ? null : <span className="text-white">{bonusDesc}</span>)
                               : currentLvl
                                 ? <>{currentLvl.name} · {currentBonusText}</>
-                                : <span className="text-gray-600">Not installed</span>}
+                                : <span className="text-white">Not installed</span>}
                           </p>
                           {/* Action */}
                           {isActive ? (
@@ -410,7 +410,7 @@ export default function OperationView() {
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
-                              className={`w-full py-0.5 rounded border border-white/20 text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-white cursor-not-allowed'}`}
+                              className={`w-full py-0.5 rounded border border-white/20 text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
                             >
                               {nextBonusText} · {nextLvl.name} · {formatMoney(scaledCost)}
                               {nextLvl.costPerCycle > 0 && <span className="text-red-300"> · ${nextLvl.costPerCycle}/cyc</span>}
