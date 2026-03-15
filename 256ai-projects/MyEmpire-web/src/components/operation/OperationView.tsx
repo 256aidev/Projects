@@ -260,42 +260,40 @@ export default function OperationView() {
 
             const isLegalRoom = def?.isLegal;
             return (
-              <div key={room.id} className={`bg-gray-800/60 border rounded-xl overflow-hidden ${isLegalRoom ? 'border-yellow-600/50' : 'border-gray-700'}`}>
-                {/* Room header */}
-                <div className={`flex items-center justify-between px-3 py-2 border-b ${isLegalRoom ? 'bg-yellow-900/20 border-yellow-700/40' : 'bg-gray-900/50 border-gray-700'}`}>
-                  <div>
-                    <p className={`font-bold text-sm ${isLegalRoom ? 'text-yellow-300' : 'text-white'}`}>{room.name} {isLegalRoom ? '👑' : ''}</p>
-                    <p className="text-gray-500 text-xs">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield · <span className="text-red-400">{formatMoney(maintenancePerCycle)}/cycle overhead</span></p>
-                  </div>
+              <div key={room.id} className={`bg-gray-800/60 border rounded-lg overflow-hidden ${isLegalRoom ? 'border-yellow-600/50' : 'border-gray-700'}`}>
+                {/* Room header — single compact line */}
+                <div className={`flex items-center justify-between px-2 py-1 border-b ${isLegalRoom ? 'bg-yellow-900/20 border-yellow-700/40' : 'bg-gray-900/50 border-gray-700'}`}>
+                  <p className={`font-bold text-xs ${isLegalRoom ? 'text-yellow-300' : 'text-white'}`}>
+                    {room.name} {isLegalRoom ? '👑' : ''} <span className="text-gray-500 font-normal text-[10px]">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield · <span className="text-red-400">{formatMoney(maintenancePerCycle)}/cyc</span></span>
+                  </p>
                   {isMaxLevel ? (
-                    <span className="text-yellow-500 text-xs font-bold px-2 py-0.5 bg-yellow-900/30 rounded-full">MAX</span>
+                    <span className="text-yellow-500 text-[9px] font-bold px-1.5 py-0.5 bg-yellow-900/30 rounded">MAX</span>
                   ) : (
-                    <Tooltip text="Unlock a new strain slot. More strains = more variety and income.">
+                    <Tooltip text="Unlock a new strain slot.">
                     <button
                       onClick={() => {
                         if (upgradeRoom(room.id)) {
                           sound.play('upgrade');
-                          const newSlotName = def?.strainSlots[room.upgradeLevel + 1]?.strainName;
-                          addNotification(`Unlocked ${newSlotName} slot!`, 'success');
+                          addNotification(`Unlocked ${def?.strainSlots[room.upgradeLevel + 1]?.strainName} slot!`, 'success');
                         } else {
-                          addNotification(`Need ${formatMoney(nextUpgradeCost)} dirty cash to upgrade`, 'warning');
+                          addNotification(`Need ${formatMoney(nextUpgradeCost)} dirty cash`, 'warning');
                         }
                       }}
                       disabled={!canUpgrade}
-                      className={`text-xs px-2 py-1 rounded-lg border border-white/30 font-semibold transition ${
+                      className={`text-[9px] px-1.5 py-0.5 rounded border border-white/30 font-semibold transition ${
                         canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       }`}
                     >
-                      + {def?.strainSlots[room.upgradeLevel + 1]?.strainName} · {formatMoney(nextUpgradeCost)}
+                      + Slot · {formatMoney(nextUpgradeCost)}
                     </button>
                     </Tooltip>
                   )}
                 </div>
 
-                {/* Table layout: grow slots (2-col grid) left, upgrades right */}
+                {/* Body: grow slots 2-col left | 6 upgrade cols right */}
                 <div className="flex">
-                  {/* LEFT — Strain slots in 2-column grid */}
-                  <div className="flex-1 p-2 grid grid-cols-2 gap-1.5 border-r border-gray-700">
+                  {/* Strain slots — 2 column grid */}
+                  <div className="flex-1 p-1.5 grid grid-cols-2 gap-1 border-r border-gray-700/50">
                     {room.slots.map((slot, slotIndex) => {
                       const progress = slot.isHarvesting && slot.growTimerTicks > 0
                         ? 1 - slot.ticksRemaining / slot.growTimerTicks
@@ -306,40 +304,36 @@ export default function OperationView() {
                       const effectiveYield = Math.floor(slot.harvestYield * (1 + yieldBonus));
 
                       return (
-                        <div key={slotIndex} className="bg-gray-900/50 rounded-lg p-1.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between mb-0.5">
-                            <p className="text-green-400 font-semibold text-[10px] truncate">{slot.strainName}</p>
-                            <span className="text-[10px] ml-1">{ready ? <CannabisLeaf size={14} /> : idle ? '💤' : '🌱'}</span>
+                        <div key={slotIndex} className="bg-gray-900/50 rounded p-1 flex flex-col">
+                          <div className="flex items-center justify-between">
+                            <p className="text-green-400 font-semibold text-[9px] truncate">{slot.strainName}</p>
+                            <span className="text-[9px] ml-0.5">{ready ? <CannabisLeaf size={12} /> : idle ? '💤' : '🌱'}</span>
                           </div>
-                          <p className="text-gray-600 text-[9px] mb-0.5">${slot.pricePerUnit}/oz · {formatUnits(effectiveYield)}/harvest</p>
-                          <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden mb-1">
+                          <p className="text-gray-600 text-[8px]">${slot.pricePerUnit}/oz · {formatUnits(effectiveYield)}</p>
+                          <div className="w-full h-0.5 bg-gray-700 rounded-full overflow-hidden my-0.5">
                             <div className="h-full rounded-full transition-all" style={{ width: `${progress * 100}%`, backgroundColor: ready ? '#22c55e' : '#65a30d' }} />
                           </div>
                           {ready ? (
-                            <Tooltip text="Collect grown product into your stash. Auto-replants if you have seeds.">
-                            <button data-tutorial="harvest-btn" onClick={() => { const u = harvestGrowRoom(room.id, slotIndex); if (u > 0) { sound.play('harvest'); addNotification(`Harvested ${formatUnits(u)} ${slot.strainName}!${op.seedStock > 0 ? ' Auto-replanting…' : ' Buy seeds.'}`, 'success'); } }}
-                              className="w-full py-1 rounded border border-white/30 bg-green-600 hover:bg-green-500 text-white text-[9px] font-bold transition">
-                              Harvest!
+                            <button data-tutorial="harvest-btn" onClick={() => { const u = harvestGrowRoom(room.id, slotIndex); if (u > 0) { sound.play('harvest'); addNotification(`Harvested ${formatUnits(u)} ${slot.strainName}!`, 'success'); } }}
+                              className="w-full py-0.5 rounded bg-green-600 hover:bg-green-500 text-white text-[8px] font-bold transition">
+                              Harvest
                             </button>
-                            </Tooltip>
                           ) : idle ? (
-                            <Tooltip text="Plant seeds to start growing. Uses 1 seed.">
-                            <button data-tutorial="plant-btn" onClick={() => { if (plantSeeds(room.id, slotIndex)) { sound.play('plant'); addNotification(`${slot.strainName} planted!`, 'success'); } else addNotification('No seeds', 'warning'); }}
+                            <button data-tutorial="plant-btn" onClick={() => { if (plantSeeds(room.id, slotIndex)) { sound.play('plant'); addNotification(`Planted!`, 'success'); } else addNotification('No seeds', 'warning'); }}
                               disabled={op.seedStock < 1}
-                              className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
-                              🌱 Plant
+                              className={`w-full py-0.5 rounded text-[8px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
+                              Plant
                             </button>
-                            </Tooltip>
                           ) : (
-                            <p className="text-center text-gray-500 text-[9px]">{slot.ticksRemaining}s</p>
+                            <p className="text-center text-gray-500 text-[8px]">{slot.ticksRemaining}s</p>
                           )}
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* RIGHT — Upgrades in a single row of 6 columns */}
-                  <div className="flex gap-1 p-2">
+                  {/* Upgrades — 6 columns in a row */}
+                  <div className="flex gap-0.5 p-1.5">
                     {ROOM_UPGRADE_DEFS.map((upgDef) => {
                       const level = room.upgradeLevels?.[upgDef.id] ?? 0;
                       const currentLvl = level > 0 ? upgDef.levels[level - 1] : null;
@@ -357,44 +351,35 @@ export default function OperationView() {
                         : null;
 
                       const nextBonusLabel = nextLvl
-                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(nextLvl.speedBonus * 100)}% time`
-                          : upgDef.bonusType === 'yield' ? `+${Math.round(nextLvl.yieldBonus * 100)}% yield`
+                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(nextLvl.speedBonus * 100)}%`
+                          : upgDef.bonusType === 'yield' ? `+${Math.round(nextLvl.yieldBonus * 100)}%`
                           : upgDef.bonusType === 'double' ? `${Math.round(nextLvl.doubleChance * 100)}% 2×`
-                          : 'Enable')
+                          : 'On')
                         : null;
 
-                      const upgradeTooltips: Record<string, string> = {
-                        speed: 'Reduce grow time.',
-                        yield: 'Increase yield per harvest.',
-                        double: 'Chance to get 2x yield.',
-                        toggle: 'Auto harvest and replant.',
-                      };
-
                       return (
-                        <Tooltip key={upgDef.id} text={upgradeTooltips[upgDef.bonusType] ?? `Upgrade ${upgDef.name}.`}>
-                        <div className={`w-16 flex flex-col justify-between gap-0.5 p-1.5 rounded-lg border text-center ${level > 0 ? `border-opacity-40 ${upgDef.bgColor}` : upgDef.borderColor}`}>
-                          <span className={`text-[9px] font-bold ${upgDef.color}`}>{upgDef.icon} {upgDef.name}</span>
-                          <p className={`text-[9px] font-semibold ${upgDef.color}`}>
-                            {isToggle
-                              ? (isActive ? null : <span className="text-gray-600">Off</span>)
-                              : (bonusLabel ?? <span className="text-gray-600">None</span>)}
+                        <Tooltip key={upgDef.id} text={`${upgDef.name}: ${upgDef.bonusType === 'speed' ? 'Reduce grow time' : upgDef.bonusType === 'yield' ? 'Increase yield' : upgDef.bonusType === 'double' ? '2x yield chance' : 'Auto harvest & replant'}`}>
+                        <div className={`w-14 flex flex-col justify-between p-1 rounded border text-center ${level > 0 ? `border-opacity-40 ${upgDef.bgColor}` : upgDef.borderColor}`}>
+                          <span className={`text-[8px] font-bold leading-tight ${upgDef.color}`}>{upgDef.icon} {upgDef.name}</span>
+                          <p className={`text-[8px] font-semibold ${upgDef.color}`}>
+                            {isToggle ? (isActive ? null : <span className="text-gray-600">Off</span>) : (bonusLabel ?? <span className="text-gray-600">—</span>)}
                           </p>
                           {isActive ? (
-                            <span className="text-[9px] text-green-400 font-bold">ACTIVE ✓</span>
+                            <span className="text-[8px] text-green-400 font-bold">ON ✓</span>
                           ) : nextLvl ? (
                             <button
                               onClick={() => {
-                                if (buyRoomUpgrade(room.id, upgDef.id)) { sound.play('upgrade'); addNotification(`${nextLvl.name} applied!`, 'success'); }
+                                if (buyRoomUpgrade(room.id, upgDef.id)) { sound.play('upgrade'); addNotification(`${nextLvl.name}!`, 'success'); }
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
-                              className={`w-full py-1 rounded border border-white/30 text-[9px] font-semibold transition ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                              className={`w-full py-0.5 rounded text-[8px] font-semibold transition ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                             >
-                              {nextBonusLabel}<br/>{nextLvl.name}<br/>{formatMoney(scaledCost)}
-                              {nextLvl.costPerCycle > 0 && <><br/><span className="text-red-300">${nextLvl.costPerCycle}/cyc</span></>}
+                              {nextBonusLabel}<br/>{formatMoney(scaledCost)}
+                              {nextLvl.costPerCycle > 0 && <><br/><span className="text-red-300">${nextLvl.costPerCycle}/c</span></>}
                             </button>
                           ) : (
-                            <span className={`text-[9px] ${upgDef.color} font-bold`}>MAX ✓</span>
+                            <span className={`text-[8px] ${upgDef.color} font-bold`}>MAX</span>
                           )}
                         </div>
                         </Tooltip>
