@@ -283,8 +283,8 @@ export const DISTRICTS: DistrictDef[] = [
   },
   {
     id: 'car_district',
-    name: 'Prestige Motors',
-    description: 'Collect exotic cars. Prestige points and future garage integration.',
+    name: 'Dealership',
+    description: 'Collect cars. Each tier gives a unique gameplay bonus.',
     themeColor: '#EF4444',
     revenueMultiplier: 0,
     operatingCostMultiplier: 0,

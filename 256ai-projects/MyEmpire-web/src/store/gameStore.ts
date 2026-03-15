@@ -61,6 +61,7 @@ import { calculateHeatTick, calculateRivalHeatTick, getHeatTier, HEAT_MAX } from
 import { tickRivals, getPlayerDefense, getHitmanUpkeep, RIVAL_TICK_INTERVAL } from '../engine/rivals';
 import { shouldTriggerEvent, triggerEvent, resolveEventChoice as resolveChoice, tickBuffs, getEventDef, type EventCheckState } from '../engine/events';
 import { INITIAL_EVENT_STATE } from '../data/events/types';
+import { getCarBonuses } from '../data/carDefs';
 
 interface GameActions {
   tick: () => void;
@@ -137,7 +138,13 @@ export const useGameStore = create<GameStore>()(
           let { dirtyCash, cleanCash } = state;
 
           const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
-          const { newOp, dirtyEarned, maintenanceCost } = tickCriminalOperation(state.operation, tech);
+          const carBonus = getCarBonuses(state.cars ?? []);
+
+          // Apply car grow speed bonus to tech speed
+          const effectiveTech = { ...tech, speedBonus: tech.speedBonus + carBonus.growSpeed };
+          const { newOp, dirtyEarned: rawDirtyEarned, maintenanceCost } = tickCriminalOperation(state.operation, effectiveTech);
+          // Apply car income multiplier + dealer boost to dirty income
+          const dirtyEarned = Math.floor(rawDirtyEarned * (1 + carBonus.incomeMultiplier + carBonus.dealerBoost));
           dirtyCash += dirtyEarned;
           dirtyCash = Math.max(0, dirtyCash - maintenanceCost);
 
@@ -166,7 +173,7 @@ export const useGameStore = create<GameStore>()(
             } else if (bizDef?.isRental) {
               // rental revenue is 100% clean cash — already counted in totalRevenue above
             } else {
-              const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed, tech.launderMultiplier);
+              const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed, tech.launderMultiplier * (1 + carBonus.launderBoost));
               totalDirtyConsumed += dirtyConsumed;
               totalCleanProduced += cleanProduced;
             }
@@ -229,7 +236,7 @@ export const useGameStore = create<GameStore>()(
           const heatDelta = calculateHeatTick(
             state.heat, dirtyCash,
             state.operation.dealerCount, state.operation.dealerTierIndex,
-            state.businesses, activeLawyerId, tech.heatReduction,
+            state.businesses, activeLawyerId, tech.heatReduction + carBonus.heatReduction,
           );
           const newHeat = Math.max(0, Math.min(HEAT_MAX, state.heat + heatDelta));
 

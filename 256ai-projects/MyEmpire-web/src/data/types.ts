@@ -602,13 +602,16 @@ export interface OwnedJewelry {
 // ─── CARS ──────────────────────────────────────────────────────────────
 export type CarTier = 'economy' | 'sport' | 'luxury' | 'exotic' | 'supercar';
 
+export type CarBonusType = 'heatReduction' | 'growSpeed' | 'dealerBoost' | 'incomeMultiplier' | 'launderBoost';
+
 export interface CarDef {
   id: string;
   name: string;
   tier: CarTier;
   cost: number;
   currency?: 'clean' | 'dirty'; // default 'clean'
-  prestigeBonus: number;
+  bonusType: CarBonusType;
+  bonusValue: number;           // percentage as decimal (0.05 = 5%)
   icon: string;
   description: string;
 }
