@@ -24,14 +24,19 @@ export default function RivalsView() {
   const activeRivals = rivals.filter(r => !r.isDefeated);
   const defeatedRivals = rivals.filter(r => r.isDefeated);
 
+  const heat = useGameStore((s) => s.heat ?? 0);
+  const rivalHeat = useGameStore((s) => s.rivalHeat ?? 0);
+
   // Power calculation: ATK + DEF + businesses×100 + cash/1000
   const playerPower = getCrewAttack(crew) + getCrewDefense(crew) + businesses.length * 100 + Math.floor(dirtyCash / 1000);
   const factions = [
-    { name: 'You', icon: '👑', power: playerPower, color: '#6366f1', isPlayer: true },
+    { name: 'You', icon: '👑', power: playerPower, heat: heat / 10, rivalThreat: rivalHeat / 10, color: '#6366f1', isPlayer: true, hitmen: playerCrewCount, biz: businesses.length },
     ...activeRivals.map(r => ({
       name: r.name, icon: r.icon,
       power: r.hitmen * 15 + r.businesses.length * 100 + Math.floor(r.dirtyCash / 1000) + Math.floor(r.power * 50),
-      color: r.color, isPlayer: false,
+      heat: r.aggression * 100,
+      rivalThreat: r.aggression * 100,
+      color: r.color, isPlayer: false, hitmen: r.hitmen, biz: r.businesses.length,
     })),
   ];
   const maxPower = Math.max(1, ...factions.map(f => f.power));
@@ -39,23 +44,51 @@ export default function RivalsView() {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
-      {/* Power Struggle */}
+      {/* Power Struggle — comparison table */}
       {factions.length > 1 && (
         <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3">
           <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-2">Power Struggle</p>
-          <div className="space-y-1.5">
-            {[...factions].sort((a, b) => b.power - a.power).map((f, i) => (
-              <div key={f.name} className="flex items-center gap-2">
-                <span className="text-sm w-5 text-center">{i === 0 ? '👑' : f.icon}</span>
-                <span className={`text-[10px] font-semibold w-20 truncate ${f.isPlayer ? 'text-indigo-300' : 'text-gray-300'}`}>{f.name}</span>
-                <div className="flex-1 h-3 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${(f.power / maxPower) * 100}%`, backgroundColor: f.color }}
-                  />
+          {/* Header */}
+          <div className="grid grid-cols-[80px_1fr_1fr] gap-2 mb-1">
+            <span className="text-[9px] text-gray-600"></span>
+            <span className="text-[9px] text-gray-500 text-center">Heat / Threat</span>
+            <span className="text-[9px] text-gray-500 text-center">Power</span>
+          </div>
+          {/* Rows */}
+          <div className="space-y-1">
+            {[...factions].sort((a, b) => b.power - a.power).map((f) => (
+              <Tooltip key={f.name} text={`${f.name}: ${f.hitmen} crew · ${f.biz} businesses · Power ${f.power.toLocaleString()} · ${f.isPlayer ? `Police heat ${Math.round(f.heat)}% · Rival heat ${Math.round(f.rivalThreat)}%` : `Aggression ${Math.round(f.heat)}%`}`}>
+              <div className="grid grid-cols-[80px_1fr_1fr] gap-2 items-center">
+                {/* Name */}
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-sm shrink-0">{f.icon}</span>
+                  <span className={`text-[10px] font-semibold truncate ${f.isPlayer ? 'text-indigo-300' : 'text-gray-300'}`}>{f.name}</span>
                 </div>
-                <span className="text-[9px] text-gray-400 font-mono w-12 text-right">{f.power.toLocaleString()}</span>
+                {/* Heat bar */}
+                <div className="flex items-center gap-1">
+                  <div className="flex-1 h-3 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, f.isPlayer ? f.rivalThreat : f.heat)}%`,
+                        backgroundColor: f.heat >= 70 ? '#ef4444' : f.heat >= 40 ? '#eab308' : '#22c55e',
+                      }}
+                    />
+                  </div>
+                  <span className="text-[8px] text-gray-500 font-mono w-8 text-right">{Math.round(f.isPlayer ? f.rivalThreat : f.heat)}%</span>
+                </div>
+                {/* Power bar */}
+                <div className="flex items-center gap-1">
+                  <div className="flex-1 h-3 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${(f.power / maxPower) * 100}%`, backgroundColor: f.color }}
+                    />
+                  </div>
+                  <span className="text-[8px] text-gray-500 font-mono w-12 text-right">{f.power.toLocaleString()}</span>
+                </div>
               </div>
+              </Tooltip>
             ))}
           </div>
         </div>
