@@ -243,7 +243,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 26,
+      version: 27,
       migrate: (persisted: unknown, _version: number) => {
         try {
         const saved = (persisted ?? {}) as Partial<GameState>;
@@ -371,6 +371,16 @@ export const useGameStore = create<GameStore>()(
         }
 
         if (!merged.lotBuildTimers) merged.lotBuildTimers = {};
+
+        // v27: Ensure unlockedSlots covers all existing businesses (no more free lots)
+        if (merged.unlockedSlots && merged.businesses) {
+          for (const biz of merged.businesses) {
+            const current = merged.unlockedSlots[biz.districtId] ?? 0;
+            if (biz.slotIndex >= current) {
+              merged.unlockedSlots[biz.districtId] = biz.slotIndex + 1;
+            }
+          }
+        }
 
         return merged;
         } catch {

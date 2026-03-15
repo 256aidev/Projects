@@ -47,7 +47,7 @@ export function createTerritoryActions(set: SetState, get: GetState) {
       const maxSlots = district?.maxBusinessSlots ?? 6;
       const currentUnlocked = state.unlockedSlots?.[districtId] ?? 0;
       if (currentUnlocked >= maxSlots) return false;
-      // Linear lot pricing: $2K for first lot, $4K for second, etc.
+      // Linear lot pricing: baseCost × (slot+1) — starter: $1K, $2K, $3K...
       const baseCost = district?.lotBaseCost ?? 2000;
       const cost = baseCost * (currentUnlocked + 1);
       if (state.cleanCash < cost) return false;
