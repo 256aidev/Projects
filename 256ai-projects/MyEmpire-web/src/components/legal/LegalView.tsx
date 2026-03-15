@@ -11,6 +11,7 @@ export default function LegalView() {
   const dirtyCash = useGameStore((s) => s.dirtyCash);
   const cleanCash = useGameStore((s) => s.cleanCash);
   const activeLawyerId = useGameStore((s) => s.activeLawyerId);
+  const hiredLawyers = useGameStore((s) => s.hiredLawyers ?? []);
   const dealerCount = useGameStore((s) => s.operation?.dealerCount ?? 0);
   const dealerTierIndex = useGameStore((s) => s.operation?.dealerTierIndex ?? 0);
   const businesses = useGameStore((s) => s.businesses);
@@ -91,59 +92,67 @@ export default function LegalView() {
         </div>
       </div>
 
-      {/* Active Lawyer */}
-      {activeLawyer && (
-        <div className="bg-indigo-900/30 border border-indigo-500/50 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-white font-semibold">⚖️ {activeLawyer.name}</h3>
-              <p className="text-indigo-300 text-xs">{activeLawyer.description}</p>
-              <p className="text-[11px] text-gray-400 mt-1">
-                Retainer: <span className="text-yellow-400">{formatMoney(activeLawyer.monthlyRetainer)}/tick</span>
-                {' · '}Decay bonus: <span className="text-green-400">-{activeLawyer.heatDecayBonus.toFixed(3)}/s</span>
-              </p>
-            </div>
-            <Tooltip text="Dismiss your current lawyer. No refund.">
-            <button onClick={() => { fireLawyer(); sound.play('fire'); }}
-              className="px-6 py-2 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-xs font-bold hover:bg-red-900/80 transition">
-              Fire
-            </button>
-            </Tooltip>
-          </div>
-        </div>
-      )}
-
-      {/* Lawyer Tiers */}
+      {/* Legal Representation — Multiple Lawyers */}
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-        <h3 className="text-white font-semibold mb-3">⚖️ Legal Representation</h3>
-        <p className="text-gray-500 text-xs mb-3">Hire a lawyer to reduce heat. One at a time — hiring replaces your current lawyer.</p>
+        <h3 className="text-white font-semibold mb-1">⚖️ Legal Representation</h3>
+        <p className="text-gray-500 text-xs mb-3">Hire multiple lawyers to stack heat decay. Cost doubles per additional hire of the same type. Max 5 each.</p>
+
+        {/* Total lawyer stats */}
+        {hiredLawyers.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            <span className="text-[9px] bg-indigo-900/40 text-indigo-300 px-2 py-0.5 rounded-full">
+              {hiredLawyers.reduce((s, h) => s + h.count, 0)} lawyers
+            </span>
+            <span className="text-[9px] bg-yellow-900/40 text-yellow-300 px-2 py-0.5 rounded-full">
+              {formatMoney(hiredLawyers.reduce((s, h) => { const d = LAWYER_MAP[h.defId]; return s + (d ? d.monthlyRetainer * h.count : 0); }, 0))}/tick retainer
+            </span>
+            <span className="text-[9px] bg-green-900/40 text-green-300 px-2 py-0.5 rounded-full">
+              -{hiredLawyers.reduce((s, h) => { const d = LAWYER_MAP[h.defId]; return s + (d ? d.heatDecayBonus * h.count : 0); }, 0).toFixed(3)}/s decay
+            </span>
+          </div>
+        )}
+
         <div className="space-y-2">
           {LAWYER_DEFS.map((lawyer) => {
-            const isActive = activeLawyerId === lawyer.id;
+            const hiredEntry = hiredLawyers.find(h => h.defId === lawyer.id);
+            const count = hiredEntry?.count ?? 0;
+            const maxCount = 5;
+            const atMax = count >= maxCount;
             const meetsHeatTier = heatTier >= lawyer.requiredHeatTier;
-            const canAfford = cleanCash >= lawyer.unlockCost;
-            const canHire = !isActive && meetsHeatTier && canAfford;
+            const nextCost = Math.floor(lawyer.unlockCost * Math.pow(2, count));
+            const canAfford = cleanCash >= nextCost && !atMax;
+            const canHire = meetsHeatTier && canAfford;
             return (
-              <div key={lawyer.id} className={`rounded-lg border p-3 transition ${isActive ? 'border-indigo-500/60 bg-indigo-900/20' : !meetsHeatTier ? 'border-gray-700/50 bg-gray-800/20 opacity-40' : 'border-gray-700 bg-gray-800/40'}`}>
+              <div key={lawyer.id} className={`rounded-lg border p-3 transition ${count > 0 ? 'border-indigo-500/60 bg-indigo-900/20' : !meetsHeatTier ? 'border-gray-700/50 bg-gray-800/20 opacity-40' : 'border-gray-700 bg-gray-800/40'}`}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-white font-semibold text-sm">{lawyer.name}</span>
-                  {isActive && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVE</span>}
+                  {count > 0 && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full">×{count}</span>}
                   {!meetsHeatTier && <span className="text-gray-500 text-sm">🔒 Tier {lawyer.requiredHeatTier}</span>}
                 </div>
                 <p className="text-gray-400 text-[11px]">{lawyer.description}</p>
                 <div className="flex gap-3 mt-1 mb-2 text-[11px]">
-                  <span className="text-yellow-400">Retainer: {formatMoney(lawyer.monthlyRetainer)}/tick</span>
-                  <span className="text-green-400">Decay: -{lawyer.heatDecayBonus.toFixed(3)}/s</span>
+                  <span className="text-yellow-400">Retainer: {formatMoney(lawyer.monthlyRetainer)}/tick each</span>
+                  <span className="text-green-400">Decay: -{lawyer.heatDecayBonus.toFixed(3)}/s each</span>
                 </div>
-                {meetsHeatTier && !isActive && (
-                  <Tooltip text="Retain a lawyer to reduce police heat over time.">
-                  <button disabled={!canHire} onClick={() => { hireLawyer(lawyer.id); sound.play('dealer_hire'); }}
-                    className={`w-full py-2 rounded-lg border border-white/30 text-xs font-bold transition ${canHire ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-700 text-white cursor-not-allowed'}`}>
-                    Hire · {formatMoney(lawyer.unlockCost)}
-                  </button>
-                  </Tooltip>
-                )}
-                {isActive && <p className="text-indigo-400 text-xs text-center font-semibold">✓ Currently Retained</p>}
+                <div className="flex gap-2">
+                  {meetsHeatTier && !atMax && (
+                    <Tooltip text={`Hire another ${lawyer.name}. Cost doubles each time.`}>
+                    <button disabled={!canHire} onClick={() => { if (hireLawyer(lawyer.id)) { sound.play('dealer_hire'); } }}
+                      className={`flex-1 py-2 rounded-lg border border-white/30 text-xs font-bold transition ${canHire ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-700 text-white cursor-not-allowed'}`}>
+                      Hire · {formatMoney(nextCost)}
+                    </button>
+                    </Tooltip>
+                  )}
+                  {atMax && <span className="flex-1 py-2 text-center text-yellow-500 text-xs font-bold">MAX (×5)</span>}
+                  {count > 0 && (
+                    <Tooltip text="Fire one lawyer of this type. No refund.">
+                    <button onClick={() => { fireLawyer(lawyer.id); sound.play('fire'); }}
+                      className="px-4 py-2 rounded-lg bg-red-900/50 hover:bg-red-900/80 text-red-300 text-xs font-bold transition">
+                      Fire
+                    </button>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
             );
           })}

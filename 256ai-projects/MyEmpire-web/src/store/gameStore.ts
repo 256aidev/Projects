@@ -94,7 +94,7 @@ interface GameActions {
   applyForJob: (jobId: string) => boolean;
   quitJob: () => void;
   hireLawyer: (lawyerId: string) => boolean;
-  fireLawyer: () => void;
+  fireLawyer: (lawyerId?: string) => void;
   prestige: () => boolean;
   purchaseTechUpgrade: (upgradeId: TechUpgradeId) => boolean;
   purchaseSessionTech: (upgradeId: SessionTechId) => boolean;
@@ -327,6 +327,10 @@ export const useGameStore = create<GameStore>()(
         if (merged.currentJobId === undefined) merged.currentJobId = null;
         if (merged.jobFiredCooldown === undefined) merged.jobFiredCooldown = 0;
         if (merged.activeLawyerId === undefined) (merged as any).activeLawyerId = null;
+        // Migrate single activeLawyerId → hiredLawyers array
+        if (!merged.hiredLawyers) {
+          merged.hiredLawyers = merged.activeLawyerId ? [{ defId: merged.activeLawyerId, count: 1 }] : [];
+        }
 
         for (const biz of merged.businesses) {
           if (biz.cleanToDirtyPerTick === undefined) (biz as any).cleanToDirtyPerTick = 0;

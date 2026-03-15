@@ -6,6 +6,11 @@ import { HEAT_MAX, getHeatTier } from '../../engine/heat';
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
 type GetState = () => GameState;
 
+/** Get the cost to hire the Nth lawyer of a given type (doubles each time) */
+function getLawyerHireCost(baseCost: number, currentCount: number): number {
+  return Math.floor(baseCost * Math.pow(2, currentCount));
+}
+
 export function createLegalActions(set: SetState, get: GetState) {
   return {
     applyForJob: (jobId: string) => {
@@ -34,18 +39,47 @@ export function createLegalActions(set: SetState, get: GetState) {
       const state = get();
       const lawyer = LAWYER_MAP[lawyerId];
       if (!lawyer) return false;
-      if (state.cleanCash < lawyer.unlockCost) return false;
       if (getHeatTier(state.heat) < lawyer.requiredHeatTier) return false;
+
+      const hired = state.hiredLawyers ?? [];
+      const existing = hired.find(h => h.defId === lawyerId);
+      const currentCount = existing?.count ?? 0;
+      const maxCount = 5;
+      if (currentCount >= maxCount) return false;
+
+      const cost = getLawyerHireCost(lawyer.unlockCost, currentCount);
+      if (state.cleanCash < cost) return false;
+
+      const newHired = existing
+        ? hired.map(h => h.defId === lawyerId ? { ...h, count: h.count + 1 } : h)
+        : [...hired, { defId: lawyerId, count: 1 }];
+
       set({
-        cleanCash: state.cleanCash - lawyer.unlockCost,
-        totalSpent: state.totalSpent + lawyer.unlockCost,
-        activeLawyerId: lawyerId,
+        cleanCash: state.cleanCash - cost,
+        totalSpent: state.totalSpent + cost,
+        hiredLawyers: newHired,
+        activeLawyerId: lawyerId, // keep for backward compat — points to last hired
       });
       return true;
     },
 
-    fireLawyer: () => {
-      set({ activeLawyerId: null });
+    fireLawyer: (lawyerId?: string) => {
+      const state = get();
+      const hired = state.hiredLawyers ?? [];
+      if (!lawyerId) {
+        // Fire all lawyers (legacy behavior)
+        set({ hiredLawyers: [], activeLawyerId: null });
+        return;
+      }
+      const existing = hired.find(h => h.defId === lawyerId);
+      if (!existing || existing.count <= 0) return;
+      const newHired = existing.count <= 1
+        ? hired.filter(h => h.defId !== lawyerId)
+        : hired.map(h => h.defId === lawyerId ? { ...h, count: h.count - 1 } : h);
+      set({
+        hiredLawyers: newHired,
+        activeLawyerId: newHired.length > 0 ? newHired[0].defId : null,
+      });
     },
   };
 }

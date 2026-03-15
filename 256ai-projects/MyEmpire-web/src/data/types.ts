@@ -664,7 +664,8 @@ export interface GameState {
   lotBuildTimers: Record<string, number>;  // "districtId:slotIndex" → tick when lot was bought (build after LOT_BUILD_COOLDOWN)
   inventory: Record<string, number>;
   storageCapacity: number;
-  activeLawyerId: string | null;
+  activeLawyerId: string | null;         // DEPRECATED — kept for migration
+  hiredLawyers: { defId: string; count: number }[];  // multiple lawyers, each with count
   lastSaveTimestamp: number;
   lastTickDirtyProfit: number;
   lastTickCleanProfit: number;
@@ -864,6 +865,7 @@ export const INITIAL_GAME_STATE: GameState = {
   inventory: {},
   storageCapacity: 500,
   activeLawyerId: null,
+  hiredLawyers: [],
   lastSaveTimestamp: Date.now(),
   lastTickDirtyProfit: 0,
   lastTickCleanProfit: 0,
