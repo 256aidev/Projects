@@ -69,10 +69,11 @@ export function createCombatActions(set: SetState, get: GetState) {
 
       let chance: number;
       if (action.type === 'assassinate') {
-        // Assassination: chance based on weakness, reduced by remaining hitmen
-        const baseChance = (rival.weakness ?? 0) / 100 * 0.8;
+        // Assassination: weakness + power ratio + hitmen all factor in
+        const weaknessBase = (rival.weakness ?? 0) / 100 * 0.5;  // 0-50% from weakness
+        const powerBonus = Math.min(0.4, (powerRatio - 0.5) * 0.3); // 0-40% from power advantage
         const hitmanPenalty = rival.hitmen * 0.15;
-        chance = Math.max(0.05, Math.min(0.95, baseChance - hitmanPenalty));
+        chance = Math.max(0.10, Math.min(0.95, weaknessBase + powerBonus - hitmanPenalty));
       } else {
         chance = Math.min(0.95, action.successBase * powerRatio);
       }
