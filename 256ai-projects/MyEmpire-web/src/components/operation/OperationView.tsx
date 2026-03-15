@@ -287,15 +287,22 @@ export default function OperationView() {
             const upgMult = def?.upgradeCostMultiplier ?? 1;
 
             const isLegalRoom = def?.isLegal;
+            const themeColor = def?.themeColor ?? '#6b7280';
+            // Upgrade level drives vibrancy: 0 slots = muted, max slots = full brightness
+            const upgradeProgress = def ? room.upgradeLevel / Math.max(1, def.strainSlots.length - 1) : 0;
+            const bgOpacity = 0.08 + upgradeProgress * 0.12; // 8% → 20%
+            const borderOpacity = 0.2 + upgradeProgress * 0.4; // 20% → 60%
             return (
-              <div key={room.id} className={`bg-gray-800/60 border rounded-lg overflow-hidden ${isLegalRoom ? 'border-yellow-600/50' : 'border-gray-700'}`}>
+              <div key={room.id} className="rounded-lg overflow-hidden"
+                style={{ background: `linear-gradient(135deg, ${themeColor}${Math.round(bgOpacity * 255).toString(16).padStart(2, '0')} 0%, rgba(31,41,55,0.6) 100%)`, border: `1px solid ${themeColor}${Math.round(borderOpacity * 255).toString(16).padStart(2, '0')}` }}>
                 {/* Room header — single compact line */}
-                <div className={`flex items-center justify-between px-2 py-1 border-b ${isLegalRoom ? 'bg-yellow-900/20 border-yellow-700/40' : 'bg-gray-900/50 border-gray-700'}`}>
-                  <p className={`font-bold text-xs ${isLegalRoom ? 'text-yellow-300' : 'text-white'}`}>
+                <div className="flex items-center justify-between px-2 py-1 border-b"
+                  style={{ borderColor: `${themeColor}${Math.round(borderOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`, background: `${themeColor}0D` }}>
+                  <p className="font-bold text-xs" style={{ color: isLegalRoom ? '#fde047' : themeColor }}>
                     {room.name} {isLegalRoom ? '👑' : ''} <span className="text-gray-500 font-normal text-[10px]">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield · <span className="text-red-400">{formatMoney(maintenancePerCycle)}/cyc</span></span>
                   </p>
                   {isMaxLevel ? (
-                    <span className="text-yellow-500 text-[9px] font-bold px-1.5 py-0.5 bg-yellow-900/30 rounded">MAX</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: themeColor, background: `${themeColor}20` }}>MAX</span>
                   ) : (
                     <Tooltip text="Unlock a new strain slot.">
                     <button
@@ -308,9 +315,9 @@ export default function OperationView() {
                         }
                       }}
                       disabled={!canUpgrade}
-                      style={{ minWidth: '300px' }}
+                      style={{ minWidth: '300px', backgroundColor: canUpgrade ? themeColor : undefined, boxShadow: canUpgrade ? `0 4px 15px ${themeColor}40` : undefined }}
                       className={`text-xs px-3 py-1.5 rounded-lg border-2 border-white/30 font-bold transition whitespace-nowrap ${
-                        canUpgrade ? 'bg-purple-700 hover:bg-purple-600 text-white shadow-lg shadow-purple-900/40' : 'bg-gray-700 text-white cursor-not-allowed'
+                        canUpgrade ? 'hover:brightness-110 text-white' : 'bg-gray-700 text-white cursor-not-allowed'
                       }`}
                     >
                       + Slot · {formatMoney(nextUpgradeCost)}

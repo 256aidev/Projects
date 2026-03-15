@@ -713,6 +713,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'closet',
     name: 'Closet',
+    themeColor: '#22c55e',    // green
     purchaseCost: 0,          // free starter (virtual base = $500 for formula coherence)
     strainUnlockBase: 500,    // cheap upgrades: $500, $1K, $2K to unlock more Basic Bud slots
     autoHarvestCost: 500,     // = virtual base
@@ -728,6 +729,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'shed',
     name: 'Shed',
+    themeColor: '#3b82f6',    // blue
     purchaseCost: 2000,        // ×4 tier 1
     strainUnlockBase: 4000,    // 2× purchaseCost, then doubles: $4K, $8K, $16K
     autoHarvestCost: 2000,     // = purchaseCost
@@ -743,6 +745,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'garage',
     name: 'Garage',
+    themeColor: '#f97316',    // orange
     purchaseCost: 8000,         // ×4 tier 2
     strainUnlockBase: 16000,    // 2× purchaseCost, then doubles: $16K, $32K, $64K
     autoHarvestCost: 8000,      // = purchaseCost
@@ -758,6 +761,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'small_grow',
     name: 'Small Grow Facility',
+    themeColor: '#a855f7',    // purple
     purchaseCost: 32000,         // ×4 tier 3
     strainUnlockBase: 64000,     // 2× purchaseCost, then doubles: $64K, $128K, $256K
     autoHarvestCost: 32000,      // = purchaseCost
@@ -773,6 +777,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'grow_facility',
     name: 'Grow Facility',
+    themeColor: '#ef4444',    // red
     purchaseCost: 128000,         // ×4 tier 4
     strainUnlockBase: 256000,     // 2× purchaseCost, then doubles: $256K, $512K, $1.02M
     autoHarvestCost: 128000,      // = purchaseCost
@@ -788,6 +793,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
   {
     id: 'large_grow',
     name: 'Large Grow Facility',
+    themeColor: '#ec4899',    // pink
     purchaseCost: 512000,          // ×4 tier 5
     strainUnlockBase: 1024000,     // 2× purchaseCost, then doubles: $1.02M, $2.05M, $4.1M
     autoHarvestCost: 512000,       // = purchaseCost
