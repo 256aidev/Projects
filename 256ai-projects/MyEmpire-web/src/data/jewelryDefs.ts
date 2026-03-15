@@ -13,6 +13,7 @@ export const JEWELRY_SLOT_LIMITS: Record<JewelrySlotType, number> = {
   bracelet: 2,
   necklace: 1,
   pendant: 1,
+  earring: 2,    // one per ear
 };
 
 export const JEWELRY_DEFS: JewelryPieceDef[] = [
@@ -71,6 +72,16 @@ export const JEWELRY_DEFS: JewelryPieceDef[] = [
   {
     id: 'pendant_yield', name: 'Crown Medallion', slotType: 'pendant', icon: '🏅',
     baseCost: 40000, tiers: JEWELRY_TIERS, bonusType: 'yield_boost', bonusPerTier: 0.03,
+  },
+
+  // ─── EARRINGS (2 slots, one per ear) ────────────────────────────
+  {
+    id: 'earring_heat', name: 'Diamond Stud', slotType: 'earring', icon: '💠',
+    baseCost: 20000, tiers: JEWELRY_TIERS, bonusType: 'heat_decay', bonusPerTier: 0.02,
+  },
+  {
+    id: 'earring_dealer', name: 'Gold Hoop', slotType: 'earring', icon: '⭕',
+    baseCost: 18000, tiers: JEWELRY_TIERS, bonusType: 'launder_boost', bonusPerTier: 0.015,
   },
 ];
 

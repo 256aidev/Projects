@@ -595,7 +595,7 @@ export interface CasinoHistory {
 }
 
 // ─── JEWELRY ──────────────────────────────────────────────────────────
-export type JewelrySlotType = 'ring' | 'bracelet' | 'necklace' | 'pendant';
+export type JewelrySlotType = 'ring' | 'bracelet' | 'necklace' | 'pendant' | 'earring';
 
 export interface JewelryPieceDef {
   id: string;

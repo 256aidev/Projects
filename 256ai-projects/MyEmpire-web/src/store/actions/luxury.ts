@@ -1,4 +1,6 @@
 import type { GameState } from '../../data/types';
+import { JEWELRY_DEF_MAP, JEWELRY_SLOT_LIMITS } from '../../data/jewelryDefs';
+import { CAR_DEF_MAP } from '../../data/carDefs';
 
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
 type GetState = () => GameState;
@@ -28,7 +30,6 @@ export function createLuxuryActions(set: SetState, get: GetState) {
     // ─── JEWELRY ───────────────────────────────────────────────
     buyJewelry: (defId: string) => {
       const state = get();
-      const { JEWELRY_DEF_MAP, JEWELRY_SLOT_LIMITS } = require('../../data/jewelryDefs');
       const def = JEWELRY_DEF_MAP[defId];
       if (!def || state.cleanCash < def.baseCost) return false;
       // Check slot limits
@@ -49,7 +50,6 @@ export function createLuxuryActions(set: SetState, get: GetState) {
       const jewelry = [...(state.jewelry ?? [])];
       const piece = jewelry[index];
       if (!piece || piece.tier >= 4) return false;
-      const { JEWELRY_DEF_MAP } = require('../../data/jewelryDefs');
       const def = JEWELRY_DEF_MAP[piece.defId];
       if (!def) return false;
       const nextTier = def.tiers[piece.tier + 1];
@@ -66,7 +66,6 @@ export function createLuxuryActions(set: SetState, get: GetState) {
     // ─── CARS ──────────────────────────────────────────────────
     buyCar: (defId: string) => {
       const state = get();
-      const { CAR_DEF_MAP } = require('../../data/carDefs');
       const def = CAR_DEF_MAP[defId];
       if (!def) return false;
       const useDirty = def.currency === 'dirty';

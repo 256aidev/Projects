@@ -17,7 +17,7 @@ const BONUS_LABELS: Record<string, string> = {
 };
 
 const SLOT_ICONS: Record<JewelrySlotType, string> = {
-  ring: '💍', bracelet: '⛓️', necklace: '📿', pendant: '🏅',
+  ring: '💍', bracelet: '⛓️', necklace: '📿', pendant: '🏅', earring: '💠',
 };
 
 export default function JewelryStoreView() {
@@ -31,7 +31,7 @@ export default function JewelryStoreView() {
   const bonuses = getJewelryBonuses(jewelry);
   const ownedIds = new Set(jewelry.map(j => j.defId));
 
-  const slotCounts: Record<JewelrySlotType, number> = { ring: 0, bracelet: 0, necklace: 0, pendant: 0 };
+  const slotCounts: Record<JewelrySlotType, number> = { ring: 0, bracelet: 0, necklace: 0, pendant: 0, earring: 0 };
   for (const j of jewelry) slotCounts[j.slotType]++;
 
   const handleBuy = (defId: string) => {
