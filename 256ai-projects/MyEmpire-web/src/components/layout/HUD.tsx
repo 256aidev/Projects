@@ -8,6 +8,7 @@ import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS,
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
 import Tooltip from '../ui/Tooltip';
+import CurrencyDisplay from '../ui/CurrencyDisplay';
 import type { GameSpeed } from '../../store/uiStore';
 
 export default function HUD() {
@@ -47,30 +48,14 @@ export default function HUD() {
     <div className="flex items-center gap-4 bg-gray-900/98 border-b border-gray-700/80 px-6 py-4 text-base select-none flex-wrap">
       {/* Dirty Cash */}
       <Tooltip text="Cash from illegal sales. Buy seeds, dealers, and fund operations.">
-        <div className="flex items-center gap-2">
-          <span className="text-3xl">💵</span>
-          <div>
-            <p className="text-white font-bold text-xl leading-none">{formatMoney(dirtyCash)}</p>
-            <p className={`text-sm leading-none ${lastTickDirtyProfit > 0 ? 'text-green-500' : 'text-gray-500'}`}>
-              {lastTickDirtyProfit > 0 ? `+${formatMoney(lastTickDirtyProfit)}/s` : 'dirty'}
-            </p>
-          </div>
-        </div>
+        <CurrencyDisplay id="dirty" amount={dirtyCash} rate={lastTickDirtyProfit} size="lg" showLabel />
       </Tooltip>
 
       <div className="text-gray-600 text-sm px-1">→ LAUNDER →</div>
 
       {/* Clean Cash */}
       <Tooltip text="Laundered money. Buy businesses, lots, cars, and legal help.">
-        <div className="flex items-center gap-2">
-          <span className="text-3xl">🏦</span>
-          <div>
-            <p className="text-white font-bold text-xl leading-none">{formatMoney(cleanCash)}</p>
-            <p className={`text-sm leading-none ${lastTickCleanProfit > 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-              {lastTickCleanProfit > 0 ? `+${formatMoney(lastTickCleanProfit)}/s` : 'clean'}
-            </p>
-          </div>
-        </div>
+        <CurrencyDisplay id="clean" amount={cleanCash} rate={lastTickCleanProfit} size="lg" showLabel />
       </Tooltip>
 
       <div className="h-8 w-px bg-gray-700 mx-1" />
