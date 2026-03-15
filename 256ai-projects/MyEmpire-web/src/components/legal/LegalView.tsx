@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { getHeatTier, getHeatBreakdown, getRivalHeatTier, getRivalHeatBreakdown, HEAT_MAX } from '../../engine/heat';
@@ -45,13 +46,37 @@ export default function LegalView() {
   const rivalBreakdown = getRivalHeatBreakdown(dealerCount, dealerTierIndex, businesses);
   const activeLawyer = activeLawyerId ? LAWYER_MAP[activeLawyerId] : null;
 
+  const [activeSubTab, setActiveSubTab] = useState<'legal' | 'rivals'>('legal');
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      <div className="text-center py-2">
-        <h2 className="text-white font-bold text-xl">Legal Status</h2>
-        <p className="text-gray-400 text-xs mt-1">Manage your exposure and legal protection</p>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Sub-tabs */}
+      <div className="flex-shrink-0 flex bg-gray-900/80 border-b border-gray-800">
+        <button
+          onClick={() => setActiveSubTab('legal')}
+          className={`flex-1 py-3 text-sm font-semibold transition border-b-2 ${
+            activeSubTab === 'legal'
+              ? 'text-white border-indigo-500 bg-gray-800/60'
+              : 'text-gray-500 border-transparent hover:text-gray-300'
+          }`}
+        >
+          ⚖️ Legal
+        </button>
+        <button
+          onClick={() => setActiveSubTab('rivals')}
+          className={`flex-1 py-3 text-sm font-semibold transition border-b-2 ${
+            activeSubTab === 'rivals'
+              ? 'text-white border-red-500 bg-gray-800/60'
+              : 'text-gray-500 border-transparent hover:text-gray-300'
+          }`}
+        >
+          🔫 Rivals {rivals.filter(r => !r.isDefeated).length > 0 ? `(${rivals.filter(r => !r.isDefeated).length})` : ''}
+        </button>
       </div>
 
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+      {activeSubTab === 'legal' && (<>
       {/* Heat */}
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
@@ -182,6 +207,71 @@ export default function LegalView() {
         </div>
       </div>
 
+      {/* Active Lawyer */}
+      {activeLawyer && (
+        <div className="bg-indigo-900/30 border border-indigo-500/50 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-white font-semibold">⚖️ {activeLawyer.name}</h3>
+              <p className="text-indigo-300 text-xs">{activeLawyer.description}</p>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Retainer: <span className="text-yellow-400">{formatMoney(activeLawyer.monthlyRetainer)}/tick</span>
+                {' · '}
+                Decay bonus: <span className="text-green-400">-{activeLawyer.heatDecayBonus.toFixed(3)}/s</span>
+              </p>
+            </div>
+            <Tooltip text="Dismiss your current lawyer. No refund.">
+            <button
+              onClick={() => { fireLawyer(); sound.play('fire'); }}
+              className="px-6 py-2 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-xs font-bold hover:bg-red-900/80 transition"
+            >
+              Fire
+            </button>
+            </Tooltip>
+          </div>
+        </div>
+      )}
+
+      {/* Lawyer Tiers */}
+      <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
+        <h3 className="text-white font-semibold mb-3">⚖️ Legal Representation</h3>
+        <p className="text-gray-500 text-xs mb-3">Hire a lawyer to reduce heat. One at a time — hiring replaces your current lawyer.</p>
+        <div className="space-y-2">
+          {LAWYER_DEFS.map((lawyer) => {
+            const isActive = activeLawyerId === lawyer.id;
+            const meetsHeatTier = heatTier >= lawyer.requiredHeatTier;
+            const canAfford = cleanCash >= lawyer.unlockCost;
+            const canHire = !isActive && meetsHeatTier && canAfford;
+            return (
+              <div key={lawyer.id} className={`rounded-lg border p-3 transition ${isActive ? 'border-indigo-500/60 bg-indigo-900/20' : !meetsHeatTier ? 'border-gray-700/50 bg-gray-800/20 opacity-40' : 'border-gray-700 bg-gray-800/40'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-white font-semibold text-sm">{lawyer.name}</span>
+                  {isActive && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVE</span>}
+                  {!meetsHeatTier && <span className="text-gray-500 text-sm">🔒 Tier {lawyer.requiredHeatTier}</span>}
+                </div>
+                <p className="text-gray-400 text-[11px]">{lawyer.description}</p>
+                <div className="flex gap-3 mt-1 mb-2 text-[11px]">
+                  <span className="text-yellow-400">Retainer: {formatMoney(lawyer.monthlyRetainer)}/tick</span>
+                  <span className="text-green-400">Decay: -{lawyer.heatDecayBonus.toFixed(3)}/s</span>
+                </div>
+                {meetsHeatTier && !isActive && (
+                  <Tooltip text="Retain a lawyer to reduce police heat over time. Costs per tick.">
+                  <button disabled={!canHire} onClick={() => { hireLawyer(lawyer.id); sound.play('dealer_hire'); }}
+                    className={`w-full py-2 rounded-lg border border-white/30 text-xs font-bold transition ${canHire ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-700 text-white cursor-not-allowed'}`}>
+                    Hire · {formatMoney(lawyer.unlockCost)}
+                  </button>
+                  </Tooltip>
+                )}
+                {isActive && <p className="text-indigo-400 text-xs text-center font-semibold">✓ Currently Retained</p>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      </>)}
+
+      {activeSubTab === 'rivals' && (<>
       {/* Crime Family */}
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
@@ -336,101 +426,8 @@ export default function LegalView() {
         </div>
       )}
 
-      {/* Active Lawyer */}
-      {activeLawyer && (
-        <div className="bg-indigo-900/30 border border-indigo-500/50 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-white font-semibold">⚖️ {activeLawyer.name}</h3>
-              <p className="text-indigo-300 text-xs">{activeLawyer.description}</p>
-              <p className="text-[11px] text-gray-400 mt-1">
-                Retainer: <span className="text-yellow-400">{formatMoney(activeLawyer.monthlyRetainer)}/tick</span>
-                {' · '}
-                Decay bonus: <span className="text-green-400">-{activeLawyer.heatDecayBonus.toFixed(3)}/s</span>
-              </p>
-            </div>
-            <Tooltip text="Dismiss your current lawyer. No refund.">
-            <button
-              onClick={() => { fireLawyer(); sound.play('fire'); }}
-              className="px-6 py-2 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-xs font-bold hover:bg-red-900/80 transition"
-            >
-              Fire
-            </button>
-            </Tooltip>
-          </div>
-        </div>
-      )}
-
-      {/* Lawyer Tiers */}
-      <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-        <h3 className="text-white font-semibold mb-3">⚖️ Legal Representation</h3>
-        <p className="text-gray-500 text-xs mb-3">Hire a lawyer to reduce heat. One at a time — hiring replaces your current lawyer.</p>
-
-        <div className="space-y-2">
-          {LAWYER_DEFS.map((lawyer) => {
-            const isActive = activeLawyerId === lawyer.id;
-            const meetsHeatTier = heatTier >= lawyer.requiredHeatTier;
-            const canAfford = cleanCash >= lawyer.unlockCost;
-            const canHire = !isActive && meetsHeatTier && canAfford;
-
-            return (
-              <div
-                key={lawyer.id}
-                className={`rounded-lg border p-3 transition ${
-                  isActive
-                    ? 'border-indigo-500/60 bg-indigo-900/20'
-                    : !meetsHeatTier
-                      ? 'border-gray-700/50 bg-gray-800/20 opacity-40'
-                      : 'border-gray-700 bg-gray-800/40'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-white font-semibold text-sm">{lawyer.name}</span>
-                    {isActive && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVE</span>}
-                    {!meetsHeatTier && <span className="text-gray-500 text-sm">🔒 Tier {lawyer.requiredHeatTier}</span>}
-                  </div>
-                  <p className="text-gray-400 text-[11px]">{lawyer.description}</p>
-                  <div className="flex gap-3 mt-1 mb-2 text-[11px]">
-                    <span className="text-yellow-400">Retainer: {formatMoney(lawyer.monthlyRetainer)}/tick</span>
-                    <span className="text-green-400">Decay: -{lawyer.heatDecayBonus.toFixed(3)}/s</span>
-                  </div>
-
-                  {meetsHeatTier && !isActive && (
-                    <Tooltip text="Retain a lawyer to reduce police heat over time. Costs per tick.">
-                    <button
-                      disabled={!canHire}
-                      onClick={() => { hireLawyer(lawyer.id); sound.play('dealer_hire'); }}
-                      className={`w-full py-2 rounded-lg border border-white/30 text-xs font-bold transition ${
-                        canHire
-                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                          : 'bg-gray-700 text-white cursor-not-allowed'
-                      }`}
-                    >
-                      Hire · {formatMoney(lawyer.unlockCost)}
-                    </button>
-                    </Tooltip>
-                  )}
-                  {isActive && (
-                    <p className="text-indigo-400 text-xs text-center font-semibold">✓ Currently Retained</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-        <h3 className="text-white font-semibold mb-3">Empire Stats</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Total Dirty Earned</span>
-            <span className="text-green-400 font-semibold">{formatMoney(totalDirtyEarned)}</span>
-          </div>
-        </div>
-      </div>
+      </>)}
+    </div>
     </div>
   );
 }

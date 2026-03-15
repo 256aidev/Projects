@@ -11,7 +11,12 @@ export type TechUpgradeId =
   | 'tech_capacity'
   | 'tech_dealer'
   | 'tech_launder'
-  | 'tech_heat';
+  | 'tech_heat'
+  | 'tech_flora_gro'
+  | 'tech_flora_micro'
+  | 'tech_flora_bloom'
+  | 'tech_water'
+  | 'tech_light';
 
 export interface TechUpgradeDef {
   id: TechUpgradeId;
@@ -22,8 +27,15 @@ export interface TechUpgradeDef {
   costs: number[];          // TP cost per level [L1, L2, L3, L4, L5]
   effectPerLevel: number;   // the numeric bonus per level
   effectLabel: string;      // human-readable per-level effect
-  bonusType: 'yield' | 'speed' | 'double' | 'capacity' | 'dealer' | 'launder' | 'heat';
+  bonusType: 'yield' | 'speed' | 'double' | 'capacity' | 'dealer' | 'launder' | 'heat' | 'flora_gro' | 'flora_micro' | 'flora_bloom' | 'water' | 'light';
 }
+
+/** Generate doubling cost array: baseCost, baseCost*2, baseCost*4, ... */
+function doublingCosts(baseCost: number, levels: number): number[] {
+  return Array.from({ length: levels }, (_, i) => baseCost * Math.pow(2, i));
+}
+
+const ROOM_UPGRADE_MAX = 50; // effectively infinite
 
 export const TECH_UPGRADE_DEFS: TechUpgradeDef[] = [
   {
@@ -103,6 +115,62 @@ export const TECH_UPGRADE_DEFS: TechUpgradeDef[] = [
     effectLabel: '-8% heat gain',
     bonusType: 'heat',
   },
+  // ─── ROOM UPGRADE BOOSTERS — infinite +1% per level, cost doubles ───
+  {
+    id: 'tech_flora_gro',
+    name: 'FloraGro Research',
+    icon: '🟢',
+    description: 'Improve FloraGro nutrient formula — +1% grow speed per level',
+    maxLevel: ROOM_UPGRADE_MAX,
+    costs: doublingCosts(1, ROOM_UPGRADE_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% grow speed',
+    bonusType: 'flora_gro',
+  },
+  {
+    id: 'tech_flora_micro',
+    name: 'FloraMicro Research',
+    icon: '🟣',
+    description: 'Refine FloraMicro nutrients — +1% yield per level',
+    maxLevel: ROOM_UPGRADE_MAX,
+    costs: doublingCosts(1, ROOM_UPGRADE_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% yield',
+    bonusType: 'flora_micro',
+  },
+  {
+    id: 'tech_flora_bloom',
+    name: 'FloraBloom Research',
+    icon: '🔴',
+    description: 'Perfect FloraBloom ratios — +1% double harvest chance per level',
+    maxLevel: ROOM_UPGRADE_MAX,
+    costs: doublingCosts(1, ROOM_UPGRADE_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% double chance',
+    bonusType: 'flora_bloom',
+  },
+  {
+    id: 'tech_water',
+    name: 'Water Systems Research',
+    icon: '💧',
+    description: 'Advanced irrigation tech — +1% grow speed per level',
+    maxLevel: ROOM_UPGRADE_MAX,
+    costs: doublingCosts(1, ROOM_UPGRADE_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% grow speed',
+    bonusType: 'water',
+  },
+  {
+    id: 'tech_light',
+    name: 'Light Tech Research',
+    icon: '💡',
+    description: 'Next-gen lighting science — +1% grow speed per level',
+    maxLevel: ROOM_UPGRADE_MAX,
+    costs: doublingCosts(1, ROOM_UPGRADE_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% grow speed',
+    bonusType: 'light',
+  },
 ];
 
 export const TECH_UPGRADE_MAP = Object.fromEntries(
@@ -117,6 +185,11 @@ export const INITIAL_TECH_UPGRADES: Record<TechUpgradeId, number> = {
   tech_dealer: 0,
   tech_launder: 0,
   tech_heat: 0,
+  tech_flora_gro: 0,
+  tech_flora_micro: 0,
+  tech_flora_bloom: 0,
+  tech_water: 0,
+  tech_light: 0,
 };
 
 // ─────────────────────────────────────────

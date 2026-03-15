@@ -132,8 +132,9 @@ export const useGameStore = create<GameStore>()(
           const crewBonus = getCrewBonuses(state.crew ?? []);
           const effectiveTech = {
             ...tech,
-            yieldBonus: tech.yieldBonus + sTech.yieldBonus,
-            speedBonus: tech.speedBonus + sTech.speedBonus + carBonus.growSpeed,
+            yieldBonus: tech.yieldBonus + sTech.yieldBonus + tech.floraMicroBonus,
+            speedBonus: tech.speedBonus + sTech.speedBonus + carBonus.growSpeed + tech.floraGroBonus + tech.waterBonus + tech.lightBonus,
+            doubleChance: tech.doubleChance + tech.floraBloomBonus,
             dealerMultiplier: tech.dealerMultiplier * sTech.dealerMultiplier * (1 + crewBonus.dealerBoost),
             launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier * (1 + crewBonus.launderBoost),
             heatReduction: tech.heatReduction + sTech.heatReduction + crewBonus.heatReduction,
