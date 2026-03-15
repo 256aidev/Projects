@@ -351,6 +351,8 @@ export const useGameStore = create<GameStore>()(
         if (merged.gameSettings.tutorialActive === undefined) { merged.gameSettings.tutorialActive = false; merged.gameSettings.tutorialStep = 0; }
         if (merged.gameSettings.rivalEntryDelay === undefined) merged.gameSettings.rivalEntryDelay = 2;
         if (!merged.rivals) merged.rivals = [];
+        // Backfill weakness for existing rivals
+        merged.rivals = merged.rivals.map((r: any) => ({ ...r, weakness: r.weakness ?? 0 }));
         if (!merged.hitmen) merged.hitmen = [];
         if (!merged.rivalAttackLog) merged.rivalAttackLog = [];
 

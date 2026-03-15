@@ -65,6 +65,7 @@ export function generateRivals(count: number, entryDelayMinutes = 10, seed?: num
       aggression: 0.1 + rng() * 0.4,
       power: 1,
       isDefeated: false,
+      weakness: 0,
       activeAtTick: firstEntryTicks + i * spacingTicks,
     });
   }

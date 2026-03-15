@@ -526,6 +526,7 @@ export interface RivalSyndicate {
   aggression: number;      // 0-1, how likely to attack per tick
   power: number;           // overall strength scaling (grows over time)
   isDefeated: boolean;
+  weakness: number;            // 0-100, how weakened the rival is (attacks increase, decays slowly)
   blacklistedSlots?: string[]; // "districtId:slotIndex" — can't rebuy after arson insurance
   activeAtTick?: number;       // tick when this rival enters the game (Royal Rumble stagger)
   ownedLots?: { districtId: string; slotIndex: number; boughtAtTick: number }[]; // lots bought, waiting for build cooldown
@@ -549,7 +550,7 @@ export const HITMAN_DEFS: HitmanDef[] = [
 
 export const HITMAN_MAP = Object.fromEntries(HITMAN_DEFS.map(h => [h.id, h]));
 
-export type RivalActionType = 'rob' | 'raid' | 'sabotage' | 'arson';
+export type RivalActionType = 'rob' | 'raid' | 'sabotage' | 'arson' | 'hit' | 'assassinate';
 
 export interface RivalAction {
   type: RivalActionType;
@@ -566,6 +567,8 @@ export const RIVAL_ACTIONS: RivalAction[] = [
   { type: 'raid',     name: 'Raid',     description: 'Steal their product stash',        hitmenRequired: 2, successBase: 0.7,  heatGain: 10, cost: 5000 },
   { type: 'sabotage', name: 'Sabotage', description: 'Damage a business (50% health)',   hitmenRequired: 2, successBase: 0.75, heatGain: 15, cost: 8000 },
   { type: 'arson',    name: 'Arson',    description: 'Burn it down (destroy business)',   hitmenRequired: 4, successBase: 0.65, heatGain: 30, cost: 20000 },
+  { type: 'hit',      name: 'Hit',      description: 'Kill a rival hitman',              hitmenRequired: 2, successBase: 0.70, heatGain: 20, cost: 10000 },
+  { type: 'assassinate', name: 'Assassinate', description: 'Take out the boss (67%+ weakness, ≤1 hitman)', hitmenRequired: 3, successBase: 0.50, heatGain: 50, cost: 50000 },
 ];
 
 export interface HiredHitman {

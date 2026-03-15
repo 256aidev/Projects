@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef } from 'react';
+import { Component, useEffect, useRef, useState } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 
 class ViewErrorBoundary extends Component<{ children: ReactNode; name: string }, { hasError: boolean; error?: Error }> {
@@ -46,6 +46,7 @@ import JewelryStoreView from './components/jewelry/JewelryStoreView';
 import CarDealershipView from './components/cars/CarDealershipView';
 import EventPopup from './components/ui/EventPopup';
 import TutorialOverlay from './components/ui/TutorialOverlay';
+import VictoryScreen from './components/ui/VictoryScreen';
 
 // Auto-sync to Firestore every 60 ticks (≈ 1 min)
 const SYNC_INTERVAL_TICKS = 60;
@@ -69,6 +70,12 @@ export default function App() {
   const { user, loading, syncToCloud } = useAuthStore();
   const tickCount = useGameStore((s) => s.tickCount);
   const gameStarted = useGameStore((s) => s.gameSettings?.gameStarted);
+  const rivals = useGameStore((s) => s.rivals);
+  const [victoryDismissed, setVictoryDismissed] = useState(false);
+
+  // Victory detection: all rivals defeated (and there are rivals)
+  const allRivalsDefeated = rivals.length > 0 && rivals.every(r => r.isDefeated);
+  const showVictory = allRivalsDefeated && !victoryDismissed;
   const lastSyncTick = useRef(0);
 
   // Cloud auto-sync on interval
@@ -157,6 +164,7 @@ export default function App() {
       {showCarDealership && <CarDealershipView />}
       <EventPopup />
       <TutorialOverlay />
+      {showVictory && <VictoryScreen onContinue={() => setVictoryDismissed(true)} />}
     </div>
   );
 }

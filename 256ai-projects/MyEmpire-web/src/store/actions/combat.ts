@@ -53,32 +53,65 @@ export function createCombatActions(set: SetState, get: GetState) {
         return { success: false, message: `Need at least ${action.hitmenRequired} hitmen` };
       }
 
+      // Assassination special requirements
+      if (action.type === 'assassinate') {
+        if ((rival.weakness ?? 0) < 67) {
+          return { success: false, message: `${rival.name} is too strong (${Math.floor(rival.weakness ?? 0)}% weakness, need 67%)` };
+        }
+        if (rival.hitmen > 1) {
+          return { success: false, message: `${rival.name} has ${rival.hitmen} hitmen protecting them. Take them out first.` };
+        }
+      }
+
+      // Calculate success chance
       const playerAttack = state.hitmen.reduce((sum, h) => {
         const def = HITMAN_MAP[h.defId];
         return sum + (def ? h.count * def.attack : 0);
       }, 0);
       const rivalDefense = rival.hitmen * 15;
       const powerRatio = Math.min(2, playerAttack / Math.max(1, rivalDefense));
-      const chance = Math.min(0.95, action.successBase * powerRatio);
+
+      let chance: number;
+      if (action.type === 'assassinate') {
+        // Assassination: chance based on weakness, reduced by remaining hitmen
+        const baseChance = (rival.weakness ?? 0) / 100 * 0.8;
+        const hitmanPenalty = rival.hitmen * 0.15;
+        chance = Math.max(0.05, Math.min(0.95, baseChance - hitmanPenalty));
+      } else {
+        chance = Math.min(0.95, action.successBase * powerRatio);
+      }
+
       const roll = Math.random();
       const success = roll < chance;
 
       const newRivalHeat = Math.min(1000, (state.rivalHeat ?? 0) + action.heatGain);
-      let message: string;
+      let message: string = '';
+      let playerHitmenLost = 0;
+
       const updatedRivals = state.rivals.map(r => {
         if (r.id !== rivalId) return r;
-        if (!success) return { ...r, aggression: Math.min(1, r.aggression + 0.1) };
+        const weakness = r.weakness ?? 0;
+
+        if (!success) {
+          // Failed attack — rival gets angry, weakness drops slightly on assassination
+          if (action.type === 'assassinate') {
+            message = `Assassination attempt on ${rival.name} FAILED! Lost hitmen in the process.`;
+            playerHitmenLost = 1 + Math.floor(Math.random() * 2); // lose 1-2 hitmen
+            return { ...r, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.max(0, weakness - 10) };
+          }
+          return { ...r, aggression: Math.min(1, r.aggression + 0.1) };
+        }
 
         switch (action.type) {
           case 'rob': {
             const stolen = Math.min(r.dirtyCash, 2000 + Math.floor(Math.random() * 8000));
             message = `Robbed ${rival.name} for $${stolen.toLocaleString()}!`;
-            return { ...r, dirtyCash: r.dirtyCash - stolen, aggression: Math.min(1, r.aggression + 0.15) };
+            return { ...r, dirtyCash: r.dirtyCash - stolen, aggression: Math.min(1, r.aggression + 0.15), weakness: Math.min(100, weakness + 3) };
           }
           case 'raid': {
             const stolenOz = Math.min(r.productOz, 5 + Math.floor(Math.random() * 20));
             message = `Raided ${rival.name} — stole ${stolenOz} oz!`;
-            return { ...r, productOz: r.productOz - stolenOz, aggression: Math.min(1, r.aggression + 0.2) };
+            return { ...r, productOz: r.productOz - stolenOz, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.min(100, weakness + 4) };
           }
           case 'sabotage': {
             if (r.businesses.length === 0) {
@@ -90,10 +123,9 @@ export function createCombatActions(set: SetState, get: GetState) {
             message = `Sabotaged ${rival.name}'s business! (-50% health)`;
             const updated = [...r.businesses];
             updated[idx] = { ...biz, health: Math.max(0, biz.health - 50) };
-            return { ...r, businesses: updated.filter(b => b.health > 0), aggression: Math.min(1, r.aggression + 0.25) };
+            return { ...r, businesses: updated.filter(b => b.health > 0), aggression: Math.min(1, r.aggression + 0.25), weakness: Math.min(100, weakness + 6) };
           }
           case 'arson': {
-            // Only target non-burning businesses
             const active = r.businesses.filter(b => !b.burnedAtTick);
             if (active.length === 0) {
               message = `${rival.name} has no businesses to burn!`;
@@ -104,14 +136,26 @@ export function createCombatActions(set: SetState, get: GetState) {
             const updated = r.businesses.map(b =>
               b === target ? { ...b, burnedAtTick: state.tickCount, health: 0 } : b
             );
-            return { ...r, businesses: updated, aggression: Math.min(1, r.aggression + 0.3) };
+            return { ...r, businesses: updated, aggression: Math.min(1, r.aggression + 0.3), weakness: Math.min(100, weakness + 10) };
+          }
+          case 'hit': {
+            if (r.hitmen <= 0) {
+              message = `${rival.name} has no hitmen left!`;
+              return r;
+            }
+            message = `Took out one of ${rival.name}'s hitmen! (${r.hitmen - 1} remaining)`;
+            return { ...r, hitmen: r.hitmen - 1, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.min(100, weakness + 7) };
+          }
+          case 'assassinate': {
+            message = `☠️ ${rival.name} has been eliminated! Their empire crumbles.`;
+            return { ...r, isDefeated: true, weakness: 100, businesses: [], hitmen: 0, dirtyCash: 0, cleanCash: 0, productOz: 0 };
           }
           default:
             return r;
         }
       });
 
-      if (!success) message = `Attack on ${rival.name} failed! They're on high alert now.`;
+      if (!success && !message) message = `Attack on ${rival.name} failed! They're on high alert now.`;
 
       // Add stolen goods to player
       let dirtyCashGain = 0;
@@ -120,15 +164,28 @@ export function createCombatActions(set: SetState, get: GetState) {
         dirtyCashGain = stolen;
       }
 
-      const log = [...(state.rivalAttackLog ?? []), message!].slice(-10);
+      // Handle player hitmen lost on failed assassination
+      let newPlayerHitmen = state.hitmen;
+      if (playerHitmenLost > 0) {
+        let remaining = playerHitmenLost;
+        newPlayerHitmen = state.hitmen.map(h => {
+          if (remaining <= 0) return h;
+          const lose = Math.min(h.count, remaining);
+          remaining -= lose;
+          return { ...h, count: h.count - lose };
+        }).filter(h => h.count > 0);
+      }
+
+      const log = [...(state.rivalAttackLog ?? []), message].slice(-10);
       const newDirtyCash = state.dirtyCash - action.cost + dirtyCashGain;
       set({
         rivals: updatedRivals,
         rivalHeat: newRivalHeat,
         rivalAttackLog: log,
         dirtyCash: newDirtyCash,
+        hitmen: newPlayerHitmen,
       });
-      return { success, message: message! };
+      return { success, message };
     },
   };
 }

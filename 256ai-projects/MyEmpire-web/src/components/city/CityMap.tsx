@@ -141,7 +141,7 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
   rivals: RivalSyndicate[];
   onRivalAction: (rivalId: string, actionType: string) => void;
 }) {
-  const districtUnlocked = unlockedSlots?.[districtId] ?? 2;
+  const districtUnlocked = unlockedSlots?.[districtId] ?? 0;
   const slotMap = new Map<number, BusinessInstance>();
   for (const biz of businesses) {
     if (biz.districtId === districtId) slotMap.set(biz.slotIndex, biz);
@@ -160,8 +160,8 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
     }
   }
 
-  // Linear lot pricing: $2K per lot, increasing by $2K each (lot 3=$2K, lot 4=$4K, lot 5=$6K...)
-  const lotCostAt = (i: number) => 2000 * (i - 1);
+  // Linear lot pricing: $1K, $2K, $3K, $4K, $5K, $6K (based on lotBaseCost × slot number)
+  const lotCostAt = (i: number) => lotBaseCost * (i + 1);
 
   return (
     <div
