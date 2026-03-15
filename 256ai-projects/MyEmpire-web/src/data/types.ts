@@ -26,6 +26,7 @@ export interface GrowRoomTypeDef {
   strainSlots: StrainSlotDef[];  // index = unlock order (max 4)
   autoHarvestCost: number;   // one-time cost to enable auto-harvest for this room
   upgradeCostMultiplier: number; // scales water/light/nutrient upgrade costs (×4 per tier)
+  maxUpgradeLevels: Record<string, number>; // per-upgrade cap for this room (e.g. closet=0, shed=1)
 }
 
 /** Cost to unlock strain slot N (0-indexed). Slot 0 is free, slot 1+ doubles each time. */
@@ -160,9 +161,12 @@ export const ROOM_UPGRADE_DEFS: RoomUpgradeDef[] = [
     color: 'text-green-400', bgColor: 'bg-green-900/40', borderColor: 'border-green-900/40',
     bonusType: 'speed', baseCostPerCycle: 0,
     levels: [
-      { name: 'FloraGro I',   cost: 600,   costPerCycle: 1, speedBonus: 0.05, yieldBonus: 0, doubleChance: 0 },
-      { name: 'FloraGro II',  cost: 3000,  costPerCycle: 3, speedBonus: 0.10, yieldBonus: 0, doubleChance: 0 },
-      { name: 'FloraGro III', cost: 12000, costPerCycle: 6, speedBonus: 0.15, yieldBonus: 0, doubleChance: 0 },
+      { name: 'FloraGro I',   cost: 600,    costPerCycle: 1,  speedBonus: 0.05, yieldBonus: 0, doubleChance: 0 },
+      { name: 'FloraGro II',  cost: 3000,   costPerCycle: 3,  speedBonus: 0.10, yieldBonus: 0, doubleChance: 0 },
+      { name: 'FloraGro III', cost: 12000,  costPerCycle: 6,  speedBonus: 0.15, yieldBonus: 0, doubleChance: 0 },
+      { name: 'FloraGro IV',  cost: 50000,  costPerCycle: 10, speedBonus: 0.20, yieldBonus: 0, doubleChance: 0 },
+      { name: 'FloraGro V',   cost: 200000, costPerCycle: 16, speedBonus: 0.25, yieldBonus: 0, doubleChance: 0 },
+      { name: 'FloraGro VI',  cost: 800000, costPerCycle: 24, speedBonus: 0.30, yieldBonus: 0, doubleChance: 0 },
     ],
   },
   {
@@ -170,9 +174,12 @@ export const ROOM_UPGRADE_DEFS: RoomUpgradeDef[] = [
     color: 'text-purple-400', bgColor: 'bg-purple-900/40', borderColor: 'border-purple-900/40',
     bonusType: 'yield', baseCostPerCycle: 0,
     levels: [
-      { name: 'FloraMicro I',   cost: 800,   costPerCycle: 1, speedBonus: 0, yieldBonus: 0.05, doubleChance: 0 },
-      { name: 'FloraMicro II',  cost: 4000,  costPerCycle: 3, speedBonus: 0, yieldBonus: 0.10, doubleChance: 0 },
-      { name: 'FloraMicro III', cost: 15000, costPerCycle: 6, speedBonus: 0, yieldBonus: 0.15, doubleChance: 0 },
+      { name: 'FloraMicro I',   cost: 800,     costPerCycle: 1,  speedBonus: 0, yieldBonus: 0.05, doubleChance: 0 },
+      { name: 'FloraMicro II',  cost: 4000,    costPerCycle: 3,  speedBonus: 0, yieldBonus: 0.10, doubleChance: 0 },
+      { name: 'FloraMicro III', cost: 15000,   costPerCycle: 6,  speedBonus: 0, yieldBonus: 0.15, doubleChance: 0 },
+      { name: 'FloraMicro IV',  cost: 60000,   costPerCycle: 10, speedBonus: 0, yieldBonus: 0.20, doubleChance: 0 },
+      { name: 'FloraMicro V',   cost: 250000,  costPerCycle: 16, speedBonus: 0, yieldBonus: 0.25, doubleChance: 0 },
+      { name: 'FloraMicro VI',  cost: 1000000, costPerCycle: 24, speedBonus: 0, yieldBonus: 0.30, doubleChance: 0 },
     ],
   },
   {
@@ -180,9 +187,12 @@ export const ROOM_UPGRADE_DEFS: RoomUpgradeDef[] = [
     color: 'text-pink-400', bgColor: 'bg-pink-900/40', borderColor: 'border-pink-900/40',
     bonusType: 'double', baseCostPerCycle: 0,
     levels: [
-      { name: 'FloraBloom I',   cost: 1200,  costPerCycle: 2, speedBonus: 0, yieldBonus: 0, doubleChance: 0.02 },
-      { name: 'FloraBloom II',  cost: 6000,  costPerCycle: 4, speedBonus: 0, yieldBonus: 0, doubleChance: 0.04 },
-      { name: 'FloraBloom III', cost: 20000, costPerCycle: 8, speedBonus: 0, yieldBonus: 0, doubleChance: 0.06 },
+      { name: 'FloraBloom I',   cost: 1200,   costPerCycle: 2,  speedBonus: 0, yieldBonus: 0, doubleChance: 0.02 },
+      { name: 'FloraBloom II',  cost: 6000,   costPerCycle: 4,  speedBonus: 0, yieldBonus: 0, doubleChance: 0.04 },
+      { name: 'FloraBloom III', cost: 20000,  costPerCycle: 8,  speedBonus: 0, yieldBonus: 0, doubleChance: 0.06 },
+      { name: 'FloraBloom IV',  cost: 80000,  costPerCycle: 12, speedBonus: 0, yieldBonus: 0, doubleChance: 0.08 },
+      { name: 'FloraBloom V',   cost: 320000, costPerCycle: 18, speedBonus: 0, yieldBonus: 0, doubleChance: 0.10 },
+      { name: 'FloraBloom VI',  cost: 1200000,costPerCycle: 26, speedBonus: 0, yieldBonus: 0, doubleChance: 0.12 },
     ],
   },
   {
@@ -190,9 +200,12 @@ export const ROOM_UPGRADE_DEFS: RoomUpgradeDef[] = [
     color: 'text-blue-400', bgColor: 'bg-blue-900/40', borderColor: 'border-blue-900/40',
     bonusType: 'speed', baseCostPerCycle: 1,
     levels: [
-      { name: 'Drip System', cost: 500,   costPerCycle: 2,  speedBonus: 0.01, yieldBonus: 0, doubleChance: 0 },
-      { name: 'Hydro Setup', cost: 2500,  costPerCycle: 5,  speedBonus: 0.02, yieldBonus: 0, doubleChance: 0 },
-      { name: 'Aeroponics',  cost: 10000, costPerCycle: 12, speedBonus: 0.03, yieldBonus: 0, doubleChance: 0 },
+      { name: 'Drip System',      cost: 500,    costPerCycle: 2,  speedBonus: 0.01, yieldBonus: 0, doubleChance: 0 },
+      { name: 'Hydro Setup',      cost: 2500,   costPerCycle: 5,  speedBonus: 0.02, yieldBonus: 0, doubleChance: 0 },
+      { name: 'Aeroponics',       cost: 10000,  costPerCycle: 12, speedBonus: 0.03, yieldBonus: 0, doubleChance: 0 },
+      { name: 'Deep Water Cul.',   cost: 40000,  costPerCycle: 18, speedBonus: 0.04, yieldBonus: 0, doubleChance: 0 },
+      { name: 'Nutrient Film',    cost: 160000, costPerCycle: 25, speedBonus: 0.05, yieldBonus: 0, doubleChance: 0 },
+      { name: 'Ebb & Flow Pro',   cost: 640000, costPerCycle: 35, speedBonus: 0.06, yieldBonus: 0, doubleChance: 0 },
     ],
   },
   {
@@ -200,9 +213,11 @@ export const ROOM_UPGRADE_DEFS: RoomUpgradeDef[] = [
     color: 'text-yellow-400', bgColor: 'bg-yellow-900/40', borderColor: 'border-yellow-900/40',
     bonusType: 'yield', baseCostPerCycle: 2,
     levels: [
-      { name: 'LED Strip',     cost: 800,   costPerCycle: 3,  speedBonus: 0, yieldBonus: 0.05, doubleChance: 0 },
-      { name: 'Full Spec LED', cost: 4000,  costPerCycle: 8,  speedBonus: 0, yieldBonus: 0.10, doubleChance: 0 },
-      { name: 'HPS + CO2',     cost: 15000, costPerCycle: 18, speedBonus: 0, yieldBonus: 0.15, doubleChance: 0 },
+      { name: 'LED Strip',       cost: 800,    costPerCycle: 3,  speedBonus: 0, yieldBonus: 0.05, doubleChance: 0 },
+      { name: 'Full Spec LED',   cost: 4000,   costPerCycle: 8,  speedBonus: 0, yieldBonus: 0.10, doubleChance: 0 },
+      { name: 'HPS + CO2',       cost: 15000,  costPerCycle: 18, speedBonus: 0, yieldBonus: 0.15, doubleChance: 0 },
+      { name: 'Double-End HPS',  cost: 60000,  costPerCycle: 28, speedBonus: 0, yieldBonus: 0.20, doubleChance: 0 },
+      { name: 'Plasma + UV',     cost: 250000, costPerCycle: 40, speedBonus: 0, yieldBonus: 0.25, doubleChance: 0 },
     ],
   },
   {
@@ -689,6 +704,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     strainUnlockBase: 500,    // cheap upgrades: $500, $1K, $2K to unlock more Basic Bud slots
     autoHarvestCost: 500,     // = virtual base
     upgradeCostMultiplier: 1, // ×1 (base tier)
+    maxUpgradeLevels: { flora_gro: 0, flora_micro: 0, flora_bloom: 0, water: 0, light: 0, auto_harvest: 1 },
     strainSlots: [
       { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12 },
       { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12 },
@@ -703,6 +719,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     strainUnlockBase: 4000,    // 2× purchaseCost, then doubles: $4K, $8K, $16K
     autoHarvestCost: 2000,     // = purchaseCost
     upgradeCostMultiplier: 4,  // ×4
+    maxUpgradeLevels: { flora_gro: 1, flora_micro: 1, flora_bloom: 1, water: 1, light: 1, auto_harvest: 1 },
     strainSlots: [
       { strainName: 'OG Kush',     pricePerUnit: 12, plantsCapacity: 2, growTimerTicks: 40, harvestYield: 24 },
       { strainName: 'White Widow', pricePerUnit: 16, plantsCapacity: 2, growTimerTicks: 38, harvestYield: 24 },
@@ -717,6 +734,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     strainUnlockBase: 16000,    // 2× purchaseCost, then doubles: $16K, $32K, $64K
     autoHarvestCost: 8000,      // = purchaseCost
     upgradeCostMultiplier: 16,  // ×4²
+    maxUpgradeLevels: { flora_gro: 2, flora_micro: 2, flora_bloom: 2, water: 2, light: 2, auto_harvest: 1 },
     strainSlots: [
       { strainName: 'Sour Diesel',        pricePerUnit: 20, plantsCapacity: 4, growTimerTicks: 36, harvestYield: 48 },
       { strainName: 'AK-47',              pricePerUnit: 28, plantsCapacity: 4, growTimerTicks: 34, harvestYield: 48 },
@@ -731,6 +749,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     strainUnlockBase: 64000,     // 2× purchaseCost, then doubles: $64K, $128K, $256K
     autoHarvestCost: 32000,      // = purchaseCost
     upgradeCostMultiplier: 64,   // ×4³
+    maxUpgradeLevels: { flora_gro: 3, flora_micro: 3, flora_bloom: 3, water: 3, light: 2, auto_harvest: 1 },
     strainSlots: [
       { strainName: 'Durban Poison', pricePerUnit: 35, plantsCapacity: 10, growTimerTicks: 32, harvestYield: 120 },
       { strainName: 'Jack Herer',    pricePerUnit: 45, plantsCapacity: 10, growTimerTicks: 30, harvestYield: 120 },
@@ -745,6 +764,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     strainUnlockBase: 256000,     // 2× purchaseCost, then doubles: $256K, $512K, $1.02M
     autoHarvestCost: 128000,      // = purchaseCost
     upgradeCostMultiplier: 256,   // ×4⁴
+    maxUpgradeLevels: { flora_gro: 4, flora_micro: 4, flora_bloom: 4, water: 4, light: 3, auto_harvest: 1 },
     strainSlots: [
       { strainName: 'Gelato',   pricePerUnit: 60,  plantsCapacity: 25, growTimerTicks: 28, harvestYield: 300 },
       { strainName: 'Runtz',    pricePerUnit: 78,  plantsCapacity: 25, growTimerTicks: 26, harvestYield: 300 },
@@ -759,6 +779,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     strainUnlockBase: 1024000,     // 2× purchaseCost, then doubles: $1.02M, $2.05M, $4.1M
     autoHarvestCost: 512000,       // = purchaseCost
     upgradeCostMultiplier: 1024,   // ×4⁵
+    maxUpgradeLevels: { flora_gro: 5, flora_micro: 5, flora_bloom: 5, water: 5, light: 4, auto_harvest: 1 },
     strainSlots: [
       { strainName: 'Exotic Kush',  pricePerUnit: 150, plantsCapacity: 50, growTimerTicks: 20, harvestYield: 600 },
       { strainName: 'Moonrock OG',  pricePerUnit: 200, plantsCapacity: 50, growTimerTicks: 18, harvestYield: 600 },
@@ -776,6 +797,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     strainUnlockBase: 50000000,     // 2× purchaseCost
     autoHarvestCost: 25000000,      // = purchaseCost
     upgradeCostMultiplier: 4096,    // ×4⁶
+    maxUpgradeLevels: { flora_gro: 6, flora_micro: 6, flora_bloom: 6, water: 6, light: 5, auto_harvest: 1 },
     strainSlots: [
       { strainName: 'Royal Gold',       pricePerUnit: 38,  plantsCapacity: 100, growTimerTicks: 20, harvestYield: 1200 },
       { strainName: 'Crown Jewel',      pricePerUnit: 50,  plantsCapacity: 100, growTimerTicks: 18, harvestYield: 1200 },

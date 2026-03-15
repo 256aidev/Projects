@@ -337,9 +337,11 @@ export default function OperationView() {
                   <div className="w-1/2 p-1.5 grid grid-cols-3 grid-rows-2 gap-1">
                     {ROOM_UPGRADE_DEFS.map((upgDef) => {
                       const level = room.upgradeLevels?.[upgDef.id] ?? 0;
-                      const maxLevel = upgDef.levels.length;
+                      const roomCap = def?.maxUpgradeLevels?.[upgDef.id] ?? upgDef.levels.length;
+                      const cappedMaxLevel = Math.min(upgDef.levels.length, roomCap);
+                      const atCap = level >= cappedMaxLevel;
                       const currentLvl = level > 0 ? upgDef.levels[level - 1] : null;
-                      const nextLvl = upgDef.levels[level];
+                      const nextLvl = !atCap ? upgDef.levels[level] : undefined;
                       const scaledCost = nextLvl ? nextLvl.cost * upgMult : 0;
                       const canAfford = nextLvl && dirtyCash >= scaledCost;
                       const isToggle = upgDef.bonusType === 'toggle';
@@ -370,9 +372,9 @@ export default function OperationView() {
                           {/* Header: icon, name, level dots */}
                           <div className="flex items-center justify-between mb-0.5">
                             <span className={`text-[10px] font-bold ${upgDef.color}`}>{upgDef.icon} {upgDef.name}</span>
-                            {!isToggle && (
+                            {!isToggle && cappedMaxLevel > 0 && (
                               <div className="flex gap-0.5">
-                                {Array.from({ length: maxLevel }).map((_, i) => (
+                                {Array.from({ length: cappedMaxLevel }).map((_, i) => (
                                   <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < level ? upgDef.color.replace('text-', 'bg-') : 'bg-gray-700'}`} />
                                 ))}
                               </div>

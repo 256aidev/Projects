@@ -535,10 +535,14 @@ export const useGameStore = create<GameStore>()(
         if (!room) return false;
         const upgDef = ROOM_UPGRADE_MAP[upgradeId];
         if (!upgDef) return false;
+        const roomDef = GROW_ROOM_TYPE_MAP[room.typeId];
         const currentLevel = room.upgradeLevels?.[upgradeId] ?? 0;
+        // Enforce per-room upgrade cap
+        const roomCap = roomDef?.maxUpgradeLevels?.[upgradeId] ?? upgDef.levels.length;
+        if (currentLevel >= roomCap) return false;
         const nextLvl = upgDef.levels[currentLevel];
         if (!nextLvl) return false; // already maxed
-        const mult = GROW_ROOM_TYPE_MAP[room.typeId]?.upgradeCostMultiplier ?? 1;
+        const mult = roomDef?.upgradeCostMultiplier ?? 1;
         const cost = nextLvl.cost * mult;
         if (state.dirtyCash < cost) return false;
         set({
@@ -1252,7 +1256,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 24,
+      version: 25,
       // Merge saved state with defaults (preserves money, progress, etc.),
       // then re-sync canonical game balance values so changes take effect immediately.
       migrate: (persisted: unknown, _version: number) => {
