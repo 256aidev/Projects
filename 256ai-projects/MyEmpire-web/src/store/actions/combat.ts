@@ -79,6 +79,7 @@ export function createCombatActions(set: SetState, get: GetState) {
 
       const roll = Math.random();
       const success = roll < chance;
+      console.log(`[Combat] ${action.type} on ${rival.name}: chance=${(chance*100).toFixed(1)}% roll=${(roll*100).toFixed(1)}% success=${success} weakness=${(rival.weakness??0).toFixed(1)}% hitmen=${rival.hitmen} playerATK=${playerAttack}`);
 
       const newRivalHeat = Math.min(1000, (state.rivalHeat ?? 0) + action.heatGain);
       let message: string = '';
