@@ -65,6 +65,8 @@ import { tickRivals, getPlayerDefense, getHitmanUpkeep, RIVAL_TICK_INTERVAL } fr
 import { shouldTriggerEvent, triggerEvent, resolveEventChoice as resolveChoice, tickBuffs, getEventDef, type EventCheckState } from '../engine/events';
 import { INITIAL_EVENT_STATE } from '../data/events/types';
 import { getCarBonuses } from '../data/carDefs';
+import { GAME_SYSTEMS } from '../engine/systems/registry';
+import type { TickState, TickContext } from '../engine/systems/types';
 
 interface GameActions {
   tick: () => void;
@@ -139,13 +141,10 @@ export const useGameStore = create<GameStore>()(
 
       tick: () => {
         set((state) => {
-          let { dirtyCash, cleanCash } = state;
-
+          // ── Build context (immutable) ──
           const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
           const sTech = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
           const carBonus = getCarBonuses(state.cars ?? []);
-
-          // Combine prestige tech + session tech + car bonuses
           const effectiveTech = {
             ...tech,
             yieldBonus: tech.yieldBonus + sTech.yieldBonus,
@@ -154,212 +153,67 @@ export const useGameStore = create<GameStore>()(
             launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier,
             heatReduction: tech.heatReduction + sTech.heatReduction,
           };
-          const { newOp, dirtyEarned: rawDirtyEarned, maintenanceCost } = tickCriminalOperation(state.operation, effectiveTech);
-          // Apply car income multiplier + dealer boost to dirty income
-          const dirtyEarned = Math.floor(rawDirtyEarned * (1 + carBonus.incomeMultiplier + carBonus.dealerBoost));
-          dirtyCash += dirtyEarned;
-          dirtyCash = Math.max(0, dirtyCash - maintenanceCost);
+          const ctx: TickContext = {
+            prevState: state,
+            tech: effectiveTech,
+            sessionTech: sTech,
+            carBonuses: carBonus,
+            gameSpeed: useUIStore.getState().gameSpeed,
+          };
 
-          let totalDirtyConsumed = 0;
-          let totalCleanProduced = 0;
-          let totalRevenue = 0;
-          let totalExpenses = 0;
+          // ── Build mutable accumulator ──
+          const ts: TickState = {
+            dirtyCash: state.dirtyCash,
+            cleanCash: state.cleanCash,
+            heat: state.heat,
+            rivalHeat: state.rivalHeat ?? 0,
+            operation: state.operation,
+            activeLawyerId: state.activeLawyerId,
+            currentJobId: state.currentJobId,
+            jobFiredCooldown: Math.max(0, (state.jobFiredCooldown ?? 0) - 1),
+            streetSellQuotaOz: state.streetSellQuotaOz ?? 160,
+            rivals: state.rivals ?? [],
+            rivalAttackLog: state.rivalAttackLog ?? [],
+            unlockedDistricts: state.unlockedDistricts,
+            eventSystem: state.eventSystem ?? INITIAL_EVENT_STATE,
+            dirtyEarned: 0,
+            maintenanceCost: 0,
+            cleanProduced: 0,
+            legitProfit: 0,
+            jobIncome: 0,
+            hitmanCost: 0,
+            tickCount: state.tickCount + 1,
+            heatNoticeShown: state.heatNoticeShown,
+            totalDirtyEarned: state.totalDirtyEarned,
+            totalCleanEarned: state.totalCleanEarned,
+          };
 
-          // Compute total oz and weighted avg price from per-strain inventory
-          const invEntries = Object.entries(newOp.productInventory);
-          const totalInventoryOz = invEntries.reduce((sum, [, e]) => sum + e.oz, 0);
-          const weightedAvgPrice = totalInventoryOz > 0
-            ? invEntries.reduce((sum, [, e]) => sum + e.oz * e.pricePerUnit, 0) / totalInventoryOz
-            : 10;
-          let totalProductConsumed = 0;
-
-          for (const biz of state.businesses) {
-            if (!biz.isOperating) continue;
-            const bizDef = BUSINESS_MAP[biz.businessDefId];
-            totalRevenue += calculateBusinessRevenue(biz);
-            totalExpenses += calculateBusinessExpenses(biz);
-            if (bizDef?.isDispensary) {
-              const { productConsumed, cleanProduced } = calculateDispensaryTick(biz, totalInventoryOz - totalProductConsumed, weightedAvgPrice);
-              totalProductConsumed += productConsumed;
-              totalCleanProduced += cleanProduced;
-            } else if (bizDef?.isRental) {
-              // rental revenue is 100% clean cash — already counted in totalRevenue above
-            } else {
-              const { dirtyConsumed, cleanProduced } = calculateLaunderTick(biz, dirtyCash - totalDirtyConsumed, effectiveTech.launderMultiplier * (1 + carBonus.launderBoost));
-              totalDirtyConsumed += dirtyConsumed;
-              totalCleanProduced += cleanProduced;
-            }
+          // ── Run all game systems in order ──
+          for (const system of GAME_SYSTEMS) {
+            system(ts, ctx);
           }
 
-          // Consume dispensary product proportionally from per-strain inventory
-          let finalOp = newOp;
-          if (totalProductConsumed > 0 && totalInventoryOz > 0) {
-            const newInventory = { ...newOp.productInventory };
-            for (const strainName of Object.keys(newInventory)) {
-              const entry = newInventory[strainName];
-              const fraction = entry.oz / totalInventoryOz;
-              const strainConsumed = Math.min(entry.oz, totalProductConsumed * fraction);
-              newInventory[strainName] = { ...entry, oz: entry.oz - strainConsumed };
-            }
-            finalOp = { ...newOp, productInventory: newInventory };
-          }
-
-          // Reverse flow: clean cash → dirty cash (95% efficiency — 5% handling cost)
-          let totalCleanToDirty = 0;
-          let totalDirtyFromClean = 0;
-          for (const biz of state.businesses) {
-            if (!biz.isOperating) continue;
-            const rate = biz.cleanToDirtyPerTick ?? 0;
-            if (rate <= 0) continue;
-            const available = cleanCash - totalCleanToDirty; // remaining clean cash
-            const consumed = Math.min(rate, Math.max(0, available));
-            totalCleanToDirty += consumed;
-            totalDirtyFromClean += consumed * 0.95;
-          }
-
-          const legitProfit = totalRevenue - totalExpenses;
-          dirtyCash = Math.max(0, dirtyCash - totalDirtyConsumed) + totalDirtyFromClean;
-          cleanCash = cleanCash - totalCleanToDirty + totalCleanProduced + legitProfit;
-          if (cleanCash < 0) cleanCash += cleanCash * 0.0001;
-
-          const totalEarned = state.totalDirtyEarned + dirtyEarned;
-          const shouldShowNotice = !state.heatNoticeShown && totalEarned >= 100_000;
-
-          // Street sell quota: dynamic max based on job + businesses
-          const currentJobDef = state.currentJobId ? JOB_MAP[state.currentJobId] ?? null : null;
-          const maxDemand = getMaxStreetDemand(currentJobDef, state.businesses) + sTech.demandBonus;
-          const refillRate = getStreetRefillRate(maxDemand);
-          const streetSellQuotaOz = Math.min(maxDemand, (state.streetSellQuotaOz ?? maxDemand) + refillRate);
-
-          // Lawyer retainer (deducted from clean cash each tick)
-          let activeLawyerId = state.activeLawyerId;
-          if (activeLawyerId) {
-            const lawyer = LAWYER_MAP[activeLawyerId];
-            if (lawyer) {
-              if (cleanCash >= lawyer.monthlyRetainer) {
-                cleanCash -= lawyer.monthlyRetainer;
-              } else {
-                activeLawyerId = null; // can't afford — auto-fired
-              }
-            }
-          }
-
-          // Heat calculation
-          const heatDelta = calculateHeatTick(
-            state.heat, dirtyCash,
-            state.operation.dealerCount, state.operation.dealerTierIndex,
-            state.businesses, activeLawyerId, effectiveTech.heatReduction + carBonus.heatReduction,
-          );
-          const newHeat = Math.max(0, Math.min(HEAT_MAX, state.heat + heatDelta));
-
-          // Rival heat calculation
-          const rivalHeatDelta = calculateRivalHeatTick(
-            state.rivalHeat ?? 0,
-            state.operation.dealerCount, state.operation.dealerTierIndex,
-            state.businesses,
-          );
-          const newRivalHeat = Math.max(0, Math.min(HEAT_MAX, (state.rivalHeat ?? 0) + rivalHeatDelta));
-
-          // Job income (clean cash) + heat-based firing
-          let jobIncome = 0;
-          let currentJobId = state.currentJobId;
-          let jobFiredCooldown = Math.max(0, (state.jobFiredCooldown ?? 0) - 1);
-          if (currentJobId) {
-            const jobDef = JOB_MAP[currentJobId];
-            if (jobDef && newHeat > jobDef.maxHeat) {
-              // FIRED — heat too high
-              currentJobId = null;
-              jobFiredCooldown = 60; // 1 minute cooldown
-            } else if (jobDef) {
-              jobIncome = jobDef.cleanPerTick;
-            }
-          }
-          cleanCash += jobIncome;
-
-          // Hitman upkeep (dirty cash per tick)
-          const hitmanCost = getHitmanUpkeep(state.hitmen ?? []);
-          dirtyCash = Math.max(0, dirtyCash - hitmanCost);
-
-          // Rival AI tick (runs every RIVAL_TICK_INTERVAL ticks)
-          let rivals = state.rivals ?? [];
-          let rivalAttackLog = state.rivalAttackLog ?? [];
-          let unlockedDistrictsUpdated: string[] | null = null;
-          const newTickCount = state.tickCount + 1;
-          if (rivals.length > 0 && newTickCount % RIVAL_TICK_INTERVAL === 0) {
-            const totalProductOz = Object.values(finalOp.productInventory).reduce((s, e) => s + e.oz, 0);
-            const result = tickRivals(
-              rivals, newRivalHeat, dirtyCash, totalProductOz,
-              state.businesses, getPlayerDefense(state.hitmen ?? []),
-              newTickCount, state.unlockedSlots,
-            );
-            rivals = result.rivals;
-            dirtyCash = Math.max(0, dirtyCash - result.playerDirtyCashLost);
-            cleanCash = Math.max(0, cleanCash - result.playerCleanCashLost);
-            if (result.attackMessages.length > 0) {
-              rivalAttackLog = [...rivalAttackLog, ...result.attackMessages].slice(-10);
-            }
-            // TODO: handle businessesDamaged and productLost
-
-            // Rival district reveal — if a rival has a business in a district
-            // the player hasn't unlocked, auto-reveal it (free unlock)
-            const revealedDistricts = new Set(state.unlockedDistricts);
-            for (const rival of rivals) {
-              if (rival.isDefeated) continue;
-              for (const rb of rival.businesses) {
-                if (!revealedDistricts.has(rb.districtId) && !rb.districtId.startsWith('gen_')) {
-                  revealedDistricts.add(rb.districtId);
-                }
-              }
-            }
-            if (revealedDistricts.size > state.unlockedDistricts.length) {
-              unlockedDistrictsUpdated = [...revealedDistricts];
-            }
-          }
-
-          // Event system tick
-          let eventSystem = tickBuffs(state.eventSystem ?? INITIAL_EVENT_STATE, newTickCount);
-          const totalProductOzForEvents = Object.values(finalOp.productInventory).reduce((s, e) => s + e.oz, 0);
-          if (shouldTriggerEvent(newTickCount, eventSystem, useUIStore.getState().gameSpeed)) {
-            const checkState: EventCheckState = {
-              tickCount: newTickCount,
-              heat: newHeat,
-              rivalHeat: newRivalHeat,
-              dirtyCash,
-              cleanCash,
-              totalDirtyEarned: totalEarned,
-              businessCount: state.businesses.length,
-              growRoomCount: finalOp.growRooms.length,
-              dealerCount: finalOp.dealerCount,
-              prestigeCount: state.prestigeCount,
-              hitmenCount: (state.hitmen ?? []).length,
-              hasJob: !!currentJobId,
-              hasLawyer: !!activeLawyerId,
-              productOz: totalProductOzForEvents,
-              rivalsDefeated: rivals.filter((r) => r.isDefeated).length,
-            };
-            eventSystem = triggerEvent(checkState, eventSystem);
-          }
-
+          // ── Return final state ──
           return {
-            dirtyCash,
-            cleanCash,
-            heat: newHeat,
-            rivalHeat: newRivalHeat,
-            activeLawyerId,
-            operation: finalOp,
-            totalDirtyEarned: totalEarned,
-            totalCleanEarned: state.totalCleanEarned + Math.max(0, totalCleanProduced + legitProfit + jobIncome),
-            lastTickDirtyProfit: dirtyEarned - maintenanceCost - hitmanCost,
-            lastTickCleanProfit: totalCleanProduced + legitProfit + jobIncome,
-            tickCount: newTickCount,
-            heatNoticeShown: state.heatNoticeShown || shouldShowNotice,
-            streetSellQuotaOz,
-            currentJobId,
-            jobFiredCooldown,
-            rivals,
-            rivalAttackLog,
-            eventSystem,
-            ...(unlockedDistrictsUpdated ? { unlockedDistricts: unlockedDistrictsUpdated } : {}),
+            dirtyCash: ts.dirtyCash,
+            cleanCash: ts.cleanCash,
+            heat: ts.heat,
+            rivalHeat: ts.rivalHeat,
+            activeLawyerId: ts.activeLawyerId,
+            operation: ts.operation,
+            totalDirtyEarned: ts.totalDirtyEarned,
+            totalCleanEarned: ts.totalCleanEarned,
+            lastTickDirtyProfit: ts.dirtyEarned - ts.maintenanceCost - ts.hitmanCost,
+            lastTickCleanProfit: ts.cleanProduced + ts.legitProfit + ts.jobIncome,
+            tickCount: ts.tickCount,
+            heatNoticeShown: ts.heatNoticeShown,
+            streetSellQuotaOz: ts.streetSellQuotaOz,
+            currentJobId: ts.currentJobId,
+            jobFiredCooldown: ts.jobFiredCooldown,
+            rivals: ts.rivals,
+            rivalAttackLog: ts.rivalAttackLog,
+            eventSystem: ts.eventSystem,
+            ...(ts.unlockedDistricts !== state.unlockedDistricts ? { unlockedDistricts: ts.unlockedDistricts } : {}),
           };
         });
       },
