@@ -92,15 +92,15 @@ export default function BuildingLot({
         onPointerDown={(e) => e.stopPropagation()}
         style={{ touchAction: 'manipulation' }}
         className={`
-          building-lot ${rootSize} rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1
+          building-lot ${rootSize} rounded-lg border-2 flex flex-col items-center justify-center gap-1
           ${isSelected
             ? 'border-white bg-white/10'
-            : 'border-gray-600 hover:border-gray-400 bg-gray-800/40'
+            : 'border-emerald-700/60 hover:border-emerald-500 bg-emerald-900/20'
           }
         `}
       >
-        <span className={`${iconSize} text-gray-500`}>+</span>
-        <span className={`${textMd} text-gray-500`}>Empty Lot</span>
+        <span className={`${iconSize} text-emerald-500`}>+</span>
+        <span className={`${textMd} text-emerald-400/70`}>Empty Lot</span>
       </button>
       </Tooltip>
     );

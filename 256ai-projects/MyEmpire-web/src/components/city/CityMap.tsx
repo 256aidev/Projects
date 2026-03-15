@@ -160,8 +160,8 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
     }
   }
 
-  // Linear lot price: lot at index i costs lotBaseCost × (i - 1) for i >= 2
-  const lotCostAt = (i: number) => lotBaseCost * (i - 1);
+  // Linear lot pricing: $2K per lot, increasing by $2K each (lot 3=$2K, lot 4=$4K, lot 5=$6K...)
+  const lotCostAt = (i: number) => 2000 * (i - 1);
 
   return (
     <div
@@ -235,7 +235,8 @@ function UnlockedBlock({ districtId, name, color, businesses, unlockedSlots, cle
 export default function CityMap() {
   const unlockedDistricts = useGameStore((s) => s.unlockedDistricts);
   const generatedBlocks = useGameStore((s) => s.generatedBlocks);
-  const nextBlockCost = useGameStore((s) => s.nextBlockCost);
+  const genUnlockedCount = useGameStore((s) => s.unlockedDistricts.filter(d => d.startsWith('gen_')).length);
+  const dynamicBlockCost = 2000 + genUnlockedCount * 2000;
   const cleanCash = useGameStore((s) => s.cleanCash);
   const businesses = useGameStore((s) => s.businesses);
   const unlockedSlots = useGameStore((s) => s.unlockedSlots);
@@ -317,7 +318,7 @@ export default function CityMap() {
     if (!positionMap.has(key)) {
       positionMap.set(key, unlocked
         ? { kind: 'district-unlocked', id: block.id, name: block.name, color: '#6B7280' }
-        : { kind: 'gen-locked', id: block.id, name: block.name, cost: block.unlockCost },
+        : { kind: 'gen-locked', id: block.id, name: block.name, cost: dynamicBlockCost },
       );
     }
   }
@@ -356,7 +357,7 @@ export default function CityMap() {
       const nc = pos.col + dc, nr = pos.row + dr;
       const nkey = `${nc},${nr}`;
       if (covered.has(nkey)) continue;
-      positionMap.set(nkey, { kind: 'gen-locked', id: `gen_${nc}_${nr}`, name: blockName(nc, nr), cost: nextBlockCost });
+      positionMap.set(nkey, { kind: 'gen-locked', id: `gen_${nc}_${nr}`, name: blockName(nc, nr), cost: dynamicBlockCost });
       covered.add(nkey);
     }
   }

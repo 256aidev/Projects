@@ -699,9 +699,8 @@ export const useGameStore = create<GameStore>()(
         const maxSlots = district?.maxBusinessSlots ?? 6;
         const currentUnlocked = state.unlockedSlots?.[districtId] ?? 2;
         if (currentUnlocked >= maxSlots) return false;
-        // Linear lot pricing: baseCost × lotNumber (lot 3 = base×1, lot 4 = base×2, ...)
-        const baseCost = district?.lotBaseCost ?? 1000;
-        const cost = baseCost * (currentUnlocked - 1);
+        // Linear lot pricing: $2K per lot, increasing by $2K each (lot 3=$2K, lot 4=$4K, lot 5=$6K...)
+        const cost = 2000 * (currentUnlocked - 1);
         if (state.cleanCash < cost) return false;
         set({
           cleanCash: state.cleanCash - cost,
@@ -814,20 +813,23 @@ export const useGameStore = create<GameStore>()(
         const parts = blockId.split('_');
         const col = parseInt(parts[1]), row = parseInt(parts[2]);
         if (isNaN(col) || isNaN(row)) return false;
-        const cost = state.nextBlockCost;
+        // Cost = $2K per generated block already unlocked + $2K base
+        const genUnlocked = state.unlockedDistricts.filter(d => d.startsWith('gen_')).length;
+        const cost = 2000 + genUnlocked * 2000;
         if (state.cleanCash < cost) return false;
         const newGenBlocks = { ...state.generatedBlocks };
         delete newGenBlocks[blockId];
+        const nextCost = 2000 + (genUnlocked + 1) * 2000;
         const newNeighbors = addNeighborBlocks(
           newGenBlocks, [...state.unlockedDistricts, blockId],
-          state.nextBlockCost * 2, col, row,
+          nextCost, col, row,
         );
         set({
           cleanCash: state.cleanCash - cost,
           totalSpent: state.totalSpent + cost,
           unlockedDistricts: [...state.unlockedDistricts, blockId],
           generatedBlocks: { ...newGenBlocks, ...newNeighbors },
-          nextBlockCost: state.nextBlockCost * 2,
+          nextBlockCost: nextCost,
           unlockedSlots: { ...(state.unlockedSlots ?? {}), [blockId]: 2 },
         });
         return true;
