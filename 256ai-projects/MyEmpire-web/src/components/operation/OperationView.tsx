@@ -161,68 +161,53 @@ export default function OperationView() {
             <span className="text-lg">🤝</span>
           </div>
           <p className="text-gray-600 text-[9px] mb-1">Avg ${weightedAvgPrice.toFixed(0)}/oz · dealer cut ${currentDealerTier.cutPer8oz} flat per 8oz sold</p>
-          <div className="flex gap-1.5 mb-1">
-            {[1, 3, 5].map((qty) => {
-              let cost = 0;
-              for (let i = 0; i < qty; i++) cost += getDealerHireCost(currentDealerTier, op.dealerCount + i);
-              const canAfford = dirtyCash >= cost;
-              return (
-                <Tooltip key={qty} text={`Hire ${qty} dealer${qty > 1 ? 's' : ''} to sell product automatically. No street demand limit.`}>
-                <button
-                  onClick={() => {
-                    if (hireDealers(qty)) { sound.play('dealer_hire'); addNotification(`Hired ${qty} dealer${qty > 1 ? 's' : ''}`, 'success'); }
-                    else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
-                  }}
-                  disabled={!canAfford}
-                  className={`flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition ${
-                    canAfford ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200' : 'bg-gray-700 text-white cursor-not-allowed'
-                  }`}
-                >
-                  +{qty} ({formatMoney(cost)})
-                </button>
-                </Tooltip>
-              );
-            })}
-            {op.dealerCount > 0 && [1, 3, 5].map((qty) => {
-              const canFire = op.dealerCount >= qty;
-              return (
-                <Tooltip key={`fire-${qty}`} text={`Fire ${qty} dealer${qty > 1 ? 's' : ''}. No refund on hiring cost.`}>
-                <button
-                  onClick={() => { fireDealers(qty); sound.play('fire'); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
-                  disabled={!canFire}
-                  className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
-                    canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-white cursor-not-allowed'
-                  }`}
-                >
-                  −{qty} Fire
-                </button>
-                </Tooltip>
-              );
-            })}
-          </div>
-          <div className="flex gap-1.5">
-            {/* Downgrade */}
-            {(() => {
-              const prevTier = DEALER_TIERS[op.dealerTierIndex - 1];
-              const currentTier = DEALER_TIERS[op.dealerTierIndex];
-              const refund = prevTier ? Math.floor(currentTier.hireCost * 3 * 0.5) : 0;
-              return prevTier ? (
-                <Tooltip text={`Downgrade dealers to ${prevTier.name}. Slower sales but lower cut. 50% refund.`}>
-                <button
-                  onClick={() => {
-                    if (downgradeDealerTier()) { sound.play('fire'); addNotification(`Downgraded to ${prevTier.name} (+${formatMoney(refund)} refund)`, 'warning'); }
-                  }}
-                  className="flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition bg-red-900/60 hover:bg-red-800/70 text-red-300"
-                >
-                  ▼ {prevTier.name}<br />
-                  <span className="font-normal opacity-75">
-                    {prevTier.salesRatePerTick} oz/tick · ${prevTier.cutPer8oz} cut/8oz<br />+{formatMoney(refund)} refund
-                  </span>
-                </button>
-                </Tooltip>
-              ) : null;
-            })()}
-            {/* Upgrade */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {/* Top-left: Hire dealers */}
+            <div className="flex gap-1">
+              {[1, 3, 5].map((qty) => {
+                let cost = 0;
+                for (let i = 0; i < qty; i++) cost += getDealerHireCost(currentDealerTier, op.dealerCount + i);
+                const canAfford = dirtyCash >= cost;
+                return (
+                  <Tooltip key={qty} text={`Hire ${qty} dealer${qty > 1 ? 's' : ''} to sell product automatically. No street demand limit.`}>
+                  <button
+                    onClick={() => {
+                      if (hireDealers(qty)) { sound.play('dealer_hire'); addNotification(`Hired ${qty} dealer${qty > 1 ? 's' : ''}`, 'success'); }
+                      else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
+                    }}
+                    disabled={!canAfford}
+                    className={`flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition ${
+                      canAfford ? 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200' : 'bg-gray-700 text-white cursor-not-allowed'
+                    }`}
+                  >
+                    +{qty} ({formatMoney(cost)})
+                  </button>
+                  </Tooltip>
+                );
+              })}
+            </div>
+
+            {/* Top-right: Fire dealers */}
+            <div className="flex gap-1">
+              {op.dealerCount > 0 && [1, 3, 5].map((qty) => {
+                const canFire = op.dealerCount >= qty;
+                return (
+                  <Tooltip key={`fire-${qty}`} text={`Fire ${qty} dealer${qty > 1 ? 's' : ''}. No refund on hiring cost.`}>
+                  <button
+                    onClick={() => { fireDealers(qty); sound.play('fire'); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
+                    disabled={!canFire}
+                    className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
+                      canFire ? 'bg-red-900/60 hover:bg-red-800/70 text-red-300' : 'bg-gray-700 text-white cursor-not-allowed'
+                    }`}
+                  >
+                    −{qty} Fire
+                  </button>
+                  </Tooltip>
+                );
+              })}
+            </div>
+
+            {/* Bottom-left: Upgrade distribution */}
             {nextDealerTier && (() => {
               const canUpgrade = dirtyCash >= nextDealerTier.hireCost * 3;
               return (
@@ -233,7 +218,7 @@ export default function OperationView() {
                     else addNotification(`Need ${formatMoney(nextDealerTier.hireCost * 3)} dirty cash`, 'warning');
                   }}
                   disabled={!canUpgrade}
-                  className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
+                  className={`w-full py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
                     canUpgrade ? 'bg-purple-800 hover:bg-purple-700 text-purple-200' : 'bg-gray-700 text-white cursor-not-allowed'
                   }`}
                 >
@@ -244,6 +229,28 @@ export default function OperationView() {
                 </button>
                 </Tooltip>
               );
+            })()}
+
+            {/* Bottom-right: Downgrade distribution */}
+            {(() => {
+              const prevTier = DEALER_TIERS[op.dealerTierIndex - 1];
+              const currentTier = DEALER_TIERS[op.dealerTierIndex];
+              const refund = prevTier ? Math.floor(currentTier.hireCost * 3 * 0.5) : 0;
+              return prevTier ? (
+                <Tooltip text={`Downgrade dealers to ${prevTier.name}. Slower sales but lower cut. 50% refund.`}>
+                <button
+                  onClick={() => {
+                    if (downgradeDealerTier()) { sound.play('fire'); addNotification(`Downgraded to ${prevTier.name} (+${formatMoney(refund)} refund)`, 'warning'); }
+                  }}
+                  className="w-full py-1.5 rounded border border-white/30 text-[9px] font-semibold transition bg-red-900/60 hover:bg-red-800/70 text-red-300"
+                >
+                  ▼ {prevTier.name}<br />
+                  <span className="font-normal opacity-75">
+                    {prevTier.salesRatePerTick} oz/tick · ${prevTier.cutPer8oz} cut/8oz<br />+{formatMoney(refund)} refund
+                  </span>
+                </button>
+                </Tooltip>
+              ) : null;
             })()}
           </div>
         </div>
