@@ -106,37 +106,44 @@ export default function OperationView() {
           </div>
         </div>
 
-        {totalInventoryOz > 0 && streetSellQuotaOz > 0 ? (
-          <div className="flex gap-2">
-            {([16, maxDemandOz] as const).map((qty) => {
-              const units = Math.min(qty, Math.floor(totalInventoryOz), Math.floor(streetSellQuotaOz));
-              const earned = Math.floor(units * weightedAvgPrice * 0.7);
-              const label = qty === 16 ? '1lb' : 'All';
-              const canSell = units > 0;
-              return (
-                <Tooltip key={qty} text={qty === 16 ? "Sell 1lb on the street at 70% avg price. Limited by street demand." : "Sell all available product on the street at 70% avg price."}>
-                <button
-                  data-tutorial={qty === 16 ? 'sell-btn' : undefined}
-                  onClick={() => {
-                    const cash = sellProduct(units);
-                    if (cash > 0) { sound.play('sell'); addNotification(`Sold ${formatUnits(units)} for ${formatMoney(cash)} 💵`, 'success'); }
-                    else addNotification('Street demand exhausted — use dealers!', 'warning');
-                  }}
-                  disabled={!canSell}
-                  className={`flex-1 py-2 rounded-lg border border-white/30 text-xs font-semibold transition ${canSell ? 'bg-green-800 hover:bg-green-700 text-green-200' : 'bg-gray-800 text-white cursor-not-allowed'}`}
-                >
-                  Sell {label}<br />
-                  <span className={canSell ? 'text-green-400' : 'text-gray-600'}>{formatMoney(earned)}</span>
-                </button>
-                </Tooltip>
-              );
-            })}
-          </div>
-        ) : totalInventoryOz > 0 ? (
-          <p className="text-orange-500 text-xs text-center py-1 font-semibold">Street demand exhausted — use dealers or wait</p>
-        ) : (
-          <p className="text-gray-600 text-xs text-center py-1">No product — grow some weed first</p>
-        )}
+        <div className="flex gap-2">
+          {([16, maxDemandOz] as const).map((qty) => {
+            const units = Math.min(qty, Math.floor(totalInventoryOz), Math.floor(streetSellQuotaOz));
+            const earned = Math.floor(units * weightedAvgPrice * 0.7);
+            const label = qty === 16 ? '1lb' : 'All';
+            const canSell = units > 0 && totalInventoryOz > 0 && streetSellQuotaOz > 0;
+            const noProduct = totalInventoryOz <= 0;
+            const noDemand = streetSellQuotaOz <= 0 && !noProduct;
+            return (
+              <Tooltip key={qty} text={noProduct ? "No product to sell — grow some weed first" : noDemand ? "Street demand exhausted — use dealers or wait" : qty === 16 ? "Sell 1lb on the street at 70% avg price. Limited by street demand." : "Sell all available product on the street at 70% avg price."}>
+              <button
+                data-tutorial={qty === 16 ? 'sell-btn' : undefined}
+                onClick={() => {
+                  if (!canSell) return;
+                  const cash = sellProduct(units);
+                  if (cash > 0) { sound.play('sell'); addNotification(`Sold ${formatUnits(units)} for ${formatMoney(cash)} 💵`, 'success'); }
+                  else addNotification('Street demand exhausted — use dealers!', 'warning');
+                }}
+                disabled={!canSell}
+                className={`flex-1 py-2 rounded-lg border border-white/30 text-xs font-semibold transition ${
+                  canSell ? 'bg-green-800 hover:bg-green-700 text-green-200'
+                  : noProduct ? 'bg-red-900/40 border-red-800/50 text-red-400 cursor-not-allowed'
+                  : noDemand ? 'bg-orange-900/30 border-orange-800/50 text-orange-400 cursor-not-allowed'
+                  : 'bg-gray-800 text-white cursor-not-allowed'
+                }`}
+              >
+                {noProduct ? (
+                  <>Out of Stock<br /><span className="text-red-500 text-[10px]">Sell {label}</span></>
+                ) : noDemand ? (
+                  <>No Demand<br /><span className="text-orange-500 text-[10px]">Sell {label}</span></>
+                ) : (
+                  <>Sell {label}<br /><span className="text-green-400">{formatMoney(earned)}</span></>
+                )}
+              </button>
+              </Tooltip>
+            );
+          })}
+        </div>
         <p className="text-gray-600 text-[10px] mt-1.5 text-center">Street sell = 70% avg price · max 10 lbs per window · dealer network has no limit</p>
       </div>
 
