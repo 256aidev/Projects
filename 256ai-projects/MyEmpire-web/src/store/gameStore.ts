@@ -1388,10 +1388,10 @@ export const useGameStore = create<GameStore>()(
 
         // Bootstrap unlocked slots for existing saves
         if (!merged.unlockedSlots) {
-          const slots: Record<string, number> = { starter: 2 };
+          const slots: Record<string, number> = { starter: 0 };
           // Unlock slots based on businesses already placed
           for (const biz of merged.businesses) {
-            const prev = slots[biz.districtId] ?? 2;
+            const prev = slots[biz.districtId] ?? 0;
             const bizCount = merged.businesses.filter((b) => b.districtId === biz.districtId).length;
             slots[biz.districtId] = Math.max(prev, bizCount + 1);
           }

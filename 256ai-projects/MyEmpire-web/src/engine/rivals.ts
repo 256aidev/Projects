@@ -118,7 +118,7 @@ export function tickRivals(
         const alreadyHas = r.businesses.some(b => b.districtId === district.id && b.slotIndex === slot);
         const isBlacklisted = (r.blacklistedSlots ?? []).includes(slotKey);
         // Skip player-owned empty lots — rivals can't take lots the player bought
-        const playerOwnsSlot = slot < (playerUnlockedSlots?.[district.id] ?? 2);
+        const playerOwnsSlot = slot < (playerUnlockedSlots?.[district.id] ?? 0);
         const playerHasBizThere = playerOwnsSlot && playerBusinesses.some(b => b.districtId === district.id && b.slotIndex === slot);
         const isProtected = playerOwnsSlot && !playerHasBizThere;
         if (!alreadyHas && !isBlacklisted && !isProtected) {
