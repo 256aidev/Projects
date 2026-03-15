@@ -157,8 +157,11 @@ export const PRESTIGE_MILESTONES: PrestigeMilestone[] = [
   { id: 'dist_4',     name: '4 districts unlocked', icon: '🗺️', check: (s) => s.unlockedDistricts.length >= 4,      bonusTP: 1 },
   { id: 'dist_8',     name: '8 districts unlocked', icon: '🗺️', check: (s) => s.unlockedDistricts.length >= 8,      bonusTP: 2 },
   // Rivals
-  { id: 'rival_1',    name: '1 rival defeated',     icon: '🔫', check: (s) => s.rivals.filter(r => r.isDefeated).length >= 1, bonusTP: 1 },
-  { id: 'rival_all',  name: 'All rivals defeated',  icon: '🔫', check: (s) => s.rivals.length > 0 && s.rivals.every(r => r.isDefeated), bonusTP: 2 },
+  { id: 'rival_1',    name: '1 rival defeated',      icon: '🔫', check: (s) => s.rivals.filter(r => r.isDefeated).length >= 1, bonusTP: 1 },
+  { id: 'rival_2',    name: '2 rivals defeated',     icon: '🔫', check: (s) => s.rivals.filter(r => r.isDefeated).length >= 2, bonusTP: 2 },
+  { id: 'rival_3',    name: '3 rivals defeated',     icon: '🔫', check: (s) => s.rivals.filter(r => r.isDefeated).length >= 3, bonusTP: 3 },
+  { id: 'rival_4',    name: '4 rivals defeated',     icon: '🔫', check: (s) => s.rivals.filter(r => r.isDefeated).length >= 4, bonusTP: 4 },
+  { id: 'rival_5',    name: '5 rivals defeated',     icon: '🔫', check: (s) => s.rivals.filter(r => r.isDefeated).length >= 5, bonusTP: 5 },
 ];
 
 /** Calculate Tech Points earned for a prestige reset */
