@@ -516,6 +516,15 @@ export default function CityMap() {
               if (!cell) {
                 return <div key={item.key} style={{ ...placement, width: BLOCK_W, height: BLOCK_H }} />;
               }
+              // Rival operations — always render custom block regardless of lock state
+              const rivalMatchEarly = cell.id.match(/^rival_ops_(\d+)$/);
+              if (rivalMatchEarly) {
+                return (
+                  <div key={cell.id} style={placement}>
+                    <RivalOperationsBlock rivalIndex={parseInt(rivalMatchEarly[1])} />
+                  </div>
+                );
+              }
               if (cell.kind === 'district-unlocked') {
                 // Operations spans multiple rows — no road between halves
                 if (cell.id === OPS_DISTRICT_ID) {
