@@ -103,7 +103,7 @@ export function tickRivals(
     // Rival buys a business occasionally (every ~50 ticks when they have money)
     // Budget scales with power: early rivals can only afford cheap businesses
     const maxBudget = Math.floor(r.power * 15000); // power 1 = $15K max, power 5 = $75K, power 10 = $150K
-    const affordableBiz = BUSINESSES.filter(b => b.purchaseCost <= maxBudget && b.purchaseCost <= r.dirtyCash);
+    const affordableBiz = BUSINESSES.filter(b => b.purchaseCost <= maxBudget && b.purchaseCost <= r.cleanCash);
     if (affordableBiz.length > 0 && Math.random() < 0.04) {
       const bizDef = affordableBiz[Math.floor(Math.random() * affordableBiz.length)];
       // Rivals only buy in starter/cheap districts until they're powerful
@@ -128,7 +128,7 @@ export function tickRivals(
             businessDefId: bizDef.id,
             health: 100,
           }];
-          r.dirtyCash -= bizDef.purchaseCost;
+          r.cleanCash -= bizDef.purchaseCost;
         }
       }
     }
