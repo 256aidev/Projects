@@ -77,15 +77,19 @@ export default function OperationView() {
           </div>
           <CannabisLeaf size={28} />
         </div>
-        {/* Per-strain stash breakdown */}
+        {/* Per-strain stash breakdown — always show all strains, even at 0 */}
         {invEntries.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
-            {invEntries.filter(([, e]) => e.oz > 0).map(([strainName, entry]) => (
-              <div key={strainName} className="bg-gray-800/70 rounded-lg px-2 py-1 flex items-center gap-1.5">
-                <span className="text-green-400 text-[10px] font-semibold">{strainName}</span>
-                <span className="text-gray-400 text-[10px]">{formatUnits(entry.oz)}</span>
+            {invEntries.map(([strainName, entry]) => {
+              const empty = entry.oz <= 0;
+              return (
+              <div key={strainName} className={`rounded-lg px-2 py-1 flex items-center gap-1.5 ${empty ? 'bg-gray-800/30 opacity-50' : 'bg-gray-800/70'}`}>
+                <span className={`text-[10px] font-semibold ${empty ? 'text-red-400' : 'text-green-400'}`}>{strainName}</span>
+                <span className={`text-[10px] ${empty ? 'text-red-500' : 'text-gray-400'}`}>{empty ? '0oz' : formatUnits(entry.oz)}</span>
                 <span className="text-yellow-500 text-[10px]">${entry.pricePerUnit}/oz</span>
               </div>
+              );
+            })
             ))}
           </div>
         )}
