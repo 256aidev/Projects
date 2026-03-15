@@ -366,8 +366,20 @@ export default function OperationView() {
                           : 'Enable')
                         : null;
 
+                      // Room doesn't support this upgrade at all (cap=0, not a toggle)
+                      if (cappedMaxLevel === 0 && !isToggle) {
+                        return (
+                          <Tooltip key={upgDef.id} text={`${upgDef.name} is not available for ${room.name}. Upgrade to a bigger room to unlock.`}>
+                          <div className="flex flex-col items-center justify-center p-1.5 rounded-lg border border-gray-800 bg-gray-900/30 opacity-40">
+                            <span className="text-[10px] font-bold text-gray-600">{upgDef.icon} {upgDef.name}</span>
+                            <span className="text-[9px] text-gray-600 mt-1">—</span>
+                          </div>
+                          </Tooltip>
+                        );
+                      }
+
                       return (
-                        <Tooltip key={upgDef.id} text={`${upgDef.name}: ${upgDef.bonusType === 'speed' ? 'Reduces grow timer' : upgDef.bonusType === 'yield' ? 'Increases harvest yield' : upgDef.bonusType === 'double' ? 'Chance for double harvest' : 'Auto harvest & replant when ready'}`}>
+                        <Tooltip key={upgDef.id} text={`${upgDef.name}: ${upgDef.bonusType === 'speed' ? 'Reduces grow timer' : upgDef.bonusType === 'yield' ? 'Increases harvest yield' : upgDef.bonusType === 'double' ? 'Chance for double harvest' : 'Auto harvest & replant when ready'}${cappedMaxLevel > 0 ? ` (${cappedMaxLevel} level${cappedMaxLevel > 1 ? 's' : ''} max in ${room.name})` : ''}`}>
                         <div className={`flex flex-col justify-between p-1.5 rounded-lg border ${level > 0 ? `border-opacity-40 ${upgDef.bgColor}` : upgDef.borderColor}`}>
                           {/* Header: icon, name, level dots */}
                           <div className="flex items-center justify-between mb-0.5">
