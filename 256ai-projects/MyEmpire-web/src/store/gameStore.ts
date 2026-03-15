@@ -217,26 +217,32 @@ export const useGameStore = create<GameStore>()(
 
       // ── Event actions (kept inline — small + use engine imports directly) ──
       resolveEvent: (choiceIndex) => {
-        const state = get();
-        const es = state.eventSystem ?? INITIAL_EVENT_STATE;
-        if (!es.activeEvent) return null;
-        const eventDef = getEventDef(es.activeEvent.eventId);
-        if (!eventDef) { set({ eventSystem: { ...es, activeEvent: null, lastEventTick: state.tickCount } }); return null; }
-        const { outcome, eventState, success } = resolveChoice(eventDef, choiceIndex, es, state.tickCount);
-        const updates: Partial<GameState> = { eventSystem: eventState };
-        if (outcome.dirtyCashDelta) updates.dirtyCash = Math.max(0, state.dirtyCash + outcome.dirtyCashDelta);
-        if (outcome.cleanCashDelta) updates.cleanCash = Math.max(0, state.cleanCash + outcome.cleanCashDelta);
-        if (outcome.heatDelta) updates.heat = Math.max(0, Math.min(1000, state.heat + outcome.heatDelta));
-        if (outcome.rivalHeatDelta) updates.rivalHeat = Math.max(0, Math.min(1000, (state.rivalHeat ?? 0) + outcome.rivalHeatDelta));
-        if (outcome.seedDelta) {
-          updates.operation = { ...state.operation, seedStock: Math.max(0, state.operation.seedStock + outcome.seedDelta) };
-        }
-        if (outcome.dealerCountDelta) {
-          const op = updates.operation ?? state.operation;
-          updates.operation = { ...op, dealerCount: Math.max(0, op.dealerCount + outcome.dealerCountDelta) };
-        }
-        set(updates);
-        return { success, message: success ? eventDef.choices[choiceIndex].description : (eventDef.choices[choiceIndex].description + ' (failed)') };
+        // Use set() updater to avoid race with tick — tick also uses set(state => ...) so
+        // this updater will see the latest state even if a tick is in-flight.
+        let result: { success: boolean; message: string } | null = null;
+        set((state) => {
+          const es = state.eventSystem ?? INITIAL_EVENT_STATE;
+          if (!es.activeEvent) return {};
+          const eventDef = getEventDef(es.activeEvent.eventId);
+          if (!eventDef) return { eventSystem: { ...es, activeEvent: null, lastEventTick: state.tickCount } };
+          const { outcome, eventState, success } = resolveChoice(eventDef, choiceIndex, es, state.tickCount);
+          const updates: Partial<GameState> = { eventSystem: eventState };
+          if (outcome.dirtyCashDelta) updates.dirtyCash = Math.max(0, state.dirtyCash + outcome.dirtyCashDelta);
+          if (outcome.cleanCashDelta) updates.cleanCash = Math.max(0, state.cleanCash + outcome.cleanCashDelta);
+          if (outcome.heatDelta) updates.heat = Math.max(0, Math.min(1000, state.heat + outcome.heatDelta));
+          if (outcome.rivalHeatDelta) updates.rivalHeat = Math.max(0, Math.min(1000, (state.rivalHeat ?? 0) + outcome.rivalHeatDelta));
+          if (outcome.seedDelta) {
+            updates.operation = { ...state.operation, seedStock: Math.max(0, state.operation.seedStock + outcome.seedDelta) };
+          }
+          if (outcome.dealerCountDelta) {
+            const op = updates.operation ?? state.operation;
+            updates.operation = { ...op, dealerCount: Math.max(0, op.dealerCount + outcome.dealerCountDelta) };
+          }
+          console.log(`[Event] ${eventDef.title} choice=${choiceIndex} success=${success} dirtyCashDelta=${outcome.dirtyCashDelta ?? 0} cleanCashDelta=${outcome.cleanCashDelta ?? 0}`);
+          result = { success, message: success ? eventDef.choices[choiceIndex].description : (eventDef.choices[choiceIndex].description + ' (failed)') };
+          return updates;
+        });
+        return result;
       },
 
       dismissEvent: () => {

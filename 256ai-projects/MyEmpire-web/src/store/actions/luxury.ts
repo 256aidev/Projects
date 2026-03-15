@@ -9,23 +9,24 @@ export function createLuxuryActions(set: SetState, get: GetState) {
   return {
     // ─── CASINO ────────────────────────────────────────────────
     settleCasinoBet: (betAmount: number, grossPayout: number) => {
-      const state = get();
-      // Deduct bet from dirty cash (floor at 0 if ticks consumed some during spin delay)
-      const dirtyAfterBet = Math.max(0, state.dirtyCash - betAmount);
-      const taxAmount = grossPayout > 0 ? Math.floor(grossPayout * 0.15) : 0;
-      const cleanWon = Math.max(0, grossPayout - taxAmount);
-      const history = state.casinoHistory ?? { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 };
-      console.log(`[Casino] bet=${betAmount} gross=${grossPayout} tax=${taxAmount} cleanWon=${cleanWon} dirtyBefore=${state.dirtyCash} dirtyAfter=${dirtyAfterBet} cleanBefore=${state.cleanCash}`);
-      set({
-        dirtyCash: dirtyAfterBet,
-        cleanCash: state.cleanCash + cleanWon,
-        totalCleanEarned: state.totalCleanEarned + cleanWon,
-        casinoHistory: {
-          totalGambled: history.totalGambled + betAmount,
-          totalWon: history.totalWon + cleanWon,
-          totalLost: history.totalLost + (grossPayout === 0 ? betAmount : 0),
-          gamesPlayed: history.gamesPlayed + 1,
-        },
+      // Use set() updater to avoid race with tick system
+      set((state) => {
+        const dirtyAfterBet = Math.max(0, state.dirtyCash - betAmount);
+        const taxAmount = grossPayout > 0 ? Math.floor(grossPayout * 0.15) : 0;
+        const cleanWon = Math.max(0, grossPayout - taxAmount);
+        const history = state.casinoHistory ?? { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 };
+        console.log(`[Casino] bet=${betAmount} gross=${grossPayout} tax=${taxAmount} cleanWon=${cleanWon} dirtyBefore=${state.dirtyCash} dirtyAfter=${dirtyAfterBet} cleanBefore=${state.cleanCash}`);
+        return {
+          dirtyCash: dirtyAfterBet,
+          cleanCash: state.cleanCash + cleanWon,
+          totalCleanEarned: state.totalCleanEarned + cleanWon,
+          casinoHistory: {
+            totalGambled: history.totalGambled + betAmount,
+            totalWon: history.totalWon + cleanWon,
+            totalLost: history.totalLost + (grossPayout === 0 ? betAmount : 0),
+            gamesPlayed: history.gamesPlayed + 1,
+          },
+        };
       });
     },
 
