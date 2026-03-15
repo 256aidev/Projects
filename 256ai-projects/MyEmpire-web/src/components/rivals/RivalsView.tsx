@@ -27,13 +27,13 @@ export default function RivalsView() {
   const heat = useGameStore((s) => s.heat ?? 0);
   const rivalHeat = useGameStore((s) => s.rivalHeat ?? 0);
 
-  // Power calculation: ATK + DEF + businesses×100 + cash/1000
-  const playerPower = getCrewAttack(crew) + getCrewDefense(crew) + businesses.length * 100 + Math.floor(dirtyCash / 1000);
+  // Power calculation: ATK + DEF + businesses×100
+  const playerPower = getCrewAttack(crew) + getCrewDefense(crew) + businesses.length * 100;
   const factions = [
     { name: 'You', icon: '👑', power: playerPower, heat: heat / 10, rivalThreat: rivalHeat / 10, color: '#6366f1', isPlayer: true, hitmen: playerCrewCount, biz: businesses.length },
     ...activeRivals.map(r => ({
       name: r.name, icon: r.icon,
-      power: r.hitmen * 15 + r.businesses.length * 100 + Math.floor(r.dirtyCash / 1000) + Math.floor(r.power * 50),
+      power: r.hitmen * 15 + r.businesses.length * 100 + Math.floor(r.power * 50),
       heat: r.aggression * 100,
       rivalThreat: r.aggression * 100,
       color: r.color, isPlayer: false, hitmen: r.hitmen, biz: r.businesses.length,
@@ -99,7 +99,7 @@ export default function RivalsView() {
         <div className="flex items-center justify-between mb-2">
           <div>
             <h3 className="text-white font-semibold text-sm">👑 Your Crew</h3>
-            <p className="text-gray-400 text-[10px]">{playerCrewCount} members · {formatMoney(crewUpkeep)}/tick</p>
+            <p className="text-gray-400 text-[10px]">{playerCrewCount} members · ATK {getCrewAttack(crew)} · DEF {getCrewDefense(crew)} · <span className="text-red-400">-{formatMoney(crewUpkeep)}/tick</span></p>
           </div>
           {playerCrewCount > 0 && (
             <div className="flex flex-wrap gap-1 justify-end">
@@ -117,11 +117,14 @@ export default function RivalsView() {
             const atMax = owned >= def.maxCount;
             const canAfford = dirtyCash >= def.cost && !atMax;
             return (
-              <Tooltip key={def.id} text={def.description}>
+              <Tooltip key={def.id} text={`${def.description} | ATK: ${def.attack} · DEF: ${def.defense} · Upkeep: ${formatMoney(def.upkeep)}/tick`}>
               <div className="bg-gray-900/60 rounded-lg p-1.5 text-center border border-gray-700/50">
                 <span className="text-sm">{def.icon}</span>
                 <p className="text-white font-bold text-[9px]">{def.name}</p>
                 <p className="text-gray-400 text-[8px]">×{owned}/{def.maxCount}</p>
+                {owned > 0 && (
+                  <p className="text-red-400 text-[8px] font-mono">-{formatMoney(def.upkeep * owned)}/tick</p>
+                )}
                 <div className="flex gap-0.5 mt-1">
                   <button
                     onClick={() => {
@@ -134,9 +137,9 @@ export default function RivalsView() {
                     {atMax ? 'MAX' : formatMoney(def.cost)}
                   </button>
                   {owned > 0 && (
-                    <button onClick={() => { fireCrew(def.id); sound.play('fire'); }}
-                      className="px-1 py-0.5 rounded text-[8px] bg-gray-700 hover:bg-gray-600 text-red-400">
-                      ×
+                    <button onClick={() => { fireCrew(def.id); sound.play('fire'); addNotification(`Fired a ${def.name}`, 'warning'); }}
+                      className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-900/60 hover:bg-red-800 text-red-300 border border-red-700/50">
+                      FIRE
                     </button>
                   )}
                 </div>
