@@ -230,12 +230,20 @@ export default function RivalsView() {
                     <Tooltip key={action.type} text={action.description}>
                     <button
                       onClick={() => {
+                        if (blocked) {
+                          const reasons: string[] = [];
+                          if ((rival.weakness ?? 0) < 67) reasons.push(`Need ${67 - Math.floor(rival.weakness ?? 0)}% more weakness (${Math.floor(rival.weakness ?? 0)}%/67%)`);
+                          if (rival.hitmen > 1) reasons.push(`Rival has ${rival.hitmen} hitmen — take them out first`);
+                          addNotification(reasons.join('. '), 'warning');
+                          return;
+                        }
                         const result = attackRival(rival.id, action.type);
                         if (result) { sound.play('attack'); addNotification(result.message, result.success ? 'success' : 'warning'); }
                       }}
-                      disabled={!canDo || blocked}
+                      disabled={!canDo}
                       className={`px-2 py-1.5 rounded text-[9px] font-semibold transition ${
-                        canDo && !blocked ? 'bg-red-900/60 hover:bg-red-800/60 text-red-300' : 'bg-gray-800 text-white cursor-not-allowed'
+                        blocked ? 'bg-gray-800 text-red-800 cursor-pointer border border-red-900/50' :
+                        canDo ? 'bg-red-900/60 hover:bg-red-800/60 text-red-300' : 'bg-gray-800 text-white cursor-not-allowed'
                       }`}
                     >
                       {action.name} · {formatMoney(action.cost)}
