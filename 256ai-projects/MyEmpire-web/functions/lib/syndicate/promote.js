@@ -34,33 +34,33 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.promoteMember = void 0;
-const https_1 = require("firebase-functions/v2/https");
+const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 /**
  * Promote a member to underboss. Only the leader can promote.
  * Max 3 underbosses.
  */
-exports.promoteMember = (0, https_1.onCall)({ cors: true }, async (request) => {
-    if (!request.auth)
-        throw new https_1.HttpsError('unauthenticated', 'Must be logged in');
-    const uid = request.auth.uid;
-    const { syndicateId, targetUid } = request.data;
+exports.promoteMember = functions.https.onCall(async (data, context) => {
+    if (!context.auth)
+        throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    const uid = context.auth.uid;
+    const { syndicateId, targetUid } = data;
     if (!syndicateId || !targetUid)
-        throw new https_1.HttpsError('invalid-argument', 'Missing fields');
+        throw new functions.https.HttpsError('invalid-argument', 'Missing fields');
     const syndicateRef = db.collection('syndicates').doc(syndicateId);
     const syndicate = await syndicateRef.get();
     if (!syndicate.exists)
-        throw new https_1.HttpsError('not-found', 'Syndicate not found');
+        throw new functions.https.HttpsError('not-found', 'Syndicate not found');
     const sd = syndicate.data();
     if (sd.leaderId !== uid) {
-        throw new https_1.HttpsError('permission-denied', 'Only the leader can promote');
+        throw new functions.https.HttpsError('permission-denied', 'Only the leader can promote');
     }
     if (sd.underbossIds.includes(targetUid)) {
-        throw new https_1.HttpsError('already-exists', 'Already an underboss');
+        throw new functions.https.HttpsError('already-exists', 'Already an underboss');
     }
     if (sd.underbossIds.length >= 3) {
-        throw new https_1.HttpsError('resource-exhausted', 'Maximum 3 underbosses');
+        throw new functions.https.HttpsError('resource-exhausted', 'Maximum 3 underbosses');
     }
     const batch = db.batch();
     batch.update(syndicateRef, {

@@ -34,14 +34,14 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.weeklyMatchmaking = void 0;
-const scheduler_1 = require("firebase-functions/v2/scheduler");
+const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 /**
  * Weekly matchmaking — runs every Monday at 00:00 UTC.
  * Pairs syndicates by total power level for the weekly war.
  */
-exports.weeklyMatchmaking = (0, scheduler_1.onSchedule)({ schedule: 'every monday 00:00', timeZone: 'UTC' }, async () => {
+exports.weeklyMatchmaking = functions.pubsub.schedule('every monday 00:00').timeZone('UTC').onRun(async () => {
     // Get all syndicates with 2+ members, sorted by power
     const syndicatesSnap = await db.collection('syndicates')
         .where('memberCount', '>=', 2)

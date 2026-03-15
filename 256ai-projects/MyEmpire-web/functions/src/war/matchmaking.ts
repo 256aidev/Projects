@@ -1,4 +1,4 @@
-import { onSchedule } from 'firebase-functions/v2/scheduler';
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
 const db = admin.firestore();
@@ -7,7 +7,7 @@ const db = admin.firestore();
  * Weekly matchmaking — runs every Monday at 00:00 UTC.
  * Pairs syndicates by total power level for the weekly war.
  */
-export const weeklyMatchmaking = onSchedule({ schedule: 'every monday 00:00', timeZone: 'UTC' }, async () => {
+export const weeklyMatchmaking = functions.pubsub.schedule('every monday 00:00').timeZone('UTC').onRun(async () => {
   // Get all syndicates with 2+ members, sorted by power
   const syndicatesSnap = await db.collection('syndicates')
     .where('memberCount', '>=', 2)

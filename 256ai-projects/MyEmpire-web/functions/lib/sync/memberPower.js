@@ -34,25 +34,25 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.syncMemberPower = void 0;
-const firestore_1 = require("firebase-functions/v2/firestore");
+const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 /**
  * When a player's leaderboard entry updates, sync their power to their syndicate.
  * This keeps syndicate totalPower accurate.
  */
-exports.syncMemberPower = (0, firestore_1.onDocumentWritten)('leaderboard/{uid}', async (event) => {
-    var _a, _b, _c, _d, _e, _f, _g;
-    const uid = event.params.uid;
-    const after = ((_b = (_a = event.data) === null || _a === void 0 ? void 0 : _a.after) === null || _b === void 0 ? void 0 : _b.exists) ? event.data.after.data() : null;
-    const before = ((_d = (_c = event.data) === null || _c === void 0 ? void 0 : _c.before) === null || _d === void 0 ? void 0 : _d.exists) ? event.data.before.data() : null;
+exports.syncMemberPower = functions.firestore.document('leaderboard/{uid}').onWrite(async (change, context) => {
+    var _a, _b, _c;
+    const uid = context.params.uid;
+    const after = change.after.exists ? change.after.data() : null;
+    const before = change.before.exists ? change.before.data() : null;
     if (!after)
         return; // deleted — handled by leave
     const syndicateId = after.syndicateId;
     if (!syndicateId)
         return; // not in a syndicate
-    const newPower = (_e = after.score) !== null && _e !== void 0 ? _e : 0;
-    const oldPower = (_f = before === null || before === void 0 ? void 0 : before.score) !== null && _f !== void 0 ? _f : 0;
+    const newPower = (_a = after.score) !== null && _a !== void 0 ? _a : 0;
+    const oldPower = (_b = before === null || before === void 0 ? void 0 : before.score) !== null && _b !== void 0 ? _b : 0;
     const powerDiff = newPower - oldPower;
     if (powerDiff === 0)
         return; // no change
@@ -64,7 +64,7 @@ exports.syncMemberPower = (0, firestore_1.onDocumentWritten)('leaderboard/{uid}'
     const batch = db.batch();
     batch.update(memberRef, {
         powerContribution: newPower,
-        displayName: (_g = after.displayName) !== null && _g !== void 0 ? _g : 'Unknown',
+        displayName: (_c = after.displayName) !== null && _c !== void 0 ? _c : 'Unknown',
     });
     batch.update(db.collection('syndicates').doc(syndicateId), {
         totalPower: admin.firestore.FieldValue.increment(powerDiff),

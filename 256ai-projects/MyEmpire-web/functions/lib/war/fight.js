@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.startFight = void 0;
-const https_1 = require("firebase-functions/v2/https");
+const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 const MAX_FIGHTS_PER_DAY = 3;
@@ -42,46 +42,46 @@ const MAX_FIGHTS_PER_DAY = 3;
  * Initiate a war fight against an opponent from the enemy syndicate.
  * Server-side resolution — reads both players' power from leaderboard.
  */
-exports.startFight = (0, https_1.onCall)({ cors: true }, async (request) => {
+exports.startFight = functions.https.onCall(async (data, context) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-    if (!request.auth)
-        throw new https_1.HttpsError('unauthenticated', 'Must be logged in');
-    const uid = request.auth.uid;
-    const { warId, defenderUid } = request.data;
+    if (!context.auth)
+        throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    const uid = context.auth.uid;
+    const { warId, defenderUid } = data;
     if (!warId || !defenderUid)
-        throw new https_1.HttpsError('invalid-argument', 'Missing fields');
+        throw new functions.https.HttpsError('invalid-argument', 'Missing fields');
     if (uid === defenderUid)
-        throw new https_1.HttpsError('invalid-argument', 'Cannot fight yourself');
+        throw new functions.https.HttpsError('invalid-argument', 'Cannot fight yourself');
     // Get war
     const warRef = db.collection('wars').doc(warId);
     const war = await warRef.get();
     if (!war.exists)
-        throw new https_1.HttpsError('not-found', 'War not found');
+        throw new functions.https.HttpsError('not-found', 'War not found');
     const warData = war.data();
     if (warData.status !== 'active') {
-        throw new https_1.HttpsError('failed-precondition', 'War is not active');
+        throw new functions.https.HttpsError('failed-precondition', 'War is not active');
     }
     // Determine which syndicate the attacker is in
-    const attackerSyndicate = warData.syndicateA === request.data.syndicateId ? warData.syndicateA
-        : warData.syndicateB === request.data.syndicateId ? warData.syndicateB : null;
+    const attackerSyndicate = warData.syndicateA === data.syndicateId ? warData.syndicateA
+        : warData.syndicateB === data.syndicateId ? warData.syndicateB : null;
     const defenderSyndicate = attackerSyndicate === warData.syndicateA ? warData.syndicateB : warData.syndicateA;
     if (!attackerSyndicate) {
-        throw new https_1.HttpsError('permission-denied', 'Your syndicate is not in this war');
+        throw new functions.https.HttpsError('permission-denied', 'Your syndicate is not in this war');
     }
     // Check fight limit
     const attackerMemberRef = db.collection('syndicates').doc(attackerSyndicate).collection('members').doc(uid);
     const attackerMember = await attackerMemberRef.get();
     if (!attackerMember.exists)
-        throw new https_1.HttpsError('not-found', 'You are not in this syndicate');
+        throw new functions.https.HttpsError('not-found', 'You are not in this syndicate');
     const fightsToday = (_b = (_a = attackerMember.data()) === null || _a === void 0 ? void 0 : _a.warFightsToday) !== null && _b !== void 0 ? _b : 0;
     if (fightsToday >= MAX_FIGHTS_PER_DAY) {
-        throw new https_1.HttpsError('resource-exhausted', `Max ${MAX_FIGHTS_PER_DAY} fights per day`);
+        throw new functions.https.HttpsError('resource-exhausted', `Max ${MAX_FIGHTS_PER_DAY} fights per day`);
     }
     // Check defender is in enemy syndicate
     const defenderMemberRef = db.collection('syndicates').doc(defenderSyndicate).collection('members').doc(defenderUid);
     const defenderMember = await defenderMemberRef.get();
     if (!defenderMember.exists) {
-        throw new https_1.HttpsError('not-found', 'Defender not found in enemy syndicate');
+        throw new functions.https.HttpsError('not-found', 'Defender not found in enemy syndicate');
     }
     // Get both players' power from leaderboard
     const [attackerLB, defenderLB] = await Promise.all([

@@ -1,4 +1,4 @@
-import { onSchedule } from 'firebase-functions/v2/scheduler';
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
 const db = admin.firestore();
@@ -13,7 +13,7 @@ const LOSER_XP = 25;
  * End war — runs every Saturday at 00:00 UTC.
  * Tallies final scores, distributes bonuses, clears war state.
  */
-export const endWar = onSchedule({ schedule: 'every saturday 00:00', timeZone: 'UTC' }, async () => {
+export const endWar = functions.pubsub.schedule('every saturday 00:00').timeZone('UTC').onRun(async () => {
   const warsSnap = await db.collection('wars').where('status', '==', 'active').get();
 
   for (const warDoc of warsSnap.docs) {

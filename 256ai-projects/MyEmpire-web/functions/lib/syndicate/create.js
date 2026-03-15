@@ -34,40 +34,35 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createSyndicate = void 0;
-const https_1 = require("firebase-functions/v2/https");
+const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 /**
  * Create a new syndicate. Caller becomes the Head of the Family.
  * Requires: name (3-30 chars), tag (2-5 chars), icon (emoji), color (hex)
  */
-exports.createSyndicate = (0, https_1.onCall)({ cors: true }, async (request) => {
-    var _a, _b, _c, _d;
-    if (!request.auth)
-        throw new https_1.HttpsError('unauthenticated', 'Must be logged in');
-    const uid = request.auth.uid;
-    const { name, tag, icon, color } = request.data;
+exports.createSyndicate = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c, _d, _e;
+    if (!context.auth)
+        throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    const uid = context.auth.uid;
+    const { name, tag, icon, color } = data;
     // Validate inputs
     if (!name || typeof name !== 'string' || name.length < 3 || name.length > 30) {
-        throw new https_1.HttpsError('invalid-argument', 'Name must be 3-30 characters');
+        throw new functions.https.HttpsError('invalid-argument', 'Name must be 3-30 characters');
     }
     if (!tag || typeof tag !== 'string' || tag.length < 2 || tag.length > 5) {
-        throw new https_1.HttpsError('invalid-argument', 'Tag must be 2-5 characters');
+        throw new functions.https.HttpsError('invalid-argument', 'Tag must be 2-5 characters');
     }
-    // Check player isn't already in a syndicate
-    const existingMembership = await db.collectionGroup('members').where('uid', '==', uid).limit(1).get();
-    if (!existingMembership.empty) {
-        throw new https_1.HttpsError('already-exists', 'You are already in a syndicate');
-    }
-    // Check name uniqueness
-    const nameCheck = await db.collection('syndicates').where('name', '==', name).limit(1).get();
-    if (!nameCheck.empty) {
-        throw new https_1.HttpsError('already-exists', 'Syndicate name already taken');
+    // Check player isn't already in a syndicate (via leaderboard doc)
+    const leaderboardRef = db.collection('leaderboard').doc(uid);
+    const lbDoc = await leaderboardRef.get();
+    if (lbDoc.exists && ((_a = lbDoc.data()) === null || _a === void 0 ? void 0 : _a.syndicateId)) {
+        throw new functions.https.HttpsError('already-exists', 'You are already in a syndicate');
     }
     // Get player display name from leaderboard
-    const leaderboardDoc = await db.collection('leaderboard').doc(uid).get();
-    const displayName = leaderboardDoc.exists ? (_b = (_a = leaderboardDoc.data()) === null || _a === void 0 ? void 0 : _a.displayName) !== null && _b !== void 0 ? _b : 'Unknown' : 'Unknown';
-    const playerPower = leaderboardDoc.exists ? (_d = (_c = leaderboardDoc.data()) === null || _c === void 0 ? void 0 : _c.score) !== null && _d !== void 0 ? _d : 0 : 0;
+    const displayName = lbDoc.exists ? (_c = (_b = lbDoc.data()) === null || _b === void 0 ? void 0 : _b.displayName) !== null && _c !== void 0 ? _c : 'Unknown' : 'Unknown';
+    const playerPower = lbDoc.exists ? (_e = (_d = lbDoc.data()) === null || _d === void 0 ? void 0 : _d.score) !== null && _e !== void 0 ? _e : 0 : 0;
     // Create syndicate document
     const syndicateRef = db.collection('syndicates').doc();
     const syndicateId = syndicateRef.id;
@@ -102,8 +97,8 @@ exports.createSyndicate = (0, https_1.onCall)({ cors: true }, async (request) =>
     const batch = db.batch();
     batch.set(syndicateRef, syndicateData);
     batch.set(syndicateRef.collection('members').doc(uid), memberData);
-    // Update player's leaderboard entry with syndicateId
-    batch.update(db.collection('leaderboard').doc(uid), { syndicateId });
+    // Update player's leaderboard entry with syndicateId (set+merge in case doc doesn't exist)
+    batch.set(leaderboardRef, { syndicateId }, { merge: true });
     await batch.commit();
     return { syndicateId, name: syndicateData.name };
 });

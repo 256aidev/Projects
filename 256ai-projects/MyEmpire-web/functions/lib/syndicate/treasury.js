@@ -34,29 +34,29 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.contributeTreasury = void 0;
-const https_1 = require("firebase-functions/v2/https");
+const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 /**
  * Contribute clean cash to syndicate treasury.
  * Deducts from player's leaderboard cleanCash field (informational — actual deduction happens client-side).
  */
-exports.contributeTreasury = (0, https_1.onCall)({ cors: true }, async (request) => {
+exports.contributeTreasury = functions.https.onCall(async (data, context) => {
     var _a;
-    if (!request.auth)
-        throw new https_1.HttpsError('unauthenticated', 'Must be logged in');
-    const uid = request.auth.uid;
-    const { syndicateId, amount } = request.data;
+    if (!context.auth)
+        throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    const uid = context.auth.uid;
+    const { syndicateId, amount } = data;
     if (!syndicateId || !amount || amount <= 0) {
-        throw new https_1.HttpsError('invalid-argument', 'Invalid contribution amount');
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid contribution amount');
     }
     const syndicateRef = db.collection('syndicates').doc(syndicateId);
     const syndicate = await syndicateRef.get();
     if (!syndicate.exists)
-        throw new https_1.HttpsError('not-found', 'Syndicate not found');
+        throw new functions.https.HttpsError('not-found', 'Syndicate not found');
     const sd = syndicate.data();
     if (!sd.memberIds.includes(uid)) {
-        throw new https_1.HttpsError('permission-denied', 'You are not in this syndicate');
+        throw new functions.https.HttpsError('permission-denied', 'You are not in this syndicate');
     }
     await syndicateRef.update({
         treasury: admin.firestore.FieldValue.increment(amount),

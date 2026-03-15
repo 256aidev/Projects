@@ -1,4 +1,4 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
 const db = admin.firestore();
@@ -7,36 +7,30 @@ const db = admin.firestore();
  * Create a new syndicate. Caller becomes the Head of the Family.
  * Requires: name (3-30 chars), tag (2-5 chars), icon (emoji), color (hex)
  */
-export const createSyndicate = onCall({ cors: true }, async (request) => {
-  if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
+export const createSyndicate = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
 
-  const uid = request.auth.uid;
-  const { name, tag, icon, color } = request.data;
+  const uid = context.auth.uid;
+  const { name, tag, icon, color } = data;
 
   // Validate inputs
   if (!name || typeof name !== 'string' || name.length < 3 || name.length > 30) {
-    throw new HttpsError('invalid-argument', 'Name must be 3-30 characters');
+    throw new functions.https.HttpsError('invalid-argument', 'Name must be 3-30 characters');
   }
   if (!tag || typeof tag !== 'string' || tag.length < 2 || tag.length > 5) {
-    throw new HttpsError('invalid-argument', 'Tag must be 2-5 characters');
+    throw new functions.https.HttpsError('invalid-argument', 'Tag must be 2-5 characters');
   }
 
-  // Check player isn't already in a syndicate
-  const existingMembership = await db.collectionGroup('members').where('uid', '==', uid).limit(1).get();
-  if (!existingMembership.empty) {
-    throw new HttpsError('already-exists', 'You are already in a syndicate');
-  }
-
-  // Check name uniqueness
-  const nameCheck = await db.collection('syndicates').where('name', '==', name).limit(1).get();
-  if (!nameCheck.empty) {
-    throw new HttpsError('already-exists', 'Syndicate name already taken');
+  // Check player isn't already in a syndicate (via leaderboard doc)
+  const leaderboardRef = db.collection('leaderboard').doc(uid);
+  const lbDoc = await leaderboardRef.get();
+  if (lbDoc.exists && lbDoc.data()?.syndicateId) {
+    throw new functions.https.HttpsError('already-exists', 'You are already in a syndicate');
   }
 
   // Get player display name from leaderboard
-  const leaderboardDoc = await db.collection('leaderboard').doc(uid).get();
-  const displayName = leaderboardDoc.exists ? leaderboardDoc.data()?.displayName ?? 'Unknown' : 'Unknown';
-  const playerPower = leaderboardDoc.exists ? leaderboardDoc.data()?.score ?? 0 : 0;
+  const displayName = lbDoc.exists ? lbDoc.data()?.displayName ?? 'Unknown' : 'Unknown';
+  const playerPower = lbDoc.exists ? lbDoc.data()?.score ?? 0 : 0;
 
   // Create syndicate document
   const syndicateRef = db.collection('syndicates').doc();
@@ -76,8 +70,8 @@ export const createSyndicate = onCall({ cors: true }, async (request) => {
   batch.set(syndicateRef, syndicateData);
   batch.set(syndicateRef.collection('members').doc(uid), memberData);
 
-  // Update player's leaderboard entry with syndicateId
-  batch.update(db.collection('leaderboard').doc(uid), { syndicateId });
+  // Update player's leaderboard entry with syndicateId (set+merge in case doc doesn't exist)
+  batch.set(leaderboardRef, { syndicateId }, { merge: true });
 
   await batch.commit();
 

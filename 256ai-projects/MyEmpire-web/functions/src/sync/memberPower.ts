@@ -1,4 +1,4 @@
-import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
 const db = admin.firestore();
@@ -7,10 +7,10 @@ const db = admin.firestore();
  * When a player's leaderboard entry updates, sync their power to their syndicate.
  * This keeps syndicate totalPower accurate.
  */
-export const syncMemberPower = onDocumentWritten('leaderboard/{uid}', async (event) => {
-  const uid = event.params.uid;
-  const after = event.data?.after?.exists ? event.data.after.data() : null;
-  const before = event.data?.before?.exists ? event.data.before.data() : null;
+export const syncMemberPower = functions.firestore.document('leaderboard/{uid}').onWrite(async (change, context) => {
+  const uid = context.params.uid;
+  const after = change.after.exists ? change.after.data() : null;
+  const before = change.before.exists ? change.before.data() : null;
 
   if (!after) return; // deleted — handled by leave
 

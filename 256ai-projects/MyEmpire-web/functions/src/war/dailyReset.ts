@@ -1,4 +1,4 @@
-import { onSchedule } from 'firebase-functions/v2/scheduler';
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
 const db = admin.firestore();
@@ -8,7 +8,7 @@ const db = admin.firestore();
  * Resets fight counts for all members in active wars.
  * Records daily results.
  */
-export const dailyWarReset = onSchedule({ schedule: 'every day 00:00', timeZone: 'UTC' }, async () => {
+export const dailyWarReset = functions.pubsub.schedule('every day 00:00').timeZone('UTC').onRun(async () => {
   // Get all active wars
   const warsSnap = await db.collection('wars').where('status', '==', 'active').get();
 

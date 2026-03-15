@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.joinSyndicate = void 0;
-const https_1 = require("firebase-functions/v2/https");
+const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const db = admin.firestore();
 const MAX_MEMBERS = 20;
@@ -42,28 +42,28 @@ const MAX_MEMBERS = 20;
  * Join an existing syndicate.
  * Requires: syndicateId
  */
-exports.joinSyndicate = (0, https_1.onCall)({ cors: true }, async (request) => {
+exports.joinSyndicate = functions.https.onCall(async (data, context) => {
     var _a, _b, _c, _d;
-    if (!request.auth)
-        throw new https_1.HttpsError('unauthenticated', 'Must be logged in');
-    const uid = request.auth.uid;
-    const { syndicateId } = request.data;
+    if (!context.auth)
+        throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    const uid = context.auth.uid;
+    const { syndicateId } = data;
     if (!syndicateId)
-        throw new https_1.HttpsError('invalid-argument', 'Missing syndicateId');
+        throw new functions.https.HttpsError('invalid-argument', 'Missing syndicateId');
     // Check player isn't already in a syndicate
     const syndicatesWithMember = await db.collectionGroup('members')
         .where('uid', '==', uid).limit(1).get();
     if (!syndicatesWithMember.empty) {
-        throw new https_1.HttpsError('already-exists', 'You are already in a syndicate');
+        throw new functions.https.HttpsError('already-exists', 'You are already in a syndicate');
     }
     const syndicateRef = db.collection('syndicates').doc(syndicateId);
     const syndicate = await syndicateRef.get();
     if (!syndicate.exists) {
-        throw new https_1.HttpsError('not-found', 'Syndicate not found');
+        throw new functions.https.HttpsError('not-found', 'Syndicate not found');
     }
     const syndicateData = syndicate.data();
     if (syndicateData.memberCount >= MAX_MEMBERS) {
-        throw new https_1.HttpsError('resource-exhausted', 'Syndicate is full');
+        throw new functions.https.HttpsError('resource-exhausted', 'Syndicate is full');
     }
     // Get player info
     const leaderboardDoc = await db.collection('leaderboard').doc(uid).get();

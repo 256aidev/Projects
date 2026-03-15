@@ -1,4 +1,4 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
 const db = admin.firestore();
@@ -8,31 +8,31 @@ const MAX_MEMBERS = 20;
  * Join an existing syndicate.
  * Requires: syndicateId
  */
-export const joinSyndicate = onCall({ cors: true }, async (request) => {
-  if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
+export const joinSyndicate = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
 
-  const uid = request.auth.uid;
-  const { syndicateId } = request.data;
+  const uid = context.auth.uid;
+  const { syndicateId } = data;
 
-  if (!syndicateId) throw new HttpsError('invalid-argument', 'Missing syndicateId');
+  if (!syndicateId) throw new functions.https.HttpsError('invalid-argument', 'Missing syndicateId');
 
   // Check player isn't already in a syndicate
   const syndicatesWithMember = await db.collectionGroup('members')
     .where('uid', '==', uid).limit(1).get();
   if (!syndicatesWithMember.empty) {
-    throw new HttpsError('already-exists', 'You are already in a syndicate');
+    throw new functions.https.HttpsError('already-exists', 'You are already in a syndicate');
   }
 
   const syndicateRef = db.collection('syndicates').doc(syndicateId);
   const syndicate = await syndicateRef.get();
 
   if (!syndicate.exists) {
-    throw new HttpsError('not-found', 'Syndicate not found');
+    throw new functions.https.HttpsError('not-found', 'Syndicate not found');
   }
 
   const syndicateData = syndicate.data()!;
   if (syndicateData.memberCount >= MAX_MEMBERS) {
-    throw new HttpsError('resource-exhausted', 'Syndicate is full');
+    throw new functions.https.HttpsError('resource-exhausted', 'Syndicate is full');
   }
 
   // Get player info
