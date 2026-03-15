@@ -6,7 +6,9 @@ import Tooltip from '../ui/Tooltip';
 const TABS: { id: ViewName; label: string; icon: string | null }[] = [
   { id: 'operation', label: 'Operation', icon: null },  // null = use CannabisLeaf
   { id: 'city',      label: 'City',      icon: '🏙️' },
-  { id: 'legal',     label: 'Legal & Rivals', icon: '⚖️' },
+  { id: 'legal',     label: 'Legal',     icon: '⚖️' },
+  { id: 'rivals',    label: 'Rivals',    icon: '🔫' },
+  { id: 'family',    label: 'Syndicate', icon: '👑' },
   { id: 'finance',   label: 'Stats',     icon: '📊' },
   { id: 'ranks',     label: 'Ranks',     icon: '🏆' },
 ];
@@ -14,7 +16,9 @@ const TABS: { id: ViewName; label: string; icon: string | null }[] = [
 const TAB_TOOLTIPS: Record<string, string> = {
   operation: 'Manage your grow operation, seeds, dealers, and product sales.',
   city: 'View the city map, buy lots, and build front businesses.',
-  legal: 'Police heat, lawyers, hitmen, and rival warfare.',
+  legal: 'Police heat, lawyers, and legal protection.',
+  rivals: 'Rival syndicates, attacks, and warfare.',
+  family: 'Your Syndicate — recruit crew, build your crime family.',
   finance: 'View detailed financial stats and game metrics.',
   ranks: 'Leaderboards, rankings, and empire score breakdown.',
 };

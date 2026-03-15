@@ -9,6 +9,12 @@ export interface SessionTechBonuses {
   heatReduction: number;     // e.g. 0.30 means 30% less heat gain
   demandBonus: number;       // flat +N oz street demand
   seedDiscount: number;      // e.g. 0.45 means 45% cheaper seeds
+  // Room upgrade boosters (session)
+  floraGroBonus: number;
+  floraMicroBonus: number;
+  floraBloomBonus: number;
+  waterBonus: number;
+  lightBonus: number;
 }
 
 /** Compute session tech bonuses from current upgrade levels */
@@ -21,5 +27,10 @@ export function getSessionTechBonuses(sessionTech: Record<SessionTechId, number>
     heatReduction: sessionTech.stech_heat * SESSION_TECH_MAP.stech_heat.effectPerLevel,
     demandBonus: sessionTech.stech_demand * SESSION_TECH_MAP.stech_demand.effectPerLevel,
     seedDiscount: sessionTech.stech_seeds * SESSION_TECH_MAP.stech_seeds.effectPerLevel,
+    floraGroBonus: (sessionTech.stech_flora_gro ?? 0) * SESSION_TECH_MAP.stech_flora_gro.effectPerLevel,
+    floraMicroBonus: (sessionTech.stech_flora_micro ?? 0) * SESSION_TECH_MAP.stech_flora_micro.effectPerLevel,
+    floraBloomBonus: (sessionTech.stech_flora_bloom ?? 0) * SESSION_TECH_MAP.stech_flora_bloom.effectPerLevel,
+    waterBonus: (sessionTech.stech_water ?? 0) * SESSION_TECH_MAP.stech_water.effectPerLevel,
+    lightBonus: (sessionTech.stech_light ?? 0) * SESSION_TECH_MAP.stech_light.effectPerLevel,
   };
 }

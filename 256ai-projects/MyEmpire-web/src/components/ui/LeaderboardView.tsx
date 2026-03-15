@@ -5,6 +5,7 @@ import { useLeaderboardStore } from '../../store/leaderboardStore';
 import { formatMoney, formatUnits } from '../../engine/economy';
 import { getDifficultyMultiplier } from '../../engine/difficulty';
 import { CAR_DEFS } from '../../data/carDefs';
+import { getCrewAttack, getCrewDefense } from '../../data/crewDefs';
 
 // ── Point Scoring System ──────────────────────────────────────────────
 // Each category awards points based on difficulty of achievement.
@@ -221,12 +222,43 @@ export default function LeaderboardView() {
           </div>
         )}
 
-        {activeTab === 'combat' && (
+        {activeTab === 'combat' && (<>
           <div className="bg-gray-800/40 rounded-xl p-3 space-y-0.5">
             <StatRow label="Rivals Defeated" value={`${(state.rivals ?? []).filter(r => r.isDefeated).length} / ${(state.rivals ?? []).length}`} pts={(state.rivals ?? []).filter(r => r.isDefeated).length * 50000} color="text-amber-400" />
             <StatRow label="Crew Members" value={`${(state.crew ?? []).reduce((s, h) => s + h.count, 0)}`} pts={(state.crew ?? []).reduce((s, h) => s + h.count, 0) * 5000} color="text-red-400" />
           </div>
-        )}
+
+          {/* Power Struggle Chart */}
+          {(() => {
+            const playerPower = getCrewAttack(state.crew ?? []) + getCrewDefense(state.crew ?? []) + state.businesses.length * 100 + Math.floor(state.dirtyCash / 1000);
+            const allFactions = [
+              { name: 'You', icon: '👑', power: playerPower, color: '#6366f1' },
+              ...(state.rivals ?? []).filter(r => !r.isDefeated).map(r => ({
+                name: r.name, icon: r.icon,
+                power: r.hitmen * 15 + r.businesses.length * 100 + Math.floor(r.dirtyCash / 1000) + Math.floor(r.power * 50),
+                color: r.color,
+              })),
+            ];
+            const maxP = Math.max(1, ...allFactions.map(f => f.power));
+            return allFactions.length > 1 ? (
+              <div className="bg-gray-800/40 rounded-xl p-3">
+                <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-2">Power Struggle</p>
+                <div className="space-y-1.5">
+                  {[...allFactions].sort((a, b) => b.power - a.power).map((f, i) => (
+                    <div key={f.name} className="flex items-center gap-2">
+                      <span className="text-sm w-5 text-center">{i === 0 ? '👑' : f.icon}</span>
+                      <span className="text-[10px] font-semibold w-20 truncate text-gray-300">{f.name}</span>
+                      <div className="flex-1 h-3 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${(f.power / maxP) * 100}%`, backgroundColor: f.color }} />
+                      </div>
+                      <span className="text-[9px] text-gray-400 font-mono w-12 text-right">{f.power.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null;
+          })()}
+        </>)}
 
         {activeTab === 'prestige' && (
           <div className="bg-gray-800/40 rounded-xl p-3 space-y-0.5">

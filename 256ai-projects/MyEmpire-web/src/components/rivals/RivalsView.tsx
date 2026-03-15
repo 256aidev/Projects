@@ -1,7 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { RIVAL_ACTIONS } from '../../data/types';
-import { CREW_DEFS, getCrewBonuses, getCrewCount, getCrewUpkeep } from '../../data/crewDefs';
+import { CREW_DEFS, getCrewBonuses, getCrewCount, getCrewUpkeep, getCrewAttack, getCrewDefense } from '../../data/crewDefs';
 import { formatMoney } from '../../engine/economy';
 import { sound } from '../../engine/sound';
 import Tooltip from '../ui/Tooltip';
@@ -16,14 +16,50 @@ export default function RivalsView() {
   const fireCrew = useGameStore((s) => s.fireCrew);
   const addNotification = useUIStore((s) => s.addNotification);
 
+  const businesses = useGameStore((s) => s.businesses);
+
   const playerCrewCount = getCrewCount(crew);
   const crewUpkeep = getCrewUpkeep(crew);
   const crewBonuses = getCrewBonuses(crew);
   const activeRivals = rivals.filter(r => !r.isDefeated);
   const defeatedRivals = rivals.filter(r => r.isDefeated);
 
+  // Power calculation: ATK + DEF + businesses×100 + cash/1000
+  const playerPower = getCrewAttack(crew) + getCrewDefense(crew) + businesses.length * 100 + Math.floor(dirtyCash / 1000);
+  const factions = [
+    { name: 'You', icon: '👑', power: playerPower, color: '#6366f1', isPlayer: true },
+    ...activeRivals.map(r => ({
+      name: r.name, icon: r.icon,
+      power: r.hitmen * 15 + r.businesses.length * 100 + Math.floor(r.dirtyCash / 1000) + Math.floor(r.power * 50),
+      color: r.color, isPlayer: false,
+    })),
+  ];
+  const maxPower = Math.max(1, ...factions.map(f => f.power));
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+      {/* Power Struggle */}
+      {factions.length > 1 && (
+        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3">
+          <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-2">Power Struggle</p>
+          <div className="space-y-1.5">
+            {[...factions].sort((a, b) => b.power - a.power).map((f, i) => (
+              <div key={f.name} className="flex items-center gap-2">
+                <span className="text-sm w-5 text-center">{i === 0 ? '👑' : f.icon}</span>
+                <span className={`text-[10px] font-semibold w-20 truncate ${f.isPlayer ? 'text-indigo-300' : 'text-gray-300'}`}>{f.name}</span>
+                <div className="flex-1 h-3 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${(f.power / maxPower) * 100}%`, backgroundColor: f.color }}
+                  />
+                </div>
+                <span className="text-[9px] text-gray-400 font-mono w-12 text-right">{f.power.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Crime Family — Your Crew */}
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3">
@@ -60,7 +96,7 @@ export default function RivalsView() {
                       else addNotification(atMax ? 'Max reached' : `Need ${formatMoney(def.cost)}`, 'warning');
                     }}
                     disabled={!canAfford}
-                    className={`flex-1 py-0.5 rounded text-[8px] font-bold transition ${canAfford ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                    className={`flex-1 py-0.5 rounded text-[8px] font-bold transition ${canAfford ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 text-white cursor-not-allowed'}`}
                   >
                     {atMax ? 'MAX' : formatMoney(def.cost)}
                   </button>
@@ -102,6 +138,7 @@ export default function RivalsView() {
               </div>
 
               {/* Weakness bar */}
+              <Tooltip text={`Weakness: ${Math.floor(rival.weakness ?? 0)}%. ${(rival.weakness ?? 0) >= 67 ? 'Critical — can be assassinated!' : (rival.weakness ?? 0) >= 33 ? 'Weakening — keep attacking.' : 'Strong — attack to weaken.'} Power ×${rival.power.toFixed(1)} · ${rival.hitmen} hitmen · ${rival.businesses.length} businesses · ${formatMoney(rival.dirtyCash)} dirty · ${formatMoney(rival.cleanCash)} clean · ${rival.productOz} oz product`}>
               <div className="mb-2">
                 <div className="flex items-center justify-between text-[9px] mb-0.5">
                   <span className="text-gray-500">Weakness</span>
@@ -119,6 +156,7 @@ export default function RivalsView() {
                   />
                 </div>
               </div>
+              </Tooltip>
 
               <div className="grid grid-cols-2 gap-1 text-[10px] mb-2">
                 <span className="text-gray-500">Dirty: <span className="text-green-400">{formatMoney(rival.dirtyCash)}</span></span>

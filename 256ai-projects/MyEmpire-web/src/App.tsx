@@ -28,6 +28,8 @@ import NavBar from './components/layout/NavBar';
 import CityMap from './components/city/CityMap';
 import OperationView from './components/operation/OperationView';
 import LegalView from './components/legal/LegalView';
+import RivalsView from './components/rivals/RivalsView';
+import FamilyView from './components/family/FamilyView';
 import WarehouseView from './components/warehouse/WarehouseView';
 import FinanceView from './components/finance/FinanceView';
 import BuyBusinessPanel from './components/panels/BuyBusinessPanel';
@@ -127,6 +129,8 @@ export default function App() {
         )}
 
         {activeView === 'legal' && <LegalView />}
+        {activeView === 'rivals' && <RivalsView />}
+        {activeView === 'family' && <FamilyView />}
         {activeView === 'finance' && <FinanceView />}
         {activeView === 'ranks' && <LeaderboardView />}
       </div>

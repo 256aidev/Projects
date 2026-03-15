@@ -11,7 +11,12 @@ export type SessionTechId =
   | 'stech_launder'
   | 'stech_heat'
   | 'stech_demand'
-  | 'stech_seeds';
+  | 'stech_seeds'
+  | 'stech_flora_gro'
+  | 'stech_flora_micro'
+  | 'stech_flora_bloom'
+  | 'stech_water'
+  | 'stech_light';
 
 export interface SessionTechCost {
   dirtyCash: number;
@@ -28,8 +33,19 @@ export interface SessionTechDef {
   costs: SessionTechCost[];  // cost per level [L1, L2, L3]
   effectPerLevel: number;
   effectLabel: string;
-  bonusType: 'yield' | 'speed' | 'dealer' | 'launder' | 'heat' | 'demand' | 'seeds';
+  bonusType: 'yield' | 'speed' | 'dealer' | 'launder' | 'heat' | 'demand' | 'seeds' | 'flora_gro' | 'flora_micro' | 'flora_bloom' | 'water' | 'light';
 }
+
+/** Generate doubling session tech costs */
+function doublingSessionCosts(baseDirty: number, baseClean: number, baseOz: number, levels: number): SessionTechCost[] {
+  return Array.from({ length: levels }, (_, i) => ({
+    dirtyCash: baseDirty * Math.pow(2, i),
+    cleanCash: baseClean * Math.pow(2, i),
+    productOz: baseOz * Math.pow(2, i),
+  }));
+}
+
+const SESSION_ROOM_MAX = 50;
 
 export const SESSION_TECH_DEFS: SessionTechDef[] = [
   {
@@ -137,6 +153,62 @@ export const SESSION_TECH_DEFS: SessionTechDef[] = [
     effectLabel: '-15% seed cost',
     bonusType: 'seeds',
   },
+  // ─── ROOM UPGRADE BOOSTERS — infinite +1% per level, cost doubles ───
+  {
+    id: 'stech_flora_gro',
+    name: 'FloraGro Boost',
+    icon: '🟢',
+    description: 'Supercharge FloraGro nutrients — +1% grow speed per level',
+    maxLevel: SESSION_ROOM_MAX,
+    costs: doublingSessionCosts(10_000, 5_000, 20, SESSION_ROOM_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% grow speed',
+    bonusType: 'flora_gro',
+  },
+  {
+    id: 'stech_flora_micro',
+    name: 'FloraMicro Boost',
+    icon: '🟣',
+    description: 'Enhanced FloraMicro formula — +1% yield per level',
+    maxLevel: SESSION_ROOM_MAX,
+    costs: doublingSessionCosts(10_000, 5_000, 20, SESSION_ROOM_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% yield',
+    bonusType: 'flora_micro',
+  },
+  {
+    id: 'stech_flora_bloom',
+    name: 'FloraBloom Boost',
+    icon: '🔴',
+    description: 'Potent FloraBloom mix — +1% double harvest chance per level',
+    maxLevel: SESSION_ROOM_MAX,
+    costs: doublingSessionCosts(10_000, 5_000, 20, SESSION_ROOM_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% double chance',
+    bonusType: 'flora_bloom',
+  },
+  {
+    id: 'stech_water',
+    name: 'Hydro Boost',
+    icon: '💧',
+    description: 'Upgraded water systems — +1% grow speed per level',
+    maxLevel: SESSION_ROOM_MAX,
+    costs: doublingSessionCosts(10_000, 5_000, 20, SESSION_ROOM_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% grow speed',
+    bonusType: 'water',
+  },
+  {
+    id: 'stech_light',
+    name: 'Light Boost',
+    icon: '💡',
+    description: 'Overdriven lighting rigs — +1% grow speed per level',
+    maxLevel: SESSION_ROOM_MAX,
+    costs: doublingSessionCosts(10_000, 5_000, 20, SESSION_ROOM_MAX),
+    effectPerLevel: 0.01,
+    effectLabel: '+1% grow speed',
+    bonusType: 'light',
+  },
 ];
 
 export const SESSION_TECH_MAP = Object.fromEntries(
@@ -151,4 +223,9 @@ export const INITIAL_SESSION_TECH: Record<SessionTechId, number> = {
   stech_heat: 0,
   stech_demand: 0,
   stech_seeds: 0,
+  stech_flora_gro: 0,
+  stech_flora_micro: 0,
+  stech_flora_bloom: 0,
+  stech_water: 0,
+  stech_light: 0,
 };

@@ -78,19 +78,23 @@ export default function SessionTechMenu() {
                   </div>
                 </div>
 
-                {/* Level dots */}
-                <div className="flex gap-1">
-                  {Array.from({ length: def.maxLevel }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-3 h-3 rounded-full border ${
-                        i < level
-                          ? 'bg-amber-400 border-amber-500'
-                          : 'bg-gray-700 border-gray-600'
-                      }`}
-                    />
-                  ))}
-                </div>
+                {/* Level indicator */}
+                {def.maxLevel <= 10 ? (
+                  <div className="flex gap-1">
+                    {Array.from({ length: def.maxLevel }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-3 rounded-full border ${
+                          i < level
+                            ? 'bg-amber-400 border-amber-500'
+                            : 'bg-gray-700 border-gray-600'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-amber-400 text-xs font-bold">Level {level}</p>
+                )}
 
                 {/* Current bonus */}
                 <p className="text-amber-300 text-xs font-mono">
@@ -162,6 +166,11 @@ function formatSessionBonus(bonusType: string, value: number): string {
     case 'heat': return `-${Math.round(value * 100)}% heat gain`;
     case 'demand': return `+${Math.round(value)} oz street demand`;
     case 'seeds': return `-${Math.round(value * 100)}% seed cost`;
+    case 'flora_gro': return `+${Math.round(value * 100)}% grow speed`;
+    case 'flora_micro': return `+${Math.round(value * 100)}% yield`;
+    case 'flora_bloom': return `+${Math.round(value * 100)}% double chance`;
+    case 'water': return `+${Math.round(value * 100)}% grow speed`;
+    case 'light': return `+${Math.round(value * 100)}% grow speed`;
     default: return `+${value}`;
   }
 }
