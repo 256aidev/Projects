@@ -133,13 +133,18 @@ export interface PrestigeMilestone {
 
 export const PRESTIGE_MILESTONES: PrestigeMilestone[] = [
   // Total Dirty Earned
-  { id: 'dirty_5m',   name: '$5M dirty earned',     icon: '💵', check: (s) => s.totalDirtyEarned >= 5_000_000,     bonusTP: 1 },
-  { id: 'dirty_25m',  name: '$25M dirty earned',    icon: '💵', check: (s) => s.totalDirtyEarned >= 25_000_000,    bonusTP: 2 },
-  { id: 'dirty_100m', name: '$100M dirty earned',   icon: '💵', check: (s) => s.totalDirtyEarned >= 100_000_000,   bonusTP: 3 },
+  { id: 'dirty_50m',   name: '$50M dirty earned',    icon: '💵', check: (s) => s.totalDirtyEarned >= 50_000_000,         bonusTP: 1 },
+  { id: 'dirty_250m',  name: '$250M dirty earned',   icon: '💵', check: (s) => s.totalDirtyEarned >= 250_000_000,        bonusTP: 2 },
+  { id: 'dirty_1b',    name: '$1B dirty earned',     icon: '💵', check: (s) => s.totalDirtyEarned >= 1_000_000_000,      bonusTP: 3 },
+  { id: 'dirty_10b',   name: '$10B dirty earned',    icon: '💵', check: (s) => s.totalDirtyEarned >= 10_000_000_000,     bonusTP: 5 },
+  { id: 'dirty_100b',  name: '$100B dirty earned',   icon: '💵', check: (s) => s.totalDirtyEarned >= 100_000_000_000,    bonusTP: 8 },
+  { id: 'dirty_1t',    name: '$1T dirty earned',     icon: '💵', check: (s) => s.totalDirtyEarned >= 1_000_000_000_000,  bonusTP: 15 },
   // Total Clean Earned
-  { id: 'clean_500k', name: '$500K clean earned',   icon: '🏦', check: (s) => s.totalCleanEarned >= 500_000,       bonusTP: 1 },
+  { id: 'clean_1m',    name: '$1M clean earned',     icon: '🏦', check: (s) => s.totalCleanEarned >= 1_000_000,       bonusTP: 1 },
   { id: 'clean_5m',   name: '$5M clean earned',     icon: '🏦', check: (s) => s.totalCleanEarned >= 5_000_000,     bonusTP: 2 },
   { id: 'clean_50m',  name: '$50M clean earned',    icon: '🏦', check: (s) => s.totalCleanEarned >= 50_000_000,    bonusTP: 3 },
+  { id: 'clean_100m', name: '$100M clean earned',   icon: '🏦', check: (s) => s.totalCleanEarned >= 100_000_000,   bonusTP: 5 },
+  { id: 'clean_1b',   name: '$1B clean earned',     icon: '🏦', check: (s) => s.totalCleanEarned >= 1_000_000_000, bonusTP: 8 },
   // Grow Rooms
   { id: 'rooms_3',    name: '3 grow rooms',         icon: '🌿', check: (s) => s.operation.growRooms.length >= 3,    bonusTP: 1 },
   { id: 'rooms_6',    name: '6 grow rooms',         icon: '🌿', check: (s) => s.operation.growRooms.length >= 6,    bonusTP: 1 },
