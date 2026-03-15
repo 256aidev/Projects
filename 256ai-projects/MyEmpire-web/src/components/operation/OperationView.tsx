@@ -7,6 +7,7 @@ import { formatMoney, formatUnits } from '../../engine/economy';
 import { JOB_MAP } from '../../data/types';
 import { sound } from '../../engine/sound';
 import { getCarBonuses } from '../../data/carDefs';
+import { getJewelryBonuses } from '../../engine/jewelry';
 import CannabisLeaf from '../ui/CannabisLeaf';
 import Tooltip from '../ui/Tooltip';
 
@@ -48,6 +49,7 @@ export default function OperationView() {
   const maxDemandOz = getMaxStreetDemand(activeJobDefs, businesses, carBonuses.streetDemand);
   const refillRate = getStreetRefillRate(maxDemandOz);
   const prestigeBonus = useGameStore((s) => s.prestigeBonus ?? 0);
+  const jewelryBonuses = getJewelryBonuses(useGameStore((s) => s.jewelry ?? []));
   const addNotification = useUIStore((s) => s.addNotification);
 
   const currentDealerTier = DEALER_TIERS[op.dealerTierIndex];
@@ -282,7 +284,7 @@ export default function OperationView() {
             const canUpgrade = hasNextSlot && dirtyCash >= nextUpgradeCost;
             const isMaxLevel = !hasNextSlot;
 
-            const totalYieldBonus = getRoomBonus(room, 'yield');
+            const totalYieldBonus = getRoomBonus(room, 'yield') + prestigeBonus + jewelryBonuses.yieldBoost;
             const maintenancePerCycle = getRoomCycleCost(room);
             const upgMult = def?.upgradeCostMultiplier ?? 1;
 
