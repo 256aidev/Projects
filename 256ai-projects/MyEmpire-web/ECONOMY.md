@@ -632,29 +632,47 @@ Rivals are procedurally generated at game start with random names, icons, and co
 
 ### Rival Passive Income (per rival tick, every 10 game ticks)
 
-Income scales with power² so early game is slow:
+Income scales **linearly** with power level (not quadratic):
 
 ```
-dirtyCash += 50 + power² × 20
-cleanCash += 10 + power² × 5
+dirtyCash += 10 + power × 20
+cleanCash += 15 + power × 15   (ONLY if dirtyCash ≥ $100K)
 productOz += floor(power × 0.3)
-power     += 0.005 (very slow creep, max 20)
+power     += 0.0005 (very slow creep, max 20)
 ```
 
-| Power | Dirty Cash/tick | Time to $15K |
-|-------|----------------|-------------|
-| 1 | $70 | ~3.5 min |
-| 5 | $550 | ~27s |
-| 10 | $2,050 | ~7s |
-| 20 | $8,050 | ~2s |
+**Clean cash gate:** Rivals must accumulate $100K dirty cash before they start earning any clean cash. This prevents them from buying businesses too early.
 
-### Rival Business Buying
+| Power | Dirty Cash/tick | Clean Cash/tick | Time to $100K dirty |
+|-------|----------------|-----------------|---------------------|
+| 1 | $30 | $0 (gated) | ~55 min |
+| 5 | $110 | $90 | ~15 min |
+| 10 | $210 | $165 | ~8 min |
+| 20 | $410 | $315 | ~4 min |
 
-Rivals buy businesses they can afford, limited by power level:
-- **Max budget:** `power × $15,000` (power 1 = $15K max, power 10 = $150K)
-- **Must have enough dirty cash** to pay the actual `purchaseCost`
+### Rival Business Buying (Two-Step: Lot → Build)
+
+Rivals use a two-step process (same system as the player):
+
+**Step 1 — Buy a Lot:**
+- **Lot cost:** $2,000 flat
+- **Buy chance:** 1% per rival tick (every 10 game ticks)
 - **District restriction:** Only districts with `unlockCost ≤ power × $25,000`
-- **Buy chance:** 4% per rival tick (was 8%)
+- Lot is stored in `ownedLots[]` with `boughtAtTick` timestamp
+- Player-owned slots and blacklisted slots are skipped
+
+**Step 2 — Build on Lot (after 60-tick cooldown):**
+- Once a lot has been owned for `LOT_BUILD_COOLDOWN` (60 ticks = 60 seconds), the rival builds
+- **Max budget:** `power × $15,000` (power 1 = $15K max, power 10 = $150K)
+- **Must have enough CLEAN cash** to pay the business `purchaseCost`
+- Picks a random affordable business definition
+- Builds on the oldest ready lot first
+
+### Universal Lot Build Cooldown
+
+Both players and rivals share the same lot cooldown system (`LOT_BUILD_COOLDOWN = 60` ticks):
+- **Player:** When unlocking a lot via `unlockLot()`, `lotBuildTimers[districtId:slotIndex] = tickCount` is recorded. `purchaseBusiness()` checks this timer and blocks building until cooldown expires. BuyBusinessPanel shows "Lot Under Development" with a countdown and progress bar.
+- **Rival:** When buying a lot, `boughtAtTick = tickCount` is stored. `tickRivals()` only builds on lots where `tickCount - boughtAtTick ≥ 60`.
 - **Blacklisted slots** are skipped (see Arson below)
 
 **Code:** `tickRivals()` in `src/engine/rivals.ts`
@@ -1130,20 +1148,22 @@ Hover tooltips on every interactive element across the game. 120+ tooltips acros
 
 ## 26. Rival Economy
 
-Rivals have their own dual-currency economy (dirty + clean cash) that scales with power level.
+Rivals have their own dual-currency economy (dirty + clean cash) that scales **linearly** with power level.
 
-### Passive Income (per tick)
-| Currency | Formula | Power 1 | Power 5 | Power 10 |
-|----------|---------|---------|---------|----------|
-| Dirty | `50 + power² × 20` | $70 | $550 | $2,050 |
-| Clean | `10 + power² × 5` | $15 | $135 | $510 |
+### Passive Income (per rival tick, every 10 game ticks)
+| Currency | Formula | Gate | Power 1 | Power 10 |
+|----------|---------|------|---------|----------|
+| Dirty | `10 + power × 20` | None | $30 | $210 |
+| Clean | `15 + power × 15` | Dirty ≥ $100K | $0 | $165 |
 
 ### Key Rules
 - **Rivals buy businesses with CLEAN cash** (same as player) — prevents them from bypassing the laundering economy
+- **Clean cash gated:** Rivals don't earn clean cash until they accumulate $100K dirty cash
+- **Two-step lot→build:** Rivals buy a lot first ($2K, 1% chance), then build after 60-tick cooldown
 - **Budget cap:** `power × 15,000` for business purchases
 - **District access:** `power × 25,000` max district unlock cost
-- **Purchase chance:** 4% per rival tick (every 10 game ticks)
-- **Power creep:** +0.005 per tick, capped at 20
+- **Purchase chance:** 1% per rival tick (every 10 game ticks)
+- **Power creep:** +0.0005 per rival tick (10× slower than before), capped at 20
 
 ### Royal Rumble Entry
 Each rival has `activeAtTick` for staggered entry:

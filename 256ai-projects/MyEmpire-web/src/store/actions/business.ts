@@ -1,4 +1,5 @@
 import type { BusinessInstance, GameState } from '../../data/types';
+import { LOT_BUILD_COOLDOWN } from '../../data/types';
 import { BUSINESS_MAP } from '../../data/businesses';
 import { DISTRICT_MAP } from '../../data/districts';
 import { RESOURCE_MAP } from '../../data/resources';
@@ -24,6 +25,10 @@ export function createBusinessActions(set: SetState, get: GetState) {
       const occupied = state.businesses.filter((b) => b.districtId === districtId);
       if (occupied.length >= maxSlots) return false;
       if (occupied.some((b) => b.slotIndex === slotIndex)) return false;
+      // Enforce lot build cooldown — must own the lot for LOT_BUILD_COOLDOWN ticks before building
+      const slotTimerKey = `${districtId}:${slotIndex}`;
+      const lotBoughtAt = state.lotBuildTimers?.[slotTimerKey];
+      if (lotBoughtAt != null && state.tickCount - lotBoughtAt < LOT_BUILD_COOLDOWN) return false;
       const instance: BusinessInstance = {
         instanceId: `biz_${nextInstanceId++}_${Date.now()}`,
         businessDefId,

@@ -1,5 +1,6 @@
 import { BUSINESSES } from '../../data/businesses';
 import { DISTRICT_MAP } from '../../data/districts';
+import { LOT_BUILD_COOLDOWN } from '../../data/types';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
@@ -12,6 +13,8 @@ export default function BuyBusinessPanel() {
   const addNotification = useUIStore((s) => s.addNotification);
 
   const cleanCash = useGameStore((s) => s.cleanCash);
+  const tickCount = useGameStore((s) => s.tickCount);
+  const lotBuildTimers = useGameStore((s) => s.lotBuildTimers);
   const purchaseBusiness = useGameStore((s) => s.purchaseBusiness);
 
   if (!selectedSlot) return null;
@@ -30,6 +33,13 @@ export default function BuyBusinessPanel() {
       : isGenBlock || b.allowedDistrictIds.includes(selectedSlot.districtId),
   );
 
+  // Check lot build cooldown
+  const slotTimerKey = `${selectedSlot.districtId}:${selectedSlot.slotIndex}`;
+  const lotBoughtAt = lotBuildTimers?.[slotTimerKey];
+  const ticksElapsed = lotBoughtAt != null ? tickCount - lotBoughtAt : LOT_BUILD_COOLDOWN;
+  const onCooldown = ticksElapsed < LOT_BUILD_COOLDOWN;
+  const cooldownRemaining = LOT_BUILD_COOLDOWN - ticksElapsed;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={closeAll}>
       <div
@@ -39,9 +49,19 @@ export default function BuyBusinessPanel() {
         <h3 className="text-white font-bold text-lg mb-1">Buy Business</h3>
         <p className="text-gray-400 text-xs mb-4">{districtName} - Lot #{selectedSlot.slotIndex + 1}</p>
 
+        {onCooldown && (
+          <div className="bg-orange-900/30 border border-orange-700/50 rounded-lg p-3 mb-4 text-center">
+            <p className="text-orange-400 font-semibold text-sm">Lot Under Development</p>
+            <p className="text-orange-300 text-xs mt-1">Ready to build in {cooldownRemaining}s</p>
+            <div className="w-full h-1.5 bg-gray-800 rounded-full mt-2 overflow-hidden">
+              <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${(ticksElapsed / LOT_BUILD_COOLDOWN) * 100}%` }} />
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col gap-3">
           {available.map((def) => {
-            const canAfford = cleanCash >= def.purchaseCost;
+            const canAfford = cleanCash >= def.purchaseCost && !onCooldown;
             const baseProfitPerSec = (def.baseRevenuePerTick * revenueMultiplier)
               - (def.baseOperatingCostPerTick * opCostMultiplier)
               - (def.baseEmployeeCount * def.employeeSalaryPerTick);

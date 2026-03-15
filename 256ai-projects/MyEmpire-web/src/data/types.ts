@@ -511,6 +511,7 @@ export interface RivalBusiness {
 
 export const ARSON_DURATION = 100; // ~10 seconds of fire/rubble before lot clears
 export const ARSON_INSURANCE = 5000; // rival gets insurance payout when fire clears
+export const LOT_BUILD_COOLDOWN = 60; // ticks after buying a lot before you can build on it
 
 export interface RivalSyndicate {
   id: string;
@@ -527,6 +528,7 @@ export interface RivalSyndicate {
   isDefeated: boolean;
   blacklistedSlots?: string[]; // "districtId:slotIndex" — can't rebuy after arson insurance
   activeAtTick?: number;       // tick when this rival enters the game (Royal Rumble stagger)
+  ownedLots?: { districtId: string; slotIndex: number; boughtAtTick: number }[]; // lots bought, waiting for build cooldown
 }
 
 export interface HitmanDef {
@@ -655,6 +657,7 @@ export interface GameState {
   businesses: BusinessInstance[];
   unlockedDistricts: string[];
   unlockedSlots: Record<string, number>;   // districtId → how many lots are visible
+  lotBuildTimers: Record<string, number>;  // "districtId:slotIndex" → tick when lot was bought (build after LOT_BUILD_COOLDOWN)
   inventory: Record<string, number>;
   storageCapacity: number;
   activeLawyerId: string | null;
@@ -852,6 +855,7 @@ export const INITIAL_GAME_STATE: GameState = {
   businesses: [],
   unlockedDistricts: ['starter', 'operations', 'dealer_network', 'job_district', 'casino_district', 'jewelry_district', 'car_district'],
   unlockedSlots: { starter: 0 },
+  lotBuildTimers: {},
   inventory: {},
   storageCapacity: 500,
   activeLawyerId: null,

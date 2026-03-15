@@ -65,13 +65,16 @@ export function tickRivals(
     const entryTick = rival.activeAtTick ?? RIVAL_HEAD_START_TICKS;
     if (tickCount < entryTick) return rival;
 
-    // ── Passive growth — scales with power² so early game is slow ──────
+    // ── Passive growth — linear scaling, much slower ──────
     let r = { ...rival };
-    // Power 1 = $50/tick, Power 5 = $550, Power 10 = $2050, Power 20 = $8050
-    r.dirtyCash += Math.floor(50 + r.power * r.power * 20);
-    r.cleanCash += Math.floor(10 + r.power * r.power * 5);
+    // Dirty: $10 base + $20 per power level (power 1 = $30, power 5 = $110, power 10 = $210)
+    r.dirtyCash += Math.floor(10 + r.power * 20);
+    // Clean: $15 base + $15 per power level, but ONLY after accumulating $100K dirty
+    if (r.dirtyCash >= 100000) {
+      r.cleanCash += Math.floor(15 + r.power * 15);
+    }
     r.productOz += Math.floor(r.power * 0.3);
-    r.power = Math.min(20, r.power + 0.005); // very slow power creep
+    r.power = Math.min(20, r.power + 0.0005); // 10x slower power creep
 
     // ── Process burned businesses — fire clears after ARSON_DURATION ticks ──
     const stillBurning: typeof r.businesses = [];
@@ -100,37 +103,45 @@ export function tickRivals(
       messages.push(`${r.icon} ${r.name} collected $${(cleared.length * ARSON_INSURANCE).toLocaleString()} insurance`);
     }
 
-    // Rival buys a business occasionally (every ~50 ticks when they have money)
-    // Budget scales with power: early rivals can only afford cheap businesses
-    const maxBudget = Math.floor(r.power * 15000); // power 1 = $15K max, power 5 = $75K, power 10 = $150K
-    const affordableBiz = BUSINESSES.filter(b => b.purchaseCost <= maxBudget && b.purchaseCost <= r.cleanCash);
-    if (affordableBiz.length > 0 && Math.random() < 0.04) {
-      const bizDef = affordableBiz[Math.floor(Math.random() * affordableBiz.length)];
-      // Rivals only buy in starter/cheap districts until they're powerful
-      const maxDistrictCost = r.power * 25000; // power 1 = $25K districts, power 4+ = $100K+
+    // ── Step 1: Rival buys a LOT occasionally (1% chance per rival tick) ──
+    if (!r.ownedLots) r.ownedLots = [];
+    const LOT_COST = 2000; // flat lot cost for rivals
+    if (r.dirtyCash >= LOT_COST && Math.random() < 0.01) {
+      const maxDistrictCost = r.power * 25000;
       const availableDistricts = DISTRICTS.filter(d =>
         d.maxBusinessSlots > 0 && (d.unlockCost ?? 0) <= maxDistrictCost
       );
       const district = availableDistricts[Math.floor(Math.random() * availableDistricts.length)];
-      if (bizDef && district) {
+      if (district) {
         const slot = Math.floor(Math.random() * district.maxBusinessSlots);
         const slotKey = `${district.id}:${slot}`;
         const alreadyHas = r.businesses.some(b => b.districtId === district.id && b.slotIndex === slot);
+        const alreadyOwnsLot = r.ownedLots.some(l => l.districtId === district.id && l.slotIndex === slot);
         const isBlacklisted = (r.blacklistedSlots ?? []).includes(slotKey);
-        // Skip player-owned empty lots — rivals can't take lots the player bought
         const playerOwnsSlot = slot < (playerUnlockedSlots?.[district.id] ?? 0);
-        const playerHasBizThere = playerOwnsSlot && playerBusinesses.some(b => b.districtId === district.id && b.slotIndex === slot);
-        const isProtected = playerOwnsSlot && !playerHasBizThere;
-        if (!alreadyHas && !isBlacklisted && !isProtected) {
-          r.businesses = [...r.businesses, {
-            districtId: district.id,
-            slotIndex: slot,
-            businessDefId: bizDef.id,
-            health: 100,
-          }];
-          r.cleanCash -= bizDef.purchaseCost;
+        if (!alreadyHas && !alreadyOwnsLot && !isBlacklisted && !playerOwnsSlot) {
+          r.ownedLots = [...r.ownedLots, { districtId: district.id, slotIndex: slot, boughtAtTick: tickCount }];
+          r.dirtyCash -= LOT_COST;
         }
       }
+    }
+
+    // ── Step 2: Build on lots that have waited 60 ticks ──
+    const LOT_BUILD_COOLDOWN = 60;
+    const maxBudget = Math.floor(r.power * 15000);
+    const affordableBiz = BUSINESSES.filter(b => b.purchaseCost <= maxBudget && b.purchaseCost <= r.cleanCash);
+    const readyLots = r.ownedLots.filter(l => tickCount - l.boughtAtTick >= LOT_BUILD_COOLDOWN);
+    if (readyLots.length > 0 && affordableBiz.length > 0) {
+      const lot = readyLots[0]; // build on the oldest ready lot
+      const bizDef = affordableBiz[Math.floor(Math.random() * affordableBiz.length)];
+      r.businesses = [...r.businesses, {
+        districtId: lot.districtId,
+        slotIndex: lot.slotIndex,
+        businessDefId: bizDef.id,
+        health: 100,
+      }];
+      r.cleanCash -= bizDef.purchaseCost;
+      r.ownedLots = r.ownedLots.filter(l => !(l.districtId === lot.districtId && l.slotIndex === lot.slotIndex));
     }
 
     // Rival hires hitmen occasionally

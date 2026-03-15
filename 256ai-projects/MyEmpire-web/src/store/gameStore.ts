@@ -243,7 +243,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 25,
+      version: 26,
       migrate: (persisted: unknown, _version: number) => {
         try {
         const saved = (persisted ?? {}) as Partial<GameState>;
@@ -367,6 +367,8 @@ export const useGameStore = create<GameStore>()(
           }
           merged.unlockedSlots = slots;
         }
+
+        if (!merged.lotBuildTimers) merged.lotBuildTimers = {};
 
         return merged;
         } catch {

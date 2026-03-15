@@ -51,10 +51,12 @@ export function createTerritoryActions(set: SetState, get: GetState) {
       const baseCost = district?.lotBaseCost ?? 2000;
       const cost = baseCost * (currentUnlocked + 1);
       if (state.cleanCash < cost) return false;
+      const slotKey = `${districtId}:${currentUnlocked}`;
       set({
         cleanCash: state.cleanCash - cost,
         totalSpent: state.totalSpent + cost,
         unlockedSlots: { ...(state.unlockedSlots ?? {}), [districtId]: currentUnlocked + 1 },
+        lotBuildTimers: { ...(state.lotBuildTimers ?? {}), [slotKey]: state.tickCount },
       });
       return true;
     },
