@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { getDifficultyMultiplier } from '../../engine/difficulty';
+import Tooltip from './Tooltip';
 
 export default function StartGameScreen() {
   const gameSettings = useGameStore((s) => s.gameSettings);
@@ -87,21 +88,25 @@ export default function StartGameScreen() {
         </div>
 
         {/* Start button */}
+        <Tooltip text={hasExistingGame ? "Start a fresh game. Resets all progress." : "Begin your criminal empire with the settings above."}>
         <button
           onClick={() => startNewGame(rivalCount, entryDelay)}
           className="w-full py-3.5 rounded-xl text-lg font-black bg-red-600 hover:bg-red-500 text-white transition shadow-lg shadow-red-900/30 mb-3"
         >
           {hasExistingGame ? 'New Game' : 'Start Game'}
         </button>
+        </Tooltip>
 
         {/* Continue button (if existing save) */}
         {hasExistingGame && (
+          <Tooltip text="Resume your existing game where you left off.">
           <button
             onClick={continueGame}
             className="w-full py-3 rounded-xl text-sm font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 transition"
           >
             Continue
           </button>
+          </Tooltip>
         )}
 
         {hasExistingGame && (
@@ -118,12 +123,14 @@ export default function StartGameScreen() {
         </div>
 
         {/* Tutorial */}
+        <Tooltip text="Step-by-step walkthrough of all game mechanics. No rivals.">
         <button
           onClick={startTutorial}
           className="w-full py-3.5 rounded-xl text-lg font-black bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-lg shadow-emerald-900/30"
         >
           Tutorial
         </button>
+        </Tooltip>
         <p className="text-gray-600 text-[9px] text-center mt-2">
           Learn the basics — guided walkthrough, no rivals.
         </p>

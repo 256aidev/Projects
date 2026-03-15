@@ -7,6 +7,7 @@ import { sound } from '../../engine/sound';
 import { PRESTIGE_THRESHOLD } from '../../data/types';
 import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
 import { getTechBonuses } from '../../engine/tech';
+import Tooltip from '../ui/Tooltip';
 
 export default function AccountScreen() {
   const { user, signOut, signInWithGoogle } = useAuthStore();
@@ -113,19 +114,23 @@ export default function AccountScreen() {
           </div>
 
           <div className="flex gap-2">
+            <Tooltip text="Spend Tech Points on permanent upgrades that survive prestige.">
             <button
               onClick={() => { setShowAccountScreen(false); setShowTechMenu(true); }}
               className="flex-1 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-cyan-400 font-bold text-sm transition"
             >
               🔬 Tech Lab
             </button>
+            </Tooltip>
             {canPrestige ? (
+              <Tooltip text="Reset all progress and earn Tech Points for permanent upgrades.">
               <button
                 onClick={handlePrestige}
                 className="flex-1 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm transition"
               >
                 🔄 Prestige
               </button>
+              </Tooltip>
             ) : (
               <div className="flex-1 py-2.5 rounded-xl bg-gray-700 text-gray-500 font-bold text-sm text-center">
                 🔄 {formatMoney(PRESTIGE_THRESHOLD)} to prestige
@@ -222,12 +227,14 @@ export default function AccountScreen() {
               </div>
             </div>
           ) : (
+            <Tooltip text="Start over but keep prestige bonuses and tech upgrades.">
             <button
               onClick={() => setConfirmReset(true)}
               className="w-full py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-red-400 font-semibold text-sm transition"
             >
               Reset Game
             </button>
+            </Tooltip>
           )}
 
           {confirmWipe ? (
@@ -253,12 +260,14 @@ export default function AccountScreen() {
               </div>
             </div>
           ) : (
+            <Tooltip text="Permanently erase everything including prestige. Cannot be undone.">
             <button
               onClick={() => setConfirmWipe(true)}
               className="w-full py-2 rounded-xl bg-gray-800 hover:bg-red-950 text-gray-500 hover:text-red-400 font-semibold text-sm transition border border-transparent hover:border-red-800"
             >
               Exit Game (Wipe All Data)
             </button>
+            </Tooltip>
           )}
 
           {isGuest ? (

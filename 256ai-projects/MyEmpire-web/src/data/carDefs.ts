@@ -1,10 +1,10 @@
 import type { CarDef, CarTier } from './types';
 
 export const CAR_DEFS: CarDef[] = [
-  // ─── ECONOMY ($5K - $15K) ────────────────────────────────────────
-  { id: 'civic',      name: 'Honda Civic',        tier: 'economy',  cost: 5000,      prestigeBonus: 1,   icon: '🚗', description: 'Reliable daily driver.' },
-  { id: 'corolla',    name: 'Toyota Corolla',     tier: 'economy',  cost: 8000,      prestigeBonus: 1,   icon: '🚗', description: 'Gets the job done.' },
-  { id: 'camry',      name: 'Toyota Camry',       tier: 'economy',  cost: 12000,     prestigeBonus: 2,   icon: '🚗', description: 'Comfortable family sedan.' },
+  // ─── ECONOMY (dirty cash — gotta earn it the hard way) ──────────
+  { id: 'corolla',    name: 'Toyota Corolla',     tier: 'economy',  cost: 150000,    currency: 'dirty', prestigeBonus: 1,   icon: '🚗', description: 'Gets the job done.' },
+  { id: 'camry',      name: 'Toyota Camry',       tier: 'economy',  cost: 150000,    currency: 'dirty', prestigeBonus: 2,   icon: '🚗', description: 'Comfortable family sedan.' },
+  { id: 'civic',      name: 'Honda Civic',        tier: 'economy',  cost: 200000,    currency: 'dirty', prestigeBonus: 3,   icon: '🚗', description: 'Reliable daily driver. Street cred.' },
 
   // ─── SPORT ($25K - $75K) ─────────────────────────────────────────
   { id: 'mustang',    name: 'Ford Mustang GT',    tier: 'sport',    cost: 35000,     prestigeBonus: 5,   icon: '🏎️', description: 'American muscle.' },

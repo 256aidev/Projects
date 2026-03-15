@@ -607,6 +607,7 @@ export interface CarDef {
   name: string;
   tier: CarTier;
   cost: number;
+  currency?: 'clean' | 'dirty'; // default 'clean'
   prestigeBonus: number;
   icon: string;
   description: string;

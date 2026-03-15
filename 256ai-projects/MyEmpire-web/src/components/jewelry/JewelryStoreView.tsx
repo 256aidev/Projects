@@ -5,6 +5,7 @@ import { JEWELRY_DEFS, JEWELRY_DEF_MAP, JEWELRY_TIERS, JEWELRY_SLOT_LIMITS } fro
 import { getJewelryBonuses } from '../../engine/jewelry';
 import type { JewelrySlotType } from '../../data/types';
 import { sound } from '../../engine/sound';
+import Tooltip from '../ui/Tooltip';
 
 const BONUS_LABELS: Record<string, string> = {
   yield_boost: 'Yield',
@@ -53,7 +54,7 @@ export default function JewelryStoreView() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-gray-400">🏦 {formatMoney(cleanCash)}</span>
-          <button onClick={() => close(false)} className="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+          <Tooltip text="Leave the jewelry store."><button onClick={() => close(false)} className="text-gray-500 hover:text-white text-xl leading-none">✕</button></Tooltip>
         </div>
       </div>
 
@@ -110,7 +111,7 @@ export default function JewelryStoreView() {
                       ))}
                     </div>
                     {nextTier && (
-                      <button onClick={() => handleUpgrade(idx)}
+                      <Tooltip text="Polish this piece to increase its value."><button onClick={() => handleUpgrade(idx)}
                         className={`w-full py-1 rounded text-[9px] font-bold ${
                           cleanCash >= nextTier.upgradeCost
                             ? 'bg-cyan-700 text-white active:bg-cyan-600'
@@ -118,7 +119,7 @@ export default function JewelryStoreView() {
                         }`}
                       >
                         {nextTier.icon} Upgrade → {nextTier.name} ({formatMoney(nextTier.upgradeCost)})
-                      </button>
+                      </button></Tooltip>
                     )}
                     {!nextTier && <p className="text-[8px] text-yellow-400 text-center font-bold">MAX TIER</p>}
                   </div>
@@ -136,7 +137,7 @@ export default function JewelryStoreView() {
               const slotFull = slotCounts[def.slotType] >= JEWELRY_SLOT_LIMITS[def.slotType];
               const canAfford = cleanCash >= def.baseCost;
               return (
-                <button key={def.id} onClick={() => !slotFull && canAfford && handleBuy(def.id)}
+                <Tooltip key={def.id} text="Buy this piece. Jewelry appreciates in value over time."><button onClick={() => !slotFull && canAfford && handleBuy(def.id)}
                   disabled={slotFull || !canAfford}
                   className={`bg-gray-900 rounded-lg p-2 border text-left transition ${
                     slotFull ? 'border-gray-800 opacity-40' : canAfford ? 'border-cyan-900/40 active:bg-gray-800' : 'border-gray-800 opacity-60'
@@ -154,7 +155,7 @@ export default function JewelryStoreView() {
                     {formatMoney(def.baseCost)}
                   </p>
                   {slotFull && <p className="text-[7px] text-red-400">Slot full</p>}
-                </button>
+                </button></Tooltip>
               );
             })}
           </div>

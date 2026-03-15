@@ -1,5 +1,6 @@
 import { useUIStore } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
+import Tooltip from '../ui/Tooltip';
 
 const BLOCK_W = 164;
 
@@ -11,6 +12,7 @@ export default function JewelryBlock() {
   const totalTier = jewelry.reduce((s, j) => s + j.tier, 0);
 
   return (
+    <Tooltip text="Browse jewelry. Buy pieces that appreciate over time.">
     <button
       onClick={() => setShowJewelryStore(true)}
       style={{ width: BLOCK_W, borderColor: '#06B6D450', backgroundColor: '#06B6D412' }}
@@ -38,5 +40,6 @@ export default function JewelryBlock() {
       </div>
       <p className="text-[7px] text-cyan-500/60 mt-0.5">Tap to browse</p>
     </button>
+    </Tooltip>
   );
 }

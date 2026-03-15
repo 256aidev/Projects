@@ -4,6 +4,7 @@ import { TECH_UPGRADE_DEFS } from '../../data/techDefs';
 import type { TechUpgradeId } from '../../data/techDefs';
 import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
 import { sound } from '../../engine/sound';
+import Tooltip from '../ui/Tooltip';
 
 export default function TechMenu() {
   const techPoints = useGameStore((s) => s.techPoints ?? 0);
@@ -26,12 +27,14 @@ export default function TechMenu() {
             <p className="text-cyan-400 font-bold text-lg">{techPoints} TP</p>
             <p className="text-gray-500 text-[10px]">{totalTechPointsEarned} lifetime | {prestigeCount} prestiges</p>
           </div>
+          <Tooltip text="Close Tech Lab">
           <button
             onClick={() => setShowTechMenu(false)}
             className="text-gray-400 hover:text-white text-2xl leading-none px-2"
           >
             &times;
           </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -82,6 +85,7 @@ export default function TechMenu() {
                 {isMaxed ? (
                   <div className="text-center text-[10px] text-yellow-500 font-bold py-1.5">MAX</div>
                 ) : (
+                  <Tooltip text={`Spend ${nextCost} Tech Points to permanently boost ${def.name.toLowerCase()}. Survives prestige resets.`}>
                   <button
                     onClick={() => { purchaseTechUpgrade(def.id as TechUpgradeId); sound.play('upgrade'); }}
                     disabled={!canAfford}
@@ -93,6 +97,7 @@ export default function TechMenu() {
                   >
                     Upgrade &middot; {nextCost} TP
                   </button>
+                  </Tooltip>
                 )}
 
                 {/* Next level preview */}

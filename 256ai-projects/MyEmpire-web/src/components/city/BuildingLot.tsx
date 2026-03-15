@@ -3,6 +3,7 @@ import { BUSINESS_MAP } from '../../data/businesses';
 import { useUIStore } from '../../store/uiStore';
 import { calculateBusinessRevenue, calculateBusinessExpenses, formatMoney } from '../../engine/economy';
 import BuildingSprite, { hasSprite } from './BuildingSprite';
+import Tooltip from '../ui/Tooltip';
 
 interface BuildingLotProps {
   slotIndex: number;
@@ -41,6 +42,7 @@ export default function BuildingLot({
 
   if (buyLot) {
     return (
+      <Tooltip text="Purchase this lot to build a front business.">
       <button
         onClick={(e) => { e.stopPropagation(); buyLot.onBuy(); }}
         onPointerDown={(e) => e.stopPropagation()}
@@ -57,12 +59,14 @@ export default function BuildingLot({
         <span className={`${textMd} text-amber-300 font-bold`}>${(buyLot.cost / 1000).toFixed(0)}k</span>
         <span className={`${textSm} text-gray-500`}>clean cash</span>
       </button>
+      </Tooltip>
     );
   }
 
   // For-sale lot — visible with price but must buy earlier lots first
   if (forSalePrice != null) {
     return (
+      <Tooltip text="Buy this lot to reserve it for a future business.">
       <div
         className={`${rootSize} rounded-lg border-2 border-dashed border-gray-700 bg-gray-900/30 flex flex-col items-center justify-center gap-0.5 opacity-60`}
       >
@@ -70,6 +74,7 @@ export default function BuildingLot({
         <span className={`${textMd} text-gray-500 font-bold`}>{formatMoney(forSalePrice)}</span>
         <span className={`${textSm} text-gray-600`}>clean cash</span>
       </div>
+      </Tooltip>
     );
   }
 
@@ -81,6 +86,7 @@ export default function BuildingLot({
 
   if (!business && isAvailable) {
     return (
+      <Tooltip text="Purchase this lot to build a front business.">
       <button
         onClick={(e) => { e.stopPropagation(); selectSlot(districtId, slotIndex); }}
         onPointerDown={(e) => e.stopPropagation()}
@@ -96,6 +102,7 @@ export default function BuildingLot({
         <span className={`${iconSize} text-gray-500`}>+</span>
         <span className={`${textMd} text-gray-500`}>Empty Lot</span>
       </button>
+      </Tooltip>
     );
   }
 
@@ -116,6 +123,7 @@ export default function BuildingLot({
 
   if (spriteAvailable) {
     return (
+      <Tooltip text="Tap to manage this business.">
       <button
         onClick={handleClick}
         onPointerDown={(e) => e.stopPropagation()}
@@ -135,13 +143,15 @@ export default function BuildingLot({
         </div>
         {/* Supply indicator */}
         {business.supplyModifier < 1 && (
-          <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-yellow-500 animate-pulse pointer-events-none" title="Low supply" />
+          <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-yellow-500 animate-pulse pointer-events-none" />
         )}
       </button>
+      </Tooltip>
     );
   }
 
   return (
+    <Tooltip text="Tap to manage this business.">
     <button
       onClick={handleClick}
       onPointerDown={(e) => e.stopPropagation()}
@@ -178,8 +188,9 @@ export default function BuildingLot({
 
       {/* Supply indicator */}
       {business.supplyModifier < 1 && (
-        <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-yellow-500 animate-pulse pointer-events-none" title="Low supply" />
+        <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-yellow-500 animate-pulse pointer-events-none" />
       )}
     </button>
+    </Tooltip>
   );
 }

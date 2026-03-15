@@ -1,6 +1,7 @@
 import { useUIStore } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
 import { formatMoney } from '../../engine/economy';
+import Tooltip from '../ui/Tooltip';
 
 const BLOCK_W = 164;
 
@@ -10,6 +11,7 @@ export default function CasinoBlock() {
   const history = useGameStore(s => s.casinoHistory);
 
   return (
+    <Tooltip text="Enter the casino. Bet dirty cash to win clean cash.">
     <button
       onClick={() => setShowCasino(true)}
       style={{ width: BLOCK_W, borderColor: '#EAB30850', backgroundColor: '#EAB30812' }}
@@ -38,5 +40,6 @@ export default function CasinoBlock() {
       </div>
       <p className="text-[7px] text-yellow-500/60 mt-0.5">Tap to enter</p>
     </button>
+    </Tooltip>
   );
 }

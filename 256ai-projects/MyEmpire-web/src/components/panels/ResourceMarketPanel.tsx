@@ -4,6 +4,7 @@ import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
 import { sound } from '../../engine/sound';
+import Tooltip from '../ui/Tooltip';
 
 export default function ResourceMarketPanel() {
   const closeAll = useUIStore((s) => s.closeAll);
@@ -52,6 +53,7 @@ export default function ResourceMarketPanel() {
                     className="flex-1 accent-amber-500"
                   />
                   <span className="text-white text-xs w-8 text-right">{qty}</span>
+                  <Tooltip text="Buy supplies for your front businesses.">
                   <button
                     onClick={() => {
                       if (purchaseResource(r.id, qty)) {
@@ -72,18 +74,21 @@ export default function ResourceMarketPanel() {
                   >
                     {formatMoney(totalCost)}
                   </button>
+                  </Tooltip>
                 </div>
               </div>
             );
           })}
         </div>
 
+        <Tooltip text="Close this panel.">
         <button
           onClick={closeAll}
           className="w-full mt-4 py-2 rounded-xl text-sm text-gray-400 hover:text-white transition"
         >
           Close
         </button>
+        </Tooltip>
       </div>
     </div>
   );

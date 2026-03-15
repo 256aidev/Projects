@@ -1,6 +1,7 @@
 import { useUIStore, type ViewName } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
 import CannabisLeaf from '../ui/CannabisLeaf';
+import Tooltip from '../ui/Tooltip';
 
 const TABS: { id: ViewName; label: string; icon: string | null }[] = [
   { id: 'operation', label: 'Operation', icon: null },  // null = use CannabisLeaf
@@ -8,6 +9,13 @@ const TABS: { id: ViewName; label: string; icon: string | null }[] = [
   { id: 'legal',     label: 'Legal',     icon: '⚖️' },
   { id: 'finance',   label: 'Stats',     icon: '📊' },
 ];
+
+const TAB_TOOLTIPS: Record<ViewName, string> = {
+  operation: 'Manage your grow operation, seeds, dealers, and product sales.',
+  city: 'View the city map, buy lots, and build front businesses.',
+  legal: 'Monitor police and rival heat, hire lawyers and hitmen.',
+  finance: 'View detailed financial stats and game metrics.',
+};
 
 export default function NavBar() {
   const activeView = useUIStore((s) => s.activeView);
@@ -21,40 +29,43 @@ export default function NavBar() {
         const active = activeView === tab.id;
         const hasBadge = tab.id === 'legal' && heatNoticeShown;
         return (
-          <button
-            key={tab.id}
-            data-tutorial={`nav-${tab.id}`}
-            onClick={() => setActiveView(tab.id)}
-            className={`
-              flex-1 flex flex-col items-center justify-center py-4 gap-1 transition
-              ${active
-                ? 'text-white bg-gray-800 border-t-3 border-indigo-500'
-                : 'text-gray-500 hover:text-gray-300'
-              }
-            `}
-          >
-            <span className="relative flex items-center justify-center">
-              {tab.icon === null
-                ? <CannabisLeaf size={32} className={active ? 'opacity-100' : 'opacity-40'} />
-                : <span className="text-3xl">{tab.icon}</span>
-              }
-              {hasBadge && (
-                <span className="absolute -top-1 -right-1.5 w-3 h-3 rounded-full bg-red-500" />
-              )}
-            </span>
-            <span className="text-sm font-semibold">{tab.label}</span>
-          </button>
+          <Tooltip key={tab.id} text={TAB_TOOLTIPS[tab.id]}>
+            <button
+              data-tutorial={`nav-${tab.id}`}
+              onClick={() => setActiveView(tab.id)}
+              className={`
+                flex-1 flex flex-col items-center justify-center py-4 gap-1 transition
+                ${active
+                  ? 'text-white bg-gray-800 border-t-3 border-indigo-500'
+                  : 'text-gray-500 hover:text-gray-300'
+                }
+              `}
+            >
+              <span className="relative flex items-center justify-center">
+                {tab.icon === null
+                  ? <CannabisLeaf size={32} className={active ? 'opacity-100' : 'opacity-40'} />
+                  : <span className="text-3xl">{tab.icon}</span>
+                }
+                {hasBadge && (
+                  <span className="absolute -top-1 -right-1.5 w-3 h-3 rounded-full bg-red-500" />
+                )}
+              </span>
+              <span className="text-sm font-semibold">{tab.label}</span>
+            </button>
+          </Tooltip>
         );
       })}
 
       {/* Leaderboard button */}
-      <button
-        onClick={() => setShowLeaderboard(true)}
-        className="flex flex-col items-center justify-center py-4 gap-1 px-10 text-gray-500 hover:text-yellow-400 transition bg-gray-800/50 border-l border-gray-700/60"
-      >
-        <span className="text-3xl">🏆</span>
-        <span className="text-sm font-semibold">Ranks</span>
-      </button>
+      <Tooltip text="View the leaderboard and your ranking.">
+        <button
+          onClick={() => setShowLeaderboard(true)}
+          className="flex flex-col items-center justify-center py-4 gap-1 px-10 text-gray-500 hover:text-yellow-400 transition bg-gray-800/50 border-l border-gray-700/60"
+        >
+          <span className="text-3xl">🏆</span>
+          <span className="text-sm font-semibold">Ranks</span>
+        </button>
+      </Tooltip>
     </div>
   );
 }

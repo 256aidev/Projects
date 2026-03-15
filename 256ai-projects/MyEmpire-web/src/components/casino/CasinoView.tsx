@@ -10,6 +10,7 @@ import {
   handValue, isBlackjack, dealerPlay, evaluatePokerHand,
 } from '../../engine/casino';
 import type { Card } from '../../data/casinoDefs';
+import Tooltip from '../ui/Tooltip';
 
 const SUIT_SYM: Record<string, string> = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' };
 const RANK_NAME: Record<number, string> = { 2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'J',12:'Q',13:'K',14:'A' };
@@ -75,33 +76,33 @@ function RouletteGame() {
           ['section', 'Section'],
           ['number', 'Number'],
         ] as [RouletteBetType, string][]).map(([t, label]) => (
-          <button key={t} onClick={() => { setBetType(t); setBetValue(t === 'color' ? 'red' : t === 'parity' ? 'even' : t === 'half' ? 'low' : t === 'section' ? '1st' : 0); }}
+          <Tooltip key={t} text="Set your bet amount."><button onClick={() => { setBetType(t); setBetValue(t === 'color' ? 'red' : t === 'parity' ? 'even' : t === 'half' ? 'low' : t === 'section' ? '1st' : 0); }}
             className={`px-2 py-1 rounded text-[10px] font-semibold ${betType === t ? 'bg-yellow-600 text-black' : 'bg-gray-800 text-gray-300'}`}
-          >{label}</button>
+          >{label}</button></Tooltip>
         ))}
       </div>
 
       {/* Bet value selector */}
       <div className="flex flex-wrap gap-1 justify-center">
         {betType === 'color' && ['red', 'black'].map(v => (
-          <button key={v} onClick={() => setBetValue(v)}
+          <Tooltip key={v} text="Set your bet amount."><button onClick={() => setBetValue(v)}
             className={`px-3 py-1 rounded text-[10px] font-bold ${betValue === v ? (v === 'red' ? 'bg-red-600' : 'bg-gray-600') + ' text-white' : 'bg-gray-800 text-gray-400'}`}
-          >{v}</button>
+          >{v}</button></Tooltip>
         ))}
         {betType === 'parity' && ['even', 'odd'].map(v => (
-          <button key={v} onClick={() => setBetValue(v)}
+          <Tooltip key={v} text="Set your bet amount."><button onClick={() => setBetValue(v)}
             className={`px-3 py-1 rounded text-[10px] font-bold ${betValue === v ? 'bg-yellow-600 text-black' : 'bg-gray-800 text-gray-400'}`}
-          >{v}</button>
+          >{v}</button></Tooltip>
         ))}
         {betType === 'half' && ['low', 'high'].map(v => (
-          <button key={v} onClick={() => setBetValue(v)}
+          <Tooltip key={v} text="Set your bet amount."><button onClick={() => setBetValue(v)}
             className={`px-3 py-1 rounded text-[10px] font-bold ${betValue === v ? 'bg-yellow-600 text-black' : 'bg-gray-800 text-gray-400'}`}
-          >{v} {v === 'low' ? '1-18' : '19-36'}</button>
+          >{v} {v === 'low' ? '1-18' : '19-36'}</button></Tooltip>
         ))}
         {betType === 'section' && ['1st', '2nd', '3rd'].map(v => (
-          <button key={v} onClick={() => setBetValue(v)}
+          <Tooltip key={v} text="Set your bet amount."><button onClick={() => setBetValue(v)}
             className={`px-3 py-1 rounded text-[10px] font-bold ${betValue === v ? 'bg-yellow-600 text-black' : 'bg-gray-800 text-gray-400'}`}
-          >{v}</button>
+          >{v}</button></Tooltip>
         ))}
         {betType === 'number' && (
           <input type="number" min={0} max={36} value={betValue as number}
@@ -113,13 +114,13 @@ function RouletteGame() {
 
       {/* Bet amount + spin */}
       <div className="flex items-center justify-center gap-2">
-        <button onClick={() => setBet(b => Math.max(MIN_BET, b / 2))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">½</button>
+        <Tooltip text="Halve your bet."><button onClick={() => setBet(b => Math.max(MIN_BET, b / 2))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">½</button></Tooltip>
         <span className="text-yellow-400 font-bold text-sm">{formatMoney(bet)}</span>
-        <button onClick={() => setBet(b => Math.min(MAX_BET, Math.min(dirtyCash, b * 2)))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">2×</button>
+        <Tooltip text="Double your bet."><button onClick={() => setBet(b => Math.min(MAX_BET, Math.min(dirtyCash, b * 2)))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">2×</button></Tooltip>
       </div>
-      <button onClick={spin} disabled={dirtyCash < bet || spinning}
+      <Tooltip text="Spin the wheel and try your luck."><button onClick={spin} disabled={dirtyCash < bet || spinning}
         className={`mx-auto px-6 py-2 rounded-lg font-bold text-sm ${dirtyCash >= bet && !spinning ? 'bg-yellow-600 text-black active:bg-yellow-500' : 'bg-gray-800 text-gray-600'}`}
-      >{spinning ? 'Spinning...' : 'Spin!'}</button>
+      >{spinning ? 'Spinning...' : 'Spin!'}</button></Tooltip>
       <p className="text-[8px] text-gray-600 text-center">Payout: {ROULETTE_PAYOUTS[betType]}:1 · {(CASINO_TAX_RATE * 100).toFixed(0)}% tax on wins</p>
     </div>
   );
@@ -245,26 +246,26 @@ function BlackjackGame() {
       <div className="flex items-center justify-center gap-2">
         {phase === 'bet' && (
           <>
-            <button onClick={() => setBet(b => Math.max(MIN_BET, b / 2))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">½</button>
+            <Tooltip text="Halve your bet."><button onClick={() => setBet(b => Math.max(MIN_BET, b / 2))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">½</button></Tooltip>
             <span className="text-yellow-400 font-bold text-sm">{formatMoney(bet)}</span>
-            <button onClick={() => setBet(b => Math.min(MAX_BET, Math.min(dirtyCash, b * 2)))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">2×</button>
+            <Tooltip text="Double your bet."><button onClick={() => setBet(b => Math.min(MAX_BET, Math.min(dirtyCash, b * 2)))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">2×</button></Tooltip>
           </>
         )}
       </div>
       <div className="flex justify-center gap-2">
         {phase === 'bet' && (
-          <button onClick={deal} disabled={dirtyCash < bet}
+          <Tooltip text="Deal the cards and start a hand."><button onClick={deal} disabled={dirtyCash < bet}
             className={`px-6 py-2 rounded-lg font-bold text-sm ${dirtyCash >= bet ? 'bg-emerald-600 text-white active:bg-emerald-500' : 'bg-gray-800 text-gray-600'}`}
-          >Deal</button>
+          >Deal</button></Tooltip>
         )}
         {phase === 'play' && (
           <>
-            <button onClick={hit} className="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold text-sm active:bg-blue-500">Hit</button>
-            <button onClick={stand} className="px-4 py-2 rounded-lg bg-amber-600 text-black font-bold text-sm active:bg-amber-500">Stand</button>
+            <Tooltip text="Draw another card. Bust over 21."><button onClick={hit} className="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold text-sm active:bg-blue-500">Hit</button></Tooltip>
+            <Tooltip text="Keep your current hand."><button onClick={stand} className="px-4 py-2 rounded-lg bg-amber-600 text-black font-bold text-sm active:bg-amber-500">Stand</button></Tooltip>
           </>
         )}
         {phase === 'result' && (
-          <button onClick={newHand} className="px-6 py-2 rounded-lg bg-gray-700 text-white font-bold text-sm active:bg-gray-600">New Hand</button>
+          <Tooltip text="Start a new hand."><button onClick={newHand} className="px-6 py-2 rounded-lg bg-gray-700 text-white font-bold text-sm active:bg-gray-600">New Hand</button></Tooltip>
         )}
       </div>
       <p className="text-[8px] text-gray-600 text-center">Blackjack pays 3:2 · Dealer hits on &lt;17 · {(CASINO_TAX_RATE * 100).toFixed(0)}% tax on wins</p>
@@ -333,7 +334,7 @@ function PokerGame() {
       {hand.length > 0 && (
         <div className="flex justify-center gap-1.5">
           {hand.map((c, i) => (
-            <button key={i} onClick={() => toggleHold(i)}
+            <Tooltip key={i} text={held[i] ? "Release this card." : "Hold this card."}><button onClick={() => toggleHold(i)}
               className={`w-12 h-16 rounded-lg border-2 flex flex-col items-center justify-center transition ${
                 held[i] ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-700 bg-gray-800'
               } ${phase === 'hold' ? 'cursor-pointer' : ''}`}
@@ -341,7 +342,7 @@ function PokerGame() {
               <span className={`text-sm font-mono font-bold ${cardColor(c)}`}>{RANK_NAME[c.rank]}</span>
               <span className={`text-xs ${cardColor(c)}`}>{SUIT_SYM[c.suit]}</span>
               {phase === 'hold' && held[i] && <span className="text-[7px] text-yellow-400 font-bold">HELD</span>}
-            </button>
+            </button></Tooltip>
           ))}
         </div>
       )}
@@ -361,23 +362,23 @@ function PokerGame() {
       <div className="flex items-center justify-center gap-2">
         {phase === 'bet' && (
           <>
-            <button onClick={() => setBet(b => Math.max(MIN_BET, b / 2))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">½</button>
+            <Tooltip text="Halve your bet."><button onClick={() => setBet(b => Math.max(MIN_BET, b / 2))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">½</button></Tooltip>
             <span className="text-yellow-400 font-bold text-sm">{formatMoney(bet)}</span>
-            <button onClick={() => setBet(b => Math.min(MAX_BET, Math.min(dirtyCash, b * 2)))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">2×</button>
+            <Tooltip text="Double your bet."><button onClick={() => setBet(b => Math.min(MAX_BET, Math.min(dirtyCash, b * 2)))} className="px-2 py-1 rounded bg-gray-800 text-gray-400 text-xs">2×</button></Tooltip>
           </>
         )}
       </div>
       <div className="flex justify-center gap-2">
         {phase === 'bet' && (
-          <button onClick={deal} disabled={dirtyCash < bet}
+          <Tooltip text="Deal five cards to start."><button onClick={deal} disabled={dirtyCash < bet}
             className={`px-6 py-2 rounded-lg font-bold text-sm ${dirtyCash >= bet ? 'bg-purple-600 text-white active:bg-purple-500' : 'bg-gray-800 text-gray-600'}`}
-          >Deal</button>
+          >Deal</button></Tooltip>
         )}
         {phase === 'hold' && (
-          <button onClick={draw} className="px-6 py-2 rounded-lg bg-purple-600 text-white font-bold text-sm active:bg-purple-500">Draw</button>
+          <Tooltip text="Replace unheld cards. Jacks or better to win."><button onClick={draw} className="px-6 py-2 rounded-lg bg-purple-600 text-white font-bold text-sm active:bg-purple-500">Draw</button></Tooltip>
         )}
         {phase === 'result' && (
-          <button onClick={newGame} className="px-6 py-2 rounded-lg bg-gray-700 text-white font-bold text-sm active:bg-gray-600">New Hand</button>
+          <Tooltip text="Start a new hand."><button onClick={newGame} className="px-6 py-2 rounded-lg bg-gray-700 text-white font-bold text-sm active:bg-gray-600">New Hand</button></Tooltip>
         )}
       </div>
       {phase === 'hold' && <p className="text-[8px] text-gray-500 text-center">Tap cards to hold, then draw replacements</p>}
@@ -402,16 +403,16 @@ export default function CasinoView() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-gray-400">💵 {formatMoney(dirtyCash)}</span>
-          <button onClick={() => close(false)} className="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+          <Tooltip text="Leave the casino."><button onClick={() => close(false)} className="text-gray-500 hover:text-white text-xl leading-none">✕</button></Tooltip>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex border-b border-gray-800">
-        {([['roulette', '🎡 Roulette'], ['blackjack', '🃏 Blackjack'], ['poker', '♠️ Poker']] as [Tab, string][]).map(([t, label]) => (
-          <button key={t} onClick={() => setTab(t)}
+        {([['roulette', '🎡 Roulette', 'Play Roulette.'], ['blackjack', '🃏 Blackjack', 'Play Blackjack.'], ['poker', '♠️ Poker', 'Play Poker.']] as [Tab, string, string][]).map(([t, label, tip]) => (
+          <Tooltip key={t} text={tip}><button onClick={() => setTab(t)}
             className={`flex-1 py-2 text-xs font-semibold transition ${tab === t ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-500'}`}
-          >{label}</button>
+          >{label}</button></Tooltip>
         ))}
       </div>
 

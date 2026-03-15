@@ -4,6 +4,7 @@ import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
 import { sound } from '../../engine/sound';
+import Tooltip from '../ui/Tooltip';
 
 export default function BuyBusinessPanel() {
   const selectedSlot = useUIStore((s) => s.selectedSlot);
@@ -46,6 +47,7 @@ export default function BuyBusinessPanel() {
               - (def.baseEmployeeCount * def.employeeSalaryPerTick);
 
             return (
+              <Tooltip text={def.description || "Purchase this front business to launder dirty cash."}>
               <button
                 key={def.id}
                 onClick={() => {
@@ -76,6 +78,7 @@ export default function BuyBusinessPanel() {
                   </div>
                 </div>
               </button>
+              </Tooltip>
             );
           })}
 
@@ -84,12 +87,14 @@ export default function BuyBusinessPanel() {
           )}
         </div>
 
+        <Tooltip text="Close this panel.">
         <button
           onClick={closeAll}
           className="w-full mt-4 py-2 rounded-xl text-sm text-gray-400 hover:text-white transition"
         >
           Cancel
         </button>
+        </Tooltip>
       </div>
     </div>
   );

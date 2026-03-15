@@ -6,6 +6,7 @@ import { LAWYER_DEFS, LAWYER_MAP } from '../../data/lawyers';
 import { formatMoney } from '../../engine/economy';
 import { getPlayerHitmanCount, getHitmanUpkeep } from '../../engine/rivals';
 import { sound } from '../../engine/sound';
+import Tooltip from '../ui/Tooltip';
 
 export default function LegalView() {
   const heat = useGameStore((s) => s.heat);
@@ -60,6 +61,7 @@ export default function LegalView() {
           <span className="text-3xl">🌡️</span>
         </div>
 
+        <Tooltip text="Police heat rises from holding dirty cash and employing dealers. High heat triggers raids that destroy product and cash.">
         <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden mb-2">
           <div
             className="h-full rounded-full transition-all duration-500"
@@ -67,6 +69,7 @@ export default function LegalView() {
           />
         </div>
         <p className="text-gray-400 text-xs text-right">{Math.floor(heat)} / {HEAT_MAX}</p>
+        </Tooltip>
 
         {heatTier === 0 && heat < 1 && (
           <p className="text-green-400 text-xs mt-2 text-center">
@@ -131,6 +134,7 @@ export default function LegalView() {
           <span className="text-3xl">🔫</span>
         </div>
 
+        <Tooltip text="Rival heat rises as your operation expands. High rival heat triggers attacks on your stash, cash, and dealers.">
         <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden mb-2">
           <div
             className="h-full rounded-full transition-all duration-500"
@@ -138,6 +142,7 @@ export default function LegalView() {
           />
         </div>
         <p className="text-gray-400 text-xs text-right">{Math.floor(rivalHeat)} / {HEAT_MAX}</p>
+        </Tooltip>
 
         {rivalTier === 0 && rivalHeat < 1 && (
           <p className="text-green-400 text-xs mt-2 text-center">
@@ -209,13 +214,16 @@ export default function LegalView() {
                 </div>
                 <div className="flex gap-2">
                   {owned > 0 && (
+                    <Tooltip text="Dismiss a hitman. No refund.">
                     <button
                       onClick={() => { fireHitman(def.id); sound.play('fire'); }}
                       className="flex-1 py-2 rounded-lg border border-white/30 bg-gray-700 hover:bg-gray-600 text-red-400 text-xs font-bold transition"
                     >
                       Fire
                     </button>
+                    </Tooltip>
                   )}
+                  <Tooltip text="Hire muscle to defend against rival attacks and launch your own.">
                   <button
                     onClick={() => {
                       if (hireHitman(def.id)) { sound.play('dealer_hire'); addNotification(`Hired ${def.name}!`, 'success'); }
@@ -228,6 +236,7 @@ export default function LegalView() {
                   >
                     Hire · {formatMoney(def.cost)}
                   </button>
+                  </Tooltip>
                 </div>
               </div>
             );
@@ -276,20 +285,20 @@ export default function LegalView() {
                       const canAffordAction = dirtyCash >= action.cost;
                       const canDo = hasEnough && canAffordAction;
                       return (
+                        <Tooltip key={action.type} text="Send hitmen to attack this rival. Costs dirty cash.">
                         <button
-                          key={action.type}
                           onClick={() => {
                             const result = attackRival(rival.id, action.type);
                             if (result) { sound.play('attack'); addNotification(result.message, result.success ? 'success' : 'warning'); }
                           }}
                           disabled={!canDo}
-                          title={`${action.description} · ${formatMoney(action.cost)} · need ${action.hitmenRequired}+ hitmen`}
                           className={`px-2 py-1.5 rounded text-[9px] font-semibold transition ${
                             canDo ? 'bg-red-900/60 hover:bg-red-800/60 text-red-300' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
                           }`}
                         >
                           {action.name} · {formatMoney(action.cost)}
                         </button>
+                        </Tooltip>
                       );
                     })}
                   </div>
@@ -325,12 +334,14 @@ export default function LegalView() {
                 Decay bonus: <span className="text-green-400">-{activeLawyer.heatDecayBonus.toFixed(3)}/s</span>
               </p>
             </div>
+            <Tooltip text="Dismiss your current lawyer. No refund.">
             <button
               onClick={() => { fireLawyer(); sound.play('fire'); }}
               className="px-6 py-2 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-xs font-bold hover:bg-red-900/80 transition"
             >
               Fire
             </button>
+            </Tooltip>
           </div>
         </div>
       )}
@@ -371,6 +382,7 @@ export default function LegalView() {
                   </div>
 
                   {meetsHeatTier && !isActive && (
+                    <Tooltip text="Retain a lawyer to reduce police heat over time. Costs per tick.">
                     <button
                       disabled={!canHire}
                       onClick={() => { hireLawyer(lawyer.id); sound.play('dealer_hire'); }}
@@ -382,6 +394,7 @@ export default function LegalView() {
                     >
                       Hire · {formatMoney(lawyer.unlockCost)}
                     </button>
+                    </Tooltip>
                   )}
                   {isActive && (
                     <p className="text-indigo-400 text-xs text-center font-semibold">✓ Currently Retained</p>

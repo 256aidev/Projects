@@ -1,6 +1,7 @@
 import { useUIStore } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
 import { formatMoney } from '../../engine/economy';
+import Tooltip from '../ui/Tooltip';
 
 const BLOCK_W = 164;
 
@@ -12,6 +13,7 @@ export default function CarDealershipBlock() {
   const totalPrestige = cars.reduce((s, c) => s + c.prestigeBonus, 0);
 
   return (
+    <Tooltip text="Browse cars. Status symbols that boost reputation.">
     <button
       onClick={() => setShowCarDealership(true)}
       style={{ width: BLOCK_W, borderColor: '#EF444450', backgroundColor: '#EF444412' }}
@@ -39,5 +41,6 @@ export default function CarDealershipBlock() {
       </div>
       <p className="text-[7px] text-red-500/60 mt-0.5">Tap to shop</p>
     </button>
+    </Tooltip>
   );
 }

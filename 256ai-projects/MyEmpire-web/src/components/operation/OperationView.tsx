@@ -7,6 +7,7 @@ import { formatMoney, formatUnits } from '../../engine/economy';
 import { JOB_MAP } from '../../data/types';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
+import Tooltip from '../ui/Tooltip';
 
 function seedPrice(qty: number): number {
   const base = INITIAL_OPERATION.seedCostPerUnit;
@@ -102,8 +103,8 @@ export default function OperationView() {
               const label = qty === 16 ? '1lb' : 'All';
               const canSell = units > 0;
               return (
+                <Tooltip key={qty} text={qty === 16 ? "Sell 1lb on the street at 70% avg price. Limited by street demand." : "Sell all available product on the street at 70% avg price."}>
                 <button
-                  key={qty}
                   data-tutorial={qty === 16 ? 'sell-btn' : undefined}
                   onClick={() => {
                     const cash = sellProduct(units);
@@ -116,6 +117,7 @@ export default function OperationView() {
                   Sell {label}<br />
                   <span className={canSell ? 'text-green-400' : 'text-gray-600'}>{formatMoney(earned)}</span>
                 </button>
+                </Tooltip>
               );
             })}
           </div>
@@ -154,8 +156,8 @@ export default function OperationView() {
               for (let i = 0; i < qty; i++) cost += getDealerHireCost(currentDealerTier, op.dealerCount + i);
               const canAfford = dirtyCash >= cost;
               return (
+                <Tooltip key={qty} text={`Hire ${qty} dealer${qty > 1 ? 's' : ''} to sell product automatically. No street demand limit.`}>
                 <button
-                  key={qty}
                   onClick={() => {
                     if (hireDealers(qty)) { sound.play('dealer_hire'); addNotification(`Hired ${qty} dealer${qty > 1 ? 's' : ''}`, 'success'); }
                     else addNotification(`Need ${formatMoney(cost)} dirty cash`, 'warning');
@@ -167,13 +169,14 @@ export default function OperationView() {
                 >
                   +{qty} ({formatMoney(cost)})
                 </button>
+                </Tooltip>
               );
             })}
             {op.dealerCount > 0 && [1, 3, 5].map((qty) => {
               const canFire = op.dealerCount >= qty;
               return (
+                <Tooltip key={`fire-${qty}`} text={`Fire ${qty} dealer${qty > 1 ? 's' : ''}. No refund on hiring cost.`}>
                 <button
-                  key={`fire-${qty}`}
                   onClick={() => { fireDealers(qty); sound.play('fire'); addNotification(`Fired ${qty} dealer${qty > 1 ? 's' : ''} (no refund)`, 'warning'); }}
                   disabled={!canFire}
                   className={`flex-1 py-1.5 rounded border border-white/30 text-[9px] font-semibold transition ${
@@ -182,6 +185,7 @@ export default function OperationView() {
                 >
                   −{qty} Fire
                 </button>
+                </Tooltip>
               );
             })}
           </div>
@@ -192,6 +196,7 @@ export default function OperationView() {
               const currentTier = DEALER_TIERS[op.dealerTierIndex];
               const refund = prevTier ? Math.floor(currentTier.hireCost * 3 * 0.5) : 0;
               return prevTier ? (
+                <Tooltip text={`Downgrade dealers to ${prevTier.name}. Slower sales but lower cut. 50% refund.`}>
                 <button
                   onClick={() => {
                     if (downgradeDealerTier()) { sound.play('fire'); addNotification(`Downgraded to ${prevTier.name} (+${formatMoney(refund)} refund)`, 'warning'); }
@@ -203,12 +208,14 @@ export default function OperationView() {
                     {prevTier.salesRatePerTick} oz/tick · ${prevTier.cutPer8oz} cut/8oz<br />+{formatMoney(refund)} refund
                   </span>
                 </button>
+                </Tooltip>
               ) : null;
             })()}
             {/* Upgrade */}
             {nextDealerTier && (() => {
               const canUpgrade = dirtyCash >= nextDealerTier.hireCost * 3;
               return (
+                <Tooltip text={`Upgrade all dealers to ${nextDealerTier.name}. Faster sales but higher cut per 8oz.`}>
                 <button
                   onClick={() => {
                     if (upgradeDealerTier()) { sound.play('upgrade'); addNotification(`Upgraded to ${nextDealerTier.name}!`, 'success'); }
@@ -224,6 +231,7 @@ export default function OperationView() {
                     {nextDealerTier.salesRatePerTick} oz/tick · ${nextDealerTier.cutPer8oz} cut/8oz · base ${formatMoney(nextDealerTier.hireCost)}/ea
                   </span>
                 </button>
+                </Tooltip>
               );
             })()}
           </div>
@@ -262,6 +270,7 @@ export default function OperationView() {
                   {isMaxLevel ? (
                     <span className="text-yellow-500 text-xs font-bold px-2 py-0.5 bg-yellow-900/30 rounded-full">MAX</span>
                   ) : (
+                    <Tooltip text="Unlock a new strain slot. More strains = more variety and income.">
                     <button
                       onClick={() => {
                         if (upgradeRoom(room.id)) {
@@ -279,6 +288,7 @@ export default function OperationView() {
                     >
                       + {def?.strainSlots[room.upgradeLevel + 1]?.strainName} · {formatMoney(nextUpgradeCost)}
                     </button>
+                    </Tooltip>
                   )}
                 </div>
 
@@ -308,16 +318,20 @@ export default function OperationView() {
                             <div className="h-full rounded-full transition-all" style={{ width: `${progress * 100}%`, backgroundColor: ready ? '#22c55e' : '#65a30d' }} />
                           </div>
                           {ready ? (
+                            <Tooltip text="Collect grown product into your stash. Auto-replants if you have seeds.">
                             <button data-tutorial="harvest-btn" onClick={() => { const u = harvestGrowRoom(room.id, slotIndex); if (u > 0) { sound.play('harvest'); addNotification(`Harvested ${formatUnits(u)} ${slot.strainName}!${op.seedStock > 0 ? ' Auto-replanting…' : ' Buy seeds.'}`, 'success'); } }}
                               className="w-full py-1 rounded border border-white/30 bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold transition">
                               Harvest!
                             </button>
+                            </Tooltip>
                           ) : idle ? (
+                            <Tooltip text="Plant seeds to start growing. Uses 1 seed.">
                             <button data-tutorial="plant-btn" onClick={() => { if (plantSeeds(room.id, slotIndex)) { sound.play('plant'); addNotification(`${slot.strainName} planted!`, 'success'); } else addNotification('No seeds', 'warning'); }}
                               disabled={op.seedStock < 1}
                               className={`w-full py-1 rounded border border-white/30 text-[10px] font-semibold transition ${op.seedStock > 0 ? 'bg-lime-700 hover:bg-lime-600 text-lime-100' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
                               🌱 Plant {op.seedStock < 1 ? '(no seeds)' : ''}
                             </button>
+                            </Tooltip>
                           ) : (
                             <p className="text-center text-gray-500 text-[10px]">{slot.ticksRemaining}s left</p>
                           )}
@@ -353,7 +367,14 @@ export default function OperationView() {
                           : 'Enable')
                         : null;
 
+                      const upgradeTooltips: Record<string, string> = {
+                        speed: 'Reduce grow time. Better irrigation means faster harvests.',
+                        yield: 'Increase yield per harvest. Better equipment = bigger buds.',
+                        double: 'Chance to get 2x yield on each harvest.',
+                        toggle: 'Automatically harvest and replant when crops finish growing.',
+                      };
                       return (
+                        <Tooltip text={upgradeTooltips[upgDef.bonusType] ?? `Upgrade ${upgDef.name} for this room.`}>
                         <div key={upgDef.id} className={`flex flex-col justify-between gap-1 p-2 rounded-lg border ${level > 0 ? `border-opacity-40 ${upgDef.bgColor}` : upgDef.borderColor}`}>
                           <span className={`text-[11px] font-semibold ${upgDef.color}`}>{upgDef.icon} {upgDef.name}</span>
                           <p className={`text-[11px] font-semibold leading-tight ${upgDef.color}`}>
@@ -381,6 +402,7 @@ export default function OperationView() {
                             <span className={`text-[11px] ${upgDef.color} text-center mt-0.5`}>MAX ✓</span>
                           )}
                         </div>
+                        </Tooltip>
                       );
                     })}
                   </div>
@@ -395,8 +417,8 @@ export default function OperationView() {
             const canAfford = useClean ? cleanCash >= def.purchaseCost : dirtyCash >= def.purchaseCost;
             const isLegal = def.isLegal;
             return (
+              <Tooltip key={def.id} text={`Build a new grow room with unique strains. ${isLegal ? 'Legal operation — product sells for clean cash.' : ''}`}>
               <button
-                key={def.id}
                 onClick={() => {
                   if (buyGrowRoom(def.id)) {
                     sound.play('buy');
@@ -424,6 +446,7 @@ export default function OperationView() {
                 </p>
                 {isLegal && <p className="text-yellow-500/70 text-[10px] mt-0.5">Legal Operation</p>}
               </button>
+              </Tooltip>
             );
           })}
         </div>
@@ -469,8 +492,8 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
             const cost = seedPrice(qty) * qty;
             const canAfford = dirtyCash >= cost;
             return (
+              <Tooltip key={qty} text={`Buy ${fmtQty(qty)} seed${qty > 1 ? 's' : ''} for planting.${qty >= 10000 ? ' Bulk discount applied!' : ''}`}>
               <button
-                key={qty}
                 data-tutorial={qty === 1 ? 'buy-seed-btn' : undefined}
                 onClick={() => handleBuy(qty)}
                 disabled={!canAfford}
@@ -480,6 +503,7 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
               >
                 x{fmtQty(qty)} ({formatMoney(cost)})
               </button>
+              </Tooltip>
             );
           })}
         </div>
@@ -490,8 +514,8 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
           const cost = seedPrice(qty) * qty;
           const canAfford = dirtyCash >= cost;
           return (
+            <Tooltip key={qty} text={`Buy ${fmtQty(qty)} seeds. Bulk discount: $${INITIAL_OPERATION.seedCostPerUnit - seedPrice(qty)} off per seed!`}>
             <button
-              key={qty}
               onClick={() => handleBuy(qty)}
               disabled={!canAfford}
               className={`flex-1 py-1.5 rounded border text-[10px] font-semibold transition ${
@@ -500,14 +524,17 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
             >
               x{fmtQty(qty)} ({formatMoney(cost)})
             </button>
+            </Tooltip>
           );
         })}
+        <Tooltip text="Enter a custom seed quantity to buy.">
         <button
           onClick={() => setShowCustom(!showCustom)}
           className="flex-1 py-1.5 rounded border border-white/30 text-[10px] font-semibold transition bg-green-800 hover:bg-green-700 text-green-200"
         >
           Custom
         </button>
+        </Tooltip>
       </div>
       {showCustom && (
         <div className="flex gap-1.5 mt-1">

@@ -3,10 +3,12 @@ import { useGameStore } from '../../store/gameStore';
 import { formatMoney } from '../../engine/economy';
 import { CAR_DEFS, CAR_TIER_COLORS, CAR_TIER_ORDER } from '../../data/carDefs';
 import { sound } from '../../engine/sound';
+import Tooltip from '../ui/Tooltip';
 
 export default function CarDealershipView() {
   const close = useUIStore(s => s.setShowCarDealership);
   const cleanCash = useGameStore(s => s.cleanCash);
+  const dirtyCash = useGameStore(s => s.dirtyCash);
   const cars = useGameStore(s => s.cars);
   const buyCar = useGameStore(s => s.buyCar);
   const addNotification = useUIStore(s => s.addNotification);
@@ -31,8 +33,12 @@ export default function CarDealershipView() {
           <p className="text-[9px] text-gray-500">Collect cars, boost prestige</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-gray-400">🏦 {formatMoney(cleanCash)}</span>
-          <button onClick={() => close(false)} className="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+          <div className="text-right">
+            <span className="text-[10px] text-gray-400">💵 {formatMoney(dirtyCash)}</span>
+            <br />
+            <span className="text-[10px] text-gray-400">🏦 {formatMoney(cleanCash)}</span>
+          </div>
+          <Tooltip text="Leave the dealership."><button onClick={() => close(false)} className="text-gray-500 hover:text-white text-xl leading-none">✕</button></Tooltip>
         </div>
       </div>
 
@@ -65,7 +71,9 @@ export default function CarDealershipView() {
               <div className="grid grid-cols-1 gap-2">
                 {tierCars.map(car => {
                   const owned = ownedIds.has(car.id);
-                  const canAfford = cleanCash >= car.cost;
+                  const isDirty = car.currency === 'dirty';
+                  const wallet = isDirty ? dirtyCash : cleanCash;
+                  const canAfford = wallet >= car.cost;
                   return (
                     <div key={car.id}
                       className={`bg-gray-900 rounded-lg p-3 border flex items-center gap-3 ${
@@ -80,17 +88,19 @@ export default function CarDealershipView() {
                         </div>
                         <p className="text-[8px] text-gray-500">{car.description}</p>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[9px] text-gray-400">{formatMoney(car.cost)}</span>
+                          <span className={`text-[9px] ${isDirty ? 'text-green-400' : 'text-blue-400'}`}>
+                            {isDirty ? '💵' : '🏦'} {formatMoney(car.cost)}
+                          </span>
                           <span className="text-[9px]" style={{ color: tierColor }}>+{car.prestigeBonus} prestige</span>
                         </div>
                       </div>
                       {!owned && (
-                        <button onClick={() => handleBuy(car.id)}
+                        <Tooltip text="Buy this car. Cars are status symbols that boost your reputation."><button onClick={() => handleBuy(car.id)}
                           disabled={!canAfford}
-                          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold shrink-0 ${
-                            canAfford ? 'bg-red-600 text-white active:bg-red-500' : 'bg-gray-800 text-gray-600'
+                          className={`px-5 py-3 rounded-xl text-sm font-black shrink-0 transition ${
+                            canAfford ? 'bg-red-600 text-white active:bg-red-500 hover:bg-red-500' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
                           }`}
-                        >Buy</button>
+                        >BUY</button></Tooltip>
                       )}
                     </div>
                   );

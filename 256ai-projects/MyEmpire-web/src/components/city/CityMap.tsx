@@ -13,6 +13,7 @@ import JobDistrictBlock from './JobDistrictBlock';
 import CasinoBlock from './CasinoBlock';
 import JewelryBlock from './JewelryBlock';
 import CarDealershipBlock from './CarDealershipBlock';
+import Tooltip from '../ui/Tooltip';
 
 const BLOCK_W = 164;
 const BLOCK_H = 258;
@@ -40,6 +41,7 @@ function LockedBlock({ name, cost, color, canAfford, onUnlock }: {
   name: string; cost: number; color: string; canAfford: boolean; onUnlock: () => void;
 }) {
   return (
+    <Tooltip text="Unlock this district to buy lots and build businesses.">
     <button
       onClick={onUnlock}
       style={{ width: BLOCK_W, height: BLOCK_H, borderColor: canAfford ? color + '80' : '#374151' }}
@@ -52,6 +54,7 @@ function LockedBlock({ name, cost, color, canAfford, onUnlock }: {
       <span className="text-[11px] font-bold text-amber-400">{formatMoney(cost)}</span>
       <span className="text-[8px] text-gray-500">clean cash</span>
     </button>
+    </Tooltip>
   );
 }
 

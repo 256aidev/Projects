@@ -4,6 +4,7 @@ import { BUSINESS_MAP } from '../../data/businesses';
 import { DISTRICT_MAP } from '../../data/districts';
 import { calculateLaunderCapacity, calculateDispensaryCapacity, calculateBusinessRevenue, calculateBusinessExpenses, formatMoney, formatUnits } from '../../engine/economy';
 import { sound } from '../../engine/sound';
+import Tooltip from '../ui/Tooltip';
 
 /**
  * Laundering heat badge — laundering dirty→clean ALWAYS reduces heat.
@@ -128,6 +129,7 @@ export default function BuildingMenu() {
             <p className="text-gray-600 text-[9px] text-center mb-2">
               Avg street price: ${avgPrice.toFixed(0)}/oz · Stash: {formatUnits(Object.values(operation.productInventory).reduce((s, e) => s + e.oz, 0))}
             </p>
+            <Tooltip text="Set how much product this dispensary consumes per tick.">
             <div>
               <p className="text-[10px] text-gray-400 mb-1">Oz to sell per tick</p>
               <input
@@ -140,6 +142,7 @@ export default function BuildingMenu() {
                 className="w-full accent-green-500"
               />
             </div>
+            </Tooltip>
           </div>
         ) : (
           /* ── LAUNDERING PANEL ── */
@@ -166,6 +169,7 @@ export default function BuildingMenu() {
                 <p className="text-blue-400 font-bold text-sm">{formatMoney(biz.dirtyQueuedPerTick * def.launderEfficiency)}/s</p>
               </div>
             </div>
+            <Tooltip text="Set how much dirty cash to push through this business per tick.">
             <div className="mt-3">
               <p className="text-[10px] text-gray-400 mb-1">Dirty cash to push/tick</p>
               <input
@@ -178,6 +182,7 @@ export default function BuildingMenu() {
                 className="w-full accent-green-500"
               />
             </div>
+            </Tooltip>
           </div>
         )}
 
@@ -199,6 +204,7 @@ export default function BuildingMenu() {
               </div>
             </div>
             <p className="text-gray-600 text-[9px] text-center mb-2">5% handling cost — skim clean cash back into dirty cash</p>
+            <Tooltip text="Convert clean cash back to dirty. Generates heat.">
             <div>
               <p className="text-[10px] text-gray-400 mb-1">Clean cash to convert/tick</p>
               <input
@@ -211,6 +217,7 @@ export default function BuildingMenu() {
                 className="w-full accent-orange-500"
               />
             </div>
+            </Tooltip>
           </div>
         )}
 
@@ -229,6 +236,7 @@ export default function BuildingMenu() {
         {/* Actions */}
         <div className="flex flex-col gap-2">
           {nextTier ? (
+            <Tooltip text="Increase laundering capacity and revenue.">
             <button
               onClick={() => {
                 if (upgradeBusiness(biz.instanceId)) {
@@ -250,10 +258,12 @@ export default function BuildingMenu() {
                 {nextTier.additionalEmployees > tier.additionalEmployees && ` · +${nextTier.additionalEmployees - tier.additionalEmployees} staff`}
               </span>
             </button>
+            </Tooltip>
           ) : (
             <div className="text-center text-xs text-yellow-400 py-2">MAX LEVEL</div>
           )}
 
+          <Tooltip text="Sell this business for 50% of purchase price.">
           <button
             onClick={() => {
               sellBusiness(biz.instanceId);
@@ -265,10 +275,13 @@ export default function BuildingMenu() {
           >
             Sell ({formatMoney(sellValue)} 🏦)
           </button>
+          </Tooltip>
 
+          <Tooltip text="Close this menu.">
           <button onClick={closeAll} className="w-full py-2 rounded-xl text-sm text-gray-400 hover:text-white transition">
             Close
           </button>
+          </Tooltip>
         </div>
       </div>
     </div>

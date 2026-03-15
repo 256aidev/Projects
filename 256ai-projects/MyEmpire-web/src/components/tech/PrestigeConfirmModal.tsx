@@ -4,6 +4,7 @@ import { calculatePrestigeTP } from '../../data/techDefs';
 import { PRESTIGE_THRESHOLD } from '../../data/types';
 import { formatMoney } from '../../engine/economy';
 import { sound } from '../../engine/sound';
+import Tooltip from '../ui/Tooltip';
 
 export default function PrestigeConfirmModal() {
   const state = useGameStore();
@@ -71,25 +72,31 @@ export default function PrestigeConfirmModal() {
 
         {/* Actions */}
         <div className="p-4 flex gap-2">
+          <Tooltip text="Go back without prestiging.">
           <button
             onClick={() => setShowPrestigeConfirm(false)}
             className="flex-1 py-2.5 rounded-lg bg-gray-800 text-gray-400 font-semibold text-sm hover:bg-gray-700 transition"
           >
             Cancel
           </button>
+          </Tooltip>
+          <Tooltip text="View and spend Tech Points in the Tech Lab.">
           <button
             onClick={() => { setShowPrestigeConfirm(false); setShowTechMenu(true); }}
             className="py-2.5 px-4 rounded-lg bg-gray-700 text-cyan-400 font-semibold text-sm hover:bg-gray-600 transition"
           >
             🔬 Tech
           </button>
+          </Tooltip>
           {eligible ? (
+            <Tooltip text="Reset all progress and earn Tech Points. Tech upgrades are permanent.">
             <button
               onClick={handlePrestige}
               className="flex-1 py-2.5 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-sm transition"
             >
               Prestige (+{total} TP)
             </button>
+            </Tooltip>
           ) : (
             <div className="flex-1 py-2.5 rounded-lg bg-gray-800 text-gray-500 font-bold text-sm text-center">
               Need {formatMoney(PRESTIGE_THRESHOLD)} dirty

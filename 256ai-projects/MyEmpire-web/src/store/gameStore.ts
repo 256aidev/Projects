@@ -1129,11 +1129,14 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         const { CAR_DEF_MAP } = require('../data/carDefs');
         const def = CAR_DEF_MAP[defId];
-        if (!def || state.cleanCash < def.cost) return false;
+        if (!def) return false;
+        const useDirty = def.currency === 'dirty';
+        const wallet = useDirty ? state.dirtyCash : state.cleanCash;
+        if (wallet < def.cost) return false;
         // Check not already owned
         if ((state.cars ?? []).some((c: { defId: string }) => c.defId === defId)) return false;
         set({
-          cleanCash: state.cleanCash - def.cost,
+          ...(useDirty ? { dirtyCash: state.dirtyCash - def.cost } : { cleanCash: state.cleanCash - def.cost }),
           totalSpent: state.totalSpent + def.cost,
           cars: [...(state.cars ?? []), { defId, purchasedAtTick: state.tickCount }],
         });
