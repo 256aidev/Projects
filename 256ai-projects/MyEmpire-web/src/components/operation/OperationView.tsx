@@ -290,10 +290,10 @@ export default function OperationView() {
                   )}
                 </div>
 
-                {/* Body: grow slots 2-col left | 6 upgrade cols right */}
+                {/* Body: grow slots 1/3 | upgrades 1/3 (3×2 grid) */}
                 <div className="flex">
-                  {/* Strain slots — 2 column grid */}
-                  <div className="flex-1 p-1.5 grid grid-cols-2 gap-1 border-r border-gray-700/50">
+                  {/* LEFT 1/3 — Strain slots in 2-column grid */}
+                  <div className="w-1/3 p-1.5 grid grid-cols-2 gap-1 border-r border-gray-700/50">
                     {room.slots.map((slot, slotIndex) => {
                       const progress = slot.isHarvesting && slot.growTimerTicks > 0
                         ? 1 - slot.ticksRemaining / slot.growTimerTicks
@@ -332,10 +332,11 @@ export default function OperationView() {
                     })}
                   </div>
 
-                  {/* Upgrades — 6 columns in a row */}
-                  <div className="flex gap-0.5 p-1.5">
+                  {/* RIGHT 2/3 — Upgrades in 3×2 grid, wider & more descriptive */}
+                  <div className="w-2/3 p-1.5 grid grid-cols-3 grid-rows-2 gap-1">
                     {ROOM_UPGRADE_DEFS.map((upgDef) => {
                       const level = room.upgradeLevels?.[upgDef.id] ?? 0;
+                      const maxLevel = upgDef.levels.length;
                       const currentLvl = level > 0 ? upgDef.levels[level - 1] : null;
                       const nextLvl = upgDef.levels[level];
                       const scaledCost = nextLvl ? nextLvl.cost * upgMult : 0;
@@ -343,43 +344,64 @@ export default function OperationView() {
                       const isToggle = upgDef.bonusType === 'toggle';
                       const isActive = isToggle && level > 0;
 
-                      const bonusLabel = currentLvl
-                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(currentLvl.speedBonus * 100)}%`
-                          : upgDef.bonusType === 'yield' ? `+${Math.round(currentLvl.yieldBonus * 100)}%`
-                          : upgDef.bonusType === 'double' ? `${Math.round(currentLvl.doubleChance * 100)}%`
+                      const bonusDesc = upgDef.bonusType === 'speed' ? 'grow time'
+                        : upgDef.bonusType === 'yield' ? 'yield'
+                        : upgDef.bonusType === 'double' ? '2× chance'
+                        : 'auto';
+
+                      const currentBonusText = currentLvl
+                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(currentLvl.speedBonus * 100)}% time`
+                          : upgDef.bonusType === 'yield' ? `+${Math.round(currentLvl.yieldBonus * 100)}% yield`
+                          : upgDef.bonusType === 'double' ? `${Math.round(currentLvl.doubleChance * 100)}% 2× chance`
                           : null)
                         : null;
 
-                      const nextBonusLabel = nextLvl
-                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(nextLvl.speedBonus * 100)}%`
-                          : upgDef.bonusType === 'yield' ? `+${Math.round(nextLvl.yieldBonus * 100)}%`
-                          : upgDef.bonusType === 'double' ? `${Math.round(nextLvl.doubleChance * 100)}% 2×`
-                          : 'On')
+                      const nextBonusText = nextLvl
+                        ? (upgDef.bonusType === 'speed' ? `-${Math.round(nextLvl.speedBonus * 100)}% time`
+                          : upgDef.bonusType === 'yield' ? `+${Math.round(nextLvl.yieldBonus * 100)}% yield`
+                          : upgDef.bonusType === 'double' ? `${Math.round(nextLvl.doubleChance * 100)}% 2× chance`
+                          : 'Enable')
                         : null;
 
                       return (
-                        <Tooltip key={upgDef.id} text={`${upgDef.name}: ${upgDef.bonusType === 'speed' ? 'Reduce grow time' : upgDef.bonusType === 'yield' ? 'Increase yield' : upgDef.bonusType === 'double' ? '2x yield chance' : 'Auto harvest & replant'}`}>
-                        <div className={`w-14 flex flex-col justify-between p-1 rounded border text-center ${level > 0 ? `border-opacity-40 ${upgDef.bgColor}` : upgDef.borderColor}`}>
-                          <span className={`text-[8px] font-bold leading-tight ${upgDef.color}`}>{upgDef.icon} {upgDef.name}</span>
-                          <p className={`text-[8px] font-semibold ${upgDef.color}`}>
-                            {isToggle ? (isActive ? null : <span className="text-gray-600">Off</span>) : (bonusLabel ?? <span className="text-gray-600">—</span>)}
+                        <Tooltip key={upgDef.id} text={`${upgDef.name}: ${upgDef.bonusType === 'speed' ? 'Reduces grow timer' : upgDef.bonusType === 'yield' ? 'Increases harvest yield' : upgDef.bonusType === 'double' ? 'Chance for double harvest' : 'Auto harvest & replant when ready'}`}>
+                        <div className={`flex flex-col justify-between p-1.5 rounded-lg border ${level > 0 ? `border-opacity-40 ${upgDef.bgColor}` : upgDef.borderColor}`}>
+                          {/* Header: icon, name, level dots */}
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className={`text-[10px] font-bold ${upgDef.color}`}>{upgDef.icon} {upgDef.name}</span>
+                            {!isToggle && (
+                              <div className="flex gap-0.5">
+                                {Array.from({ length: maxLevel }).map((_, i) => (
+                                  <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < level ? upgDef.color.replace('text-', 'bg-') : 'bg-gray-700'}`} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {/* Current status */}
+                          <p className={`text-[9px] ${upgDef.color} font-semibold`}>
+                            {isToggle
+                              ? (isActive ? null : <span className="text-gray-600">{bonusDesc}</span>)
+                              : currentLvl
+                                ? <>{currentLvl.name} · {currentBonusText}</>
+                                : <span className="text-gray-600">Not installed</span>}
                           </p>
+                          {/* Action */}
                           {isActive ? (
-                            <span className="text-[8px] text-green-400 font-bold">ON ✓</span>
+                            <span className="text-[10px] text-green-400 font-bold text-center">ACTIVE ✓</span>
                           ) : nextLvl ? (
                             <button
                               onClick={() => {
-                                if (buyRoomUpgrade(room.id, upgDef.id)) { sound.play('upgrade'); addNotification(`${nextLvl.name}!`, 'success'); }
+                                if (buyRoomUpgrade(room.id, upgDef.id)) { sound.play('upgrade'); addNotification(`${nextLvl.name} installed!`, 'success'); }
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
-                              className={`w-full py-0.5 rounded text-[8px] font-semibold transition ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
+                              className={`w-full py-0.5 rounded border border-white/20 text-[9px] font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-gray-600 cursor-not-allowed'}`}
                             >
-                              {nextBonusLabel}<br/>{formatMoney(scaledCost)}
-                              {nextLvl.costPerCycle > 0 && <><br/><span className="text-red-300">${nextLvl.costPerCycle}/c</span></>}
+                              {nextBonusText} · {nextLvl.name} · {formatMoney(scaledCost)}
+                              {nextLvl.costPerCycle > 0 && <span className="text-red-300"> · ${nextLvl.costPerCycle}/cyc</span>}
                             </button>
                           ) : (
-                            <span className={`text-[8px] ${upgDef.color} font-bold`}>MAX</span>
+                            <span className={`text-[10px] ${upgDef.color} font-bold text-center`}>MAX ✓</span>
                           )}
                         </div>
                         </Tooltip>
