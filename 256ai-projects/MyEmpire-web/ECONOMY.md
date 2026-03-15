@@ -931,36 +931,45 @@ At Silver (tier 0): 1× base. At Legendary (tier 4): 5× base.
 
 ---
 
-## 19. Car Dealership (Car Bonuses)
+## 19. Car Dealership (Tier-Specific Gameplay Bonuses)
 
-Buy collectible cars. Each car provides a **gameplay bonus** (not just prestige). Economy cars cost **dirty cash**, all others cost **clean cash**.
+Buy collectible cars. Each **tier** gives a unique gameplay bonus that stacks across owned cars. Economy cars cost **dirty cash**, all others cost **clean cash**.
 
-### Tiers & Pricing
-| Tier | Price Range | Currency | Bonus Type |
-|------|------------|----------|------------|
-| Economy | $150K–$200K | **Dirty** | Heat reduction, grow speed |
-| Sport | $35K–$55K | Clean | Grow speed, dealer boost |
-| Luxury | $100K–$150K | Clean | Income multiplier, launder boost |
-| Exotic | $250K–$400K | Clean | Income multiplier, dealer boost |
-| Supercar | $750K–$2M | Clean | Income multiplier, launder boost |
+### Tier Bonuses
+| Tier | Price Range | Currency | Bonus Type | Range |
+|------|------------|----------|------------|-------|
+| Economy | $150K–$200K | **Dirty** | **Heat Reduction** — blend in, look normal | -3% to -8% |
+| Sport | $35K–$55K | Clean | **Grow Speed** — faster harvest cycles | -5% to -10% |
+| Luxury | $100K–$150K | Clean | **Dealer Boost** — flex = more customers | +5% to +10% |
+| Exotic | $250K–$400K | Clean | **Income Multiplier** — status = more money | +5% to +10% |
+| Supercar | $750K–$2M | Clean | **Launder Boost** — wealth = legit cover | +8% to +15% |
 
-**Economy cars** (Corolla $150K, Camry $150K, Civic $200K) intentionally cost dirty cash to make early prestige harder to acquire cheaply.
+**Bonus application in game tick:**
+- `heatReduction` → added to `tech.heatReduction` in heat calculation
+- `growSpeed` → added to `tech.speedBonus` in operation tick
+- `dealerBoost` + `incomeMultiplier` → multiply raw dirty income: `dirtyEarned × (1 + incomeMultiplier + dealerBoost)`
+- `launderBoost` → multiplies launder efficiency: `launderMultiplier × (1 + launderBoost)`
 
-15 total cars. Each can only be purchased once. Car bonuses stack additively.
+15 total cars. Each can only be purchased once. `getCarBonuses()` sums all owned car bonuses.
 
 ### Code Locations
 | File | Purpose |
 |------|---------|
-| `src/data/carDefs.ts` | 15 car definitions, tier colors |
-| `src/store/gameStore.ts` | `buyCar()` action |
-| `src/components/cars/CarDealershipView.tsx` | Full-screen dealership overlay |
+| `src/data/carDefs.ts` | 15 car definitions, `getCarBonuses()`, tier colors |
+| `src/data/types.ts` | `CarDef` interface with `bonusType` + `bonusValue` |
+| `src/store/gameStore.ts` | `buyCar()` action, car bonuses applied in `tick()` |
+| `src/components/cars/CarDealershipView.tsx` | Full-screen dealership with active bonus display |
 | `src/components/city/CarDealershipBlock.tsx` | City map block |
 
 ---
 
 ## 21. Event System
 
-Random events trigger every 30-120 ticks (~30s to 2min) with 400 total events across 4 categories. Each event presents 2-3 choices with risk/reward outcomes. Full documentation in [EVENTS.md](EVENTS.md).
+Random events trigger every 120-360 ticks (~2-6 min at 1x speed) with 400 total events across 4 categories. Each event presents 2-3 choices with risk/reward outcomes. Full documentation in [EVENTS.md](EVENTS.md).
+
+**Speed scaling:** At higher game speeds (2x/4x/8x), event intervals multiply by the speed factor so events stay ~2 min apart in real wall-clock time.
+
+**Bug fix:** `dismissEvent()` now properly resets `lastEventTick` to prevent rapid-fire events.
 
 | Category | Count | Theme |
 |----------|-------|-------|
@@ -999,8 +1008,20 @@ Applied to leaderboard scores. Higher rivals + shorter start time = bigger multi
 
 **Leaderboard score:** `Math.floor(baseScore × difficultyMultiplier)`
 
+### Point Scoring System (per category)
+| Category | Formula | Difficulty |
+|----------|---------|------------|
+| Money | 1 pt per $1K total earned (dirty + clean) | Easiest |
+| Territory | 5K per business + 2K per district unlocked | Easy |
+| Criminal | 10K per grow room + 1K per dealer + 15K per dealer tier | Medium |
+| Combat | 50K per rival defeated + 5K per hitman | Hard |
+| Collection | 20K per car + 15K per jewelry | Hard |
+| Prestige | 500K per prestige reset + 10K per Tech Point earned | Hardest |
+| **Overall** | Sum of all categories × difficulty multiplier | Combined |
+
 **Code:** `getDifficultyMultiplier()` in `src/engine/difficulty.ts`
-**UI:** `src/components/ui/StartGameScreen.tsx`, `src/components/ui/LeaderboardView.tsx`
+**UI:** `src/components/ui/LeaderboardView.tsx` (full tab with 7 sub-tabs)
+**Sync:** `updateLeaderboardEntry()` in `src/store/cloudSave.ts`
 
 ---
 
@@ -1037,3 +1058,97 @@ Pool-based HTMLAudioElement sound engine with 18 sound effects and background mu
 
 **Code:** `src/engine/sound.ts`
 **Assets:** `public/sounds/*.wav` (synthesized via Node.js script)
+
+---
+
+## 24. Tutorial System
+
+Guided walkthrough for new players. Activated via the green "Tutorial" button on the Start Game screen. No rivals during tutorial.
+
+### Flow (19 steps)
+1. Welcome → Operation tab intro → Harvest → Product stash → Sell → Dirty cash → Buy seeds → Plant → Auto-harvest tip
+2. Switch to City → City intro → Districts & lots
+3. Switch to Legal → Heat & law → Jobs
+4. Switch to Stats → Finance intro
+5. Two currencies explained → Rivals warning → Complete
+
+### Mechanics
+- **Spotlight effect:** SVG mask highlights target element with dark overlay
+- **Auto-advance:** Steps with `advanceOn` (harvest/sell/plant/buy-seed/switch-tab) advance when the player performs the action
+- **Manual advance:** Informational steps have a "Got it" button
+- **Skip:** Can bail out at any time
+- **Progress dots:** Shows position in tutorial
+- **data-tutorial attributes:** Added to key buttons (harvest-btn, plant-btn, sell-btn, buy-seed-btn, nav-city, nav-legal, nav-finance)
+
+### State
+- `gameSettings.tutorialActive: boolean` — true during tutorial
+- `gameSettings.tutorialStep: number` — current step index
+- Actions: `startTutorial()`, `advanceTutorial()`, `skipTutorial()`
+
+### Code Locations
+| File | Purpose |
+|------|---------|
+| `src/data/tutorial.ts` | 19 step definitions with targets and advance triggers |
+| `src/components/ui/TutorialOverlay.tsx` | Spotlight + tooltip overlay |
+| `src/store/gameStore.ts` | Tutorial state + actions, `checkTutorialAdvance()` |
+
+---
+
+## 25. Tooltip System
+
+Hover tooltips on every interactive element across the game. 120+ tooltips across 20+ files.
+
+### Component
+`src/components/ui/Tooltip.tsx` — Reusable portal-based tooltip:
+- `display: contents` wrapper (never breaks flex layouts)
+- 300ms hover delay
+- Auto-positioning (bottom by default, flips to top near viewport edge)
+- Dark theme: `bg-gray-900 border-gray-600 text-white text-[11px]`
+- `pointer-events-none` (never blocks gameplay)
+- Max width 220px with word wrap
+
+### Usage
+```tsx
+<Tooltip text="Collect grown product into your stash.">
+  <button>Harvest!</button>
+</Tooltip>
+```
+
+### Coverage
+| Area | # Tooltips |
+|------|-----------|
+| OperationView (harvest, plant, seeds, sell, dealers, upgrades, rooms) | ~25 |
+| HUD (cash, stash, tech, prestige, heat, speed, sound) | ~14 |
+| NavBar (all tabs) | 5 |
+| City panels (building menu, buy business, lots, resources, map) | ~15 |
+| LegalView (lawyers, hitmen, jobs, rival attacks) | ~10 |
+| TechMenu + PrestigeConfirm | ~11 |
+| Casino + Jewelry + Cars + city blocks | ~25 |
+| AccountScreen + StartGameScreen | ~12 |
+
+---
+
+## 26. Rival Economy
+
+Rivals have their own dual-currency economy (dirty + clean cash) that scales with power level.
+
+### Passive Income (per tick)
+| Currency | Formula | Power 1 | Power 5 | Power 10 |
+|----------|---------|---------|---------|----------|
+| Dirty | `50 + power² × 20` | $70 | $550 | $2,050 |
+| Clean | `10 + power² × 5` | $15 | $135 | $510 |
+
+### Key Rules
+- **Rivals buy businesses with CLEAN cash** (same as player) — prevents them from bypassing the laundering economy
+- **Budget cap:** `power × 15,000` for business purchases
+- **District access:** `power × 25,000` max district unlock cost
+- **Purchase chance:** 4% per rival tick (every 10 game ticks)
+- **Power creep:** +0.005 per tick, capped at 20
+
+### Royal Rumble Entry
+Each rival has `activeAtTick` for staggered entry:
+- 5-minute base buffer (`BASE_HEAD_START_TICKS = 300`)
+- Configurable delay between entries (Start Game slider, 0-60 min)
+- Formula: `activeAtTick = BASE_HEAD_START_TICKS + i × entryDelayTicks`
+
+**Code:** `src/engine/rivals.ts`, `src/data/rivals.ts`
