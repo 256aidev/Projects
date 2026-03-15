@@ -10,6 +10,14 @@ import { getCarBonuses } from '../../data/carDefs';
 import CannabisLeaf from '../ui/CannabisLeaf';
 import Tooltip from '../ui/Tooltip';
 
+/** Seed warning: yellow blink ≤25, red blink ≤10, fast red blink at 0 */
+function seedWarningClass(seeds: number): string {
+  if (seeds === 0) return 'text-red-500 animate-[blink_0.3s_ease-in-out_infinite]';
+  if (seeds <= 10) return 'text-red-400 animate-[blink_0.8s_ease-in-out_infinite]';
+  if (seeds <= 25) return 'text-yellow-400 animate-[blink_1.2s_ease-in-out_infinite]';
+  return 'text-gray-400';
+}
+
 function seedPrice(qty: number): number {
   const base = INITIAL_OPERATION.seedCostPerUnit;
   const discount = qty >= 30000 ? 3 : qty >= 20000 ? 2 : qty >= 10000 ? 1 : 0;
@@ -138,7 +146,7 @@ export default function OperationView() {
         {/* Seeds */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-white font-semibold text-xs">Seeds <span className="text-gray-400 font-normal">{op.seedStock} in stock · {formatMoney(INITIAL_OPERATION.seedCostPerUnit)}/seed</span></p>
+            <p className="text-white font-semibold text-xs">Seeds <span className={`font-normal ${seedWarningClass(op.seedStock)}`}>{op.seedStock} in stock · {formatMoney(INITIAL_OPERATION.seedCostPerUnit)}/seed</span></p>
             <span className="text-lg">🌱</span>
           </div>
           <SeedButtons buySeed={buySeed} dirtyCash={dirtyCash} addNotification={addNotification} />
@@ -247,7 +255,7 @@ export default function OperationView() {
 
       {/* Grow Rooms */}
       <section>
-        <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-2 px-1">Grow Rooms · 🌱 {op.seedStock} seeds</h3>
+        <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-2 px-1">Grow Rooms · 🌱 <span className={seedWarningClass(op.seedStock)}>{op.seedStock} seeds</span></h3>
         <div className="flex flex-col gap-4">
           {op.growRooms.map((room) => {
             const def = GROW_ROOM_TYPE_DEFS.find((d) => d.id === room.typeId);

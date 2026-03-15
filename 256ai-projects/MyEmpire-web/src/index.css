@@ -24,6 +24,11 @@ html, body, #root {
 .money-positive { animation: pulse-green 2s ease-in-out infinite; }
 .money-negative { animation: pulse-red 2s ease-in-out infinite; }
 
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
 .building-lot:hover {
   transform: scale(1.03);
   filter: brightness(1.15);
