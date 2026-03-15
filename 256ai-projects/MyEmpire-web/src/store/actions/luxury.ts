@@ -31,14 +31,14 @@ export function createLuxuryActions(set: SetState, get: GetState) {
     buyJewelry: (defId: string) => {
       const state = get();
       const def = JEWELRY_DEF_MAP[defId];
-      if (!def || state.cleanCash < def.baseCost) return false;
+      if (!def || state.dirtyCash < def.baseCost) return false;
       // Check slot limits
       const slotsUsed = (state.jewelry ?? []).filter((j: { slotType: string }) => j.slotType === def.slotType).length;
       if (slotsUsed >= JEWELRY_SLOT_LIMITS[def.slotType]) return false;
       // Check not already owned
       if ((state.jewelry ?? []).some((j: { defId: string }) => j.defId === defId)) return false;
       set({
-        cleanCash: state.cleanCash - def.baseCost,
+        dirtyCash: state.dirtyCash - def.baseCost,
         totalSpent: state.totalSpent + def.baseCost,
         jewelry: [...(state.jewelry ?? []), { defId, slotType: def.slotType, tier: 0, equippedSlotIndex: slotsUsed }],
       });
@@ -53,10 +53,10 @@ export function createLuxuryActions(set: SetState, get: GetState) {
       const def = JEWELRY_DEF_MAP[piece.defId];
       if (!def) return false;
       const nextTier = def.tiers[piece.tier + 1];
-      if (!nextTier || state.cleanCash < nextTier.upgradeCost) return false;
+      if (!nextTier || state.dirtyCash < nextTier.upgradeCost) return false;
       jewelry[index] = { ...piece, tier: piece.tier + 1 };
       set({
-        cleanCash: state.cleanCash - nextTier.upgradeCost,
+        dirtyCash: state.dirtyCash - nextTier.upgradeCost,
         totalSpent: state.totalSpent + nextTier.upgradeCost,
         jewelry,
       });

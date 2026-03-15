@@ -22,7 +22,7 @@ const SLOT_ICONS: Record<JewelrySlotType, string> = {
 
 export default function JewelryStoreView() {
   const close = useUIStore(s => s.setShowJewelryStore);
-  const cleanCash = useGameStore(s => s.cleanCash);
+  const dirtyCash = useGameStore(s => s.dirtyCash);
   const jewelry = useGameStore(s => s.jewelry);
   const buyJewelry = useGameStore(s => s.buyJewelry);
   const upgradeJewelry = useGameStore(s => s.upgradeJewelry);
@@ -53,7 +53,7 @@ export default function JewelryStoreView() {
           <p className="text-[9px] text-gray-500">Buy & upgrade for permanent bonuses</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-gray-400">🏦 {formatMoney(cleanCash)}</span>
+          <span className="text-[10px] text-gray-400">💵 {formatMoney(dirtyCash)}</span>
           <Tooltip text="Leave the jewelry store."><button onClick={() => close(false)} className="text-gray-500 hover:text-white text-xl leading-none">✕</button></Tooltip>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function JewelryStoreView() {
                     {nextTier && (
                       <Tooltip text="Polish this piece to increase its value."><button onClick={() => handleUpgrade(idx)}
                         className={`w-full py-1 rounded text-[9px] font-bold ${
-                          cleanCash >= nextTier.upgradeCost
+                          dirtyCash >= nextTier.upgradeCost
                             ? 'bg-cyan-700 text-white active:bg-cyan-600'
                             : 'bg-gray-800 text-gray-600'
                         }`}
@@ -135,7 +135,7 @@ export default function JewelryStoreView() {
           <div className="grid grid-cols-2 gap-2">
             {JEWELRY_DEFS.filter(d => !ownedIds.has(d.id)).map(def => {
               const slotFull = slotCounts[def.slotType] >= JEWELRY_SLOT_LIMITS[def.slotType];
-              const canAfford = cleanCash >= def.baseCost;
+              const canAfford = dirtyCash >= def.baseCost;
               return (
                 <Tooltip key={def.id} text="Buy this piece. Jewelry appreciates in value over time."><button onClick={() => !slotFull && canAfford && handleBuy(def.id)}
                   disabled={slotFull || !canAfford}
