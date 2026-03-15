@@ -10,17 +10,19 @@ export function createLuxuryActions(set: SetState, get: GetState) {
     // ─── CASINO ────────────────────────────────────────────────
     settleCasinoBet: (betAmount: number, grossPayout: number) => {
       const state = get();
-      if (state.dirtyCash < betAmount) return;
+      // Deduct bet from dirty cash (floor at 0 if ticks consumed some during spin delay)
+      const dirtyAfterBet = Math.max(0, state.dirtyCash - betAmount);
       const taxAmount = grossPayout > 0 ? Math.floor(grossPayout * 0.15) : 0;
-      const cleanWon = grossPayout - taxAmount;
+      const cleanWon = Math.max(0, grossPayout - taxAmount);
       const history = state.casinoHistory ?? { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 };
+      console.log(`[Casino] bet=${betAmount} gross=${grossPayout} tax=${taxAmount} cleanWon=${cleanWon} dirtyBefore=${state.dirtyCash} dirtyAfter=${dirtyAfterBet} cleanBefore=${state.cleanCash}`);
       set({
-        dirtyCash: state.dirtyCash - betAmount,
-        cleanCash: state.cleanCash + Math.max(0, cleanWon),
-        totalCleanEarned: state.totalCleanEarned + Math.max(0, cleanWon),
+        dirtyCash: dirtyAfterBet,
+        cleanCash: state.cleanCash + cleanWon,
+        totalCleanEarned: state.totalCleanEarned + cleanWon,
         casinoHistory: {
           totalGambled: history.totalGambled + betAmount,
-          totalWon: history.totalWon + Math.max(0, cleanWon),
+          totalWon: history.totalWon + cleanWon,
           totalLost: history.totalLost + (grossPayout === 0 ? betAmount : 0),
           gamesPlayed: history.gamesPlayed + 1,
         },
