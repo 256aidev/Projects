@@ -16,7 +16,7 @@ Each building type can be purchased once. Prices follow a x4 progression per tie
 
 | Room | Cost | Currency | Plants | Yield/Harvest | upgradeCostMultiplier |
 |------|------|----------|--------|--------------|----------------------|
-| Closet | $0 (free) | dirty | 1 | 12 oz | 1x |
+| Closet | $0 (free) | dirty | 4 | 48 oz (3 lbs) | 1x |
 | Shed | $2,000 | dirty | 2 | 24 oz (1.5 lbs) | 4x |
 | Garage | $8,000 | dirty | 4 | 48 oz (3 lbs) | 16x |
 | Small Grow | $32,000 | dirty | 10 | 120 oz (7.5 lbs) | 64x |

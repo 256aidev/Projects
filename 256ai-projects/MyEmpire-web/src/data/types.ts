@@ -690,7 +690,7 @@ export const GROW_ROOM_TYPE_DEFS: GrowRoomTypeDef[] = [
     autoHarvestCost: 500,     // = virtual base
     upgradeCostMultiplier: 1, // ×1 (base tier)
     strainSlots: [
-      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12 },
+      { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 48 },
     ],
   },
   {
@@ -803,7 +803,7 @@ export const INITIAL_OPERATION: CriminalOperation = {
       upgradeLevel: 0,
       upgradeLevels: {},
       slots: [
-        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 1, growTimerTicks: 30, harvestYield: 12, isHarvesting: true, ticksRemaining: 30 },
+        { strainName: 'Basic Bud', pricePerUnit: 8, plantsCapacity: 4, growTimerTicks: 30, harvestYield: 48, isHarvesting: true, ticksRemaining: 30 },
       ],
     },
   ],
