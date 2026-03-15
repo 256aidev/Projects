@@ -428,7 +428,7 @@ export default function OperationView() {
                                 else addNotification(`Need ${formatMoney(scaledCost)}`, 'warning');
                               }}
                               disabled={!canAfford}
-                              className={`w-full py-1.5 rounded border border-white/20 text-[10px] font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-white cursor-not-allowed'}`}
+                              className={`w-full px-3 py-2 rounded border border-white/20 text-xs font-semibold transition mt-0.5 ${canAfford ? `${upgDef.bgColor} hover:opacity-80 ${upgDef.color}` : 'bg-gray-700 text-white cursor-not-allowed'}`}
                             >
                               {nextBonusText} · {nextLvl.name} · {formatMoney(scaledCost)}
                               {nextLvl.costPerCycle > 0 && <span className="text-red-300"> · ${nextLvl.costPerCycle}/cyc</span>}
