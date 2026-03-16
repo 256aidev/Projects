@@ -9,12 +9,14 @@ import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
 import Tooltip from '../ui/Tooltip';
 import CurrencyDisplay from '../ui/CurrencyDisplay';
+import MusicMenu from '../ui/MusicMenu';
 import type { GameSpeed } from '../../store/uiStore';
 import { getSeasonFromTick } from '../../data/seasons';
 
 export default function HUD() {
   const [sfxOn, setSfxOn] = useState(!sound.sfxMuted);
   const [musicOn, setMusicOn] = useState(!sound.musicMuted);
+  const [showMusicMenu, setShowMusicMenu] = useState(false);
   const dirtyCash = useGameStore((s) => s.dirtyCash);
   const cleanCash = useGameStore((s) => s.cleanCash);
   const lastTickDirtyProfit = useGameStore((s) => s.lastTickDirtyProfit);
@@ -223,7 +225,18 @@ export default function HUD() {
             MUS
           </button>
         </Tooltip>
+        <span className="text-gray-700 text-sm">|</span>
+        <Tooltip text="Music playlist — choose tracks, reorder, shuffle.">
+          <button
+            onClick={() => setShowMusicMenu(true)}
+            className="text-sm font-bold px-1.5 py-0.5 rounded transition text-yellow-400 hover:text-yellow-300"
+          >
+            🎵
+          </button>
+        </Tooltip>
       </div>
+
+      {showMusicMenu && <MusicMenu onClose={() => setShowMusicMenu(false)} />}
 
       {/* Account / save indicator */}
       <div className="ml-auto flex items-center gap-3">

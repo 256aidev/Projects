@@ -2,9 +2,12 @@
  * Sound Engine
  * Manages game audio using HTMLAudioElement pool.
  * All sounds are pre-generated WAV files in /public/sounds/.
- * Background music loops automatically.
+ * Background music supports playlist with auto-rotation.
  * SFX and music volumes + mutes are independent and persisted in localStorage.
  */
+
+import { MUSIC_TRACKS, TRACK_ROTATION_MS, loadPlaylistPrefs, savePlaylistPrefs } from '../data/musicDefs';
+import type { PlaylistPrefs } from '../data/musicDefs';
 
 export type SoundKey =
   | 'notify_success'
@@ -23,8 +26,7 @@ export type SoundKey =
   | 'casino_lose'
   | 'attack'
   | 'event_popup'
-  | 'prestige'
-  | 'bg_lofi';
+  | 'prestige';
 
 const SOUND_PATHS: Record<SoundKey, string> = {
   notify_success: '/sounds/notify_success.wav',
@@ -44,7 +46,6 @@ const SOUND_PATHS: Record<SoundKey, string> = {
   attack:         '/sounds/attack.wav',
   event_popup:    '/sounds/event_popup.wav',
   prestige:       '/sounds/prestige.wav',
-  bg_lofi:        '/sounds/bg_lofi.wav',
 };
 
 const STORAGE_KEY = 'myempire-sound';
@@ -72,18 +73,28 @@ class SoundEngine {
   private pool: Map<SoundKey, HTMLAudioElement[]> = new Map();
   private bgMusic: HTMLAudioElement | null = null;
   private prefs: SoundPrefs;
+  private playlistPrefs: PlaylistPrefs;
+  private currentTrackIndex = 0;
+  private rotationTimer: number | null = null;
+  private _currentTrackId: string | null = null;
+  private _onTrackChange: (() => void) | null = null;
 
   constructor() {
     this.prefs = loadPrefs();
+    this.playlistPrefs = loadPlaylistPrefs();
   }
 
   get sfxVolume() { return this.prefs.sfxVolume; }
   get musicVolume() { return this.prefs.musicVolume; }
   get sfxMuted() { return this.prefs.sfxMuted; }
   get musicMuted() { return this.prefs.musicMuted; }
+  get currentTrackId() { return this._currentTrackId; }
+  get playlist() { return this.playlistPrefs; }
 
   /** Legacy: treat as overall mute (both SFX + music) */
   get muted() { return this.prefs.sfxMuted && this.prefs.musicMuted; }
+
+  onTrackChange(cb: (() => void) | null) { this._onTrackChange = cb; }
 
   setSfxVolume(v: number) {
     this.prefs.sfxVolume = Math.max(0, Math.min(1, v));
@@ -128,7 +139,7 @@ class SoundEngine {
 
   /** Play a one-shot sound effect. */
   play(key: SoundKey) {
-    if (this.prefs.sfxMuted || key === 'bg_lofi') return;
+    if (this.prefs.sfxMuted) return;
 
     let pool = this.pool.get(key);
     if (!pool) {
@@ -147,20 +158,130 @@ class SoundEngine {
     el.play().catch(() => {});
   }
 
-  /** Start looping background music. Call once after first user interaction. */
-  startMusic() {
-    if (this.bgMusic) return;
-    this.bgMusic = new Audio(SOUND_PATHS['bg_lofi']);
+  // ── Playlist Management ──────────────────────────────────────────────
+
+  private getEnabledTracks() {
+    const enabled = new Set(this.playlistPrefs.enabledTracks);
+    const ordered = this.playlistPrefs.order.filter(id => enabled.has(id));
+    // Add any enabled tracks not in the order
+    for (const id of this.playlistPrefs.enabledTracks) {
+      if (!ordered.includes(id)) ordered.push(id);
+    }
+    return ordered.map(id => MUSIC_TRACKS.find(t => t.id === id)).filter(Boolean);
+  }
+
+  private pickNextTrack() {
+    const tracks = this.getEnabledTracks();
+    if (tracks.length === 0) return null;
+    if (this.playlistPrefs.shuffle) {
+      const idx = Math.floor(Math.random() * tracks.length);
+      this.currentTrackIndex = idx;
+      return tracks[idx];
+    }
+    this.currentTrackIndex = (this.currentTrackIndex + 1) % tracks.length;
+    return tracks[this.currentTrackIndex];
+  }
+
+  /** Toggle a track on/off in the playlist */
+  toggleTrack(trackId: string) {
+    const idx = this.playlistPrefs.enabledTracks.indexOf(trackId);
+    if (idx >= 0) {
+      // Don't allow disabling the last track
+      if (this.playlistPrefs.enabledTracks.length <= 1) return;
+      this.playlistPrefs.enabledTracks.splice(idx, 1);
+    } else {
+      this.playlistPrefs.enabledTracks.push(trackId);
+    }
+    savePlaylistPrefs(this.playlistPrefs);
+  }
+
+  /** Move a track up in the order */
+  moveTrackUp(trackId: string) {
+    const order = this.playlistPrefs.order;
+    const idx = order.indexOf(trackId);
+    if (idx > 0) {
+      [order[idx - 1], order[idx]] = [order[idx], order[idx - 1]];
+      savePlaylistPrefs(this.playlistPrefs);
+    }
+  }
+
+  /** Move a track down in the order */
+  moveTrackDown(trackId: string) {
+    const order = this.playlistPrefs.order;
+    const idx = order.indexOf(trackId);
+    if (idx >= 0 && idx < order.length - 1) {
+      [order[idx], order[idx + 1]] = [order[idx + 1], order[idx]];
+      savePlaylistPrefs(this.playlistPrefs);
+    }
+  }
+
+  /** Toggle shuffle mode */
+  toggleShuffle() {
+    this.playlistPrefs.shuffle = !this.playlistPrefs.shuffle;
+    savePlaylistPrefs(this.playlistPrefs);
+  }
+
+  /** Play a specific track immediately */
+  playTrack(trackId: string) {
+    const track = MUSIC_TRACKS.find(t => t.id === trackId);
+    if (!track) return;
+    const tracks = this.getEnabledTracks();
+    this.currentTrackIndex = tracks.findIndex(t => t?.id === trackId);
+    if (this.currentTrackIndex < 0) this.currentTrackIndex = 0;
+    this.loadAndPlayTrack(track.path, track.id);
+  }
+
+  /** Skip to next track */
+  nextTrack() {
+    const track = this.pickNextTrack();
+    if (track) this.loadAndPlayTrack(track.path, track.id);
+  }
+
+  private loadAndPlayTrack(path: string, id: string) {
+    if (this.bgMusic) {
+      this.bgMusic.pause();
+      this.bgMusic = null;
+    }
+    this._currentTrackId = id;
+    this.bgMusic = new Audio(path);
     this.bgMusic.loop = true;
     this.bgMusic.volume = this.prefs.musicVolume;
     if (!this.prefs.musicMuted) {
       this.bgMusic.play().catch(() => {});
     }
+    this._onTrackChange?.();
+    this.resetRotationTimer();
+  }
+
+  private resetRotationTimer() {
+    if (this.rotationTimer) clearInterval(this.rotationTimer);
+    this.rotationTimer = window.setInterval(() => {
+      if (this.getEnabledTracks().length > 1) {
+        this.nextTrack();
+      }
+    }, TRACK_ROTATION_MS);
+  }
+
+  /** Start looping background music. Call once after first user interaction. */
+  startMusic() {
+    if (this.bgMusic) return;
+    // Start with the first enabled track
+    const tracks = this.getEnabledTracks();
+    if (tracks.length === 0) return;
+    const track = tracks[0];
+    if (!track) return;
+    this.currentTrackIndex = 0;
+    this.loadAndPlayTrack(track.path, track.id);
   }
 
   stopMusic() {
     this.bgMusic?.pause();
     this.bgMusic = null;
+    this._currentTrackId = null;
+    if (this.rotationTimer) {
+      clearInterval(this.rotationTimer);
+      this.rotationTimer = null;
+    }
   }
 }
 
