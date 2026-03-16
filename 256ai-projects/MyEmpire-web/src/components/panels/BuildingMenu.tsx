@@ -144,7 +144,7 @@ export default function BuildingMenu() {
             </div>
             </Tooltip>
           </div>
-        ) : (
+        ) : def.baseLaunderPerTick > 0 ? (
           /* ── LAUNDERING PANEL ── */
           <div className="bg-green-900/20 border border-green-800/30 rounded-xl p-3 mb-3">
             <div className="flex items-center justify-between mb-2">
@@ -184,10 +184,10 @@ export default function BuildingMenu() {
             </div>
             </Tooltip>
           </div>
-        )}
+        ) : null}
 
         {/* Reverse flow: clean → dirty */}
-        {!def.isRental && (
+        {!def.isRental && def.baseLaunderPerTick > 0 && (
           <div className="bg-orange-900/20 border border-orange-800/30 rounded-xl p-3 mb-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-orange-400 text-xs font-bold uppercase tracking-wide">🔄 Reverse Flow <span className="font-normal text-gray-500">(clean → dirty)</span></p>
