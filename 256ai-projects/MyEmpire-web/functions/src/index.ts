@@ -9,6 +9,8 @@ export { leaveSyndicate } from './syndicate/leave';
 export { kickMember } from './syndicate/kick';
 export { promoteMember } from './syndicate/promote';
 export { contributeTreasury } from './syndicate/treasury';
+export { spendTreasury } from './syndicate/spend';
+export { sendInvite, acceptInvite, declineInvite } from './syndicate/invite';
 
 // War system
 export { startFight } from './war/fight';

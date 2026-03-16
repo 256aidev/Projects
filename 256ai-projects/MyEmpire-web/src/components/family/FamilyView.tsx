@@ -5,6 +5,8 @@ import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatMoney } from '../../engine/economy';
 import { sound } from '../../engine/sound';
+import { SYNDICATE_LEVELS, getSyndicateLevel, getNextLevelXp, TREASURY_PURCHASES } from '../../data/syndicateDefs';
+import WarView from './WarView';
 import Tooltip from '../ui/Tooltip';
 
 export default function FamilyView() {
@@ -12,11 +14,12 @@ export default function FamilyView() {
   const isGuest = !user || (user as { uid: string }).uid === 'guest';
 
   const {
-    syndicate, members, currentWar, enemyMembers,
-    searchResults, loading, error,
+    syndicate, members, currentWar,
+    pendingInvites, searchResults, loading, error,
     createSyndicate, joinSyndicate, leaveSyndicate,
-    kickMember, promoteMember, contributeTreasury,
-    startFight, searchSyndicates, subscribe, clearError,
+    kickMember, promoteMember, contributeTreasury, spendTreasury,
+    sendInvite, acceptInvite, declineInvite, fetchMyInvites,
+    searchSyndicates, subscribe, clearError,
   } = useSyndicateStore();
 
   const cleanCash = useGameStore((s) => s.cleanCash);
@@ -27,18 +30,17 @@ export default function FamilyView() {
   const [createTag, setCreateTag] = useState('');
   const [createIcon, setCreateIcon] = useState('🏴');
   const [contributeAmount, setContributeAmount] = useState('');
+  const [inviteUid, setInviteUid] = useState('');
 
   const uid = user?.uid;
   const isLeader = syndicate?.leaderId === uid;
   const isUnderboss = syndicate?.underbossIds?.includes(uid ?? '') ?? false;
   const canManage = isLeader || isUnderboss;
 
-  // Auto-load syndicate if player has one
+  // Auto-load syndicate if player has one + fetch invites
   useEffect(() => {
-    // Check leaderboard for syndicateId
     if (!uid || isGuest) return;
-    // We'd need to check if player already has a syndicateId
-    // For now, syndicate loads when player subscribes
+    fetchMyInvites();
   }, [uid, isGuest]);
 
   // ── Guest state ──
@@ -148,7 +150,48 @@ export default function FamilyView() {
 
     // Default: create or join prompt
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-6 space-y-6">
+        {/* Pending Invites */}
+        {pendingInvites.length > 0 && (
+          <div className="w-full max-w-sm space-y-2">
+            <h3 className="text-white font-semibold text-sm">Pending Invites</h3>
+            {pendingInvites.map(invite => (
+              <div key={invite.id} className="bg-gray-800/60 border border-indigo-500/30 rounded-xl p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{invite.syndicateIcon}</span>
+                  <div>
+                    <p className="text-white text-sm font-bold">{invite.syndicateName}</p>
+                    <p className="text-gray-500 text-[10px]">Invited by {invite.invitedBy}</p>
+                  </div>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={async () => {
+                      if (await acceptInvite(invite.id)) {
+                        sound.play('upgrade');
+                        addNotification(`Joined ${invite.syndicateName}!`, 'success');
+                      }
+                    }}
+                    disabled={loading}
+                    className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await declineInvite(invite.id);
+                    }}
+                    disabled={loading}
+                    className="px-3 py-1.5 rounded-lg bg-red-900/60 hover:bg-red-800 text-red-300 text-[10px] font-bold"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <span className="text-5xl">🤝</span>
         <div className="text-center">
           <h2 className="text-white font-bold text-xl">Syndicates</h2>
@@ -184,58 +227,8 @@ export default function FamilyView() {
         </div>
       </div>
 
-      {/* War Status */}
-      {currentWar && (
-        <div className="bg-red-900/20 border border-red-700/50 rounded-xl p-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-red-400 font-bold text-sm">⚔️ AT WAR</h3>
-            <span className="text-gray-400 text-[10px]">Ends: {new Date(currentWar.endsAt).toLocaleDateString()}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="text-center flex-1">
-              <p className="text-white font-bold text-lg">{currentWar.totalPointsA}</p>
-              <p className="text-gray-400 text-[10px]">{currentWar.syndicateAName}</p>
-            </div>
-            <span className="text-gray-600 text-xl font-bold px-3">vs</span>
-            <div className="text-center flex-1">
-              <p className="text-white font-bold text-lg">{currentWar.totalPointsB}</p>
-              <p className="text-gray-400 text-[10px]">{currentWar.syndicateBName}</p>
-            </div>
-          </div>
-
-          {/* Enemy members to fight */}
-          {enemyMembers.length > 0 && (
-            <div className="mt-3 space-y-1">
-              <p className="text-gray-500 text-[10px] uppercase tracking-widest">Fight Opponents (3/day)</p>
-              {enemyMembers.map(enemy => (
-                <div key={enemy.uid} className="flex items-center justify-between bg-gray-800/60 rounded-lg px-2 py-1.5">
-                  <span className="text-white text-xs">{enemy.displayName}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500 text-[10px]">Power: {enemy.powerContribution.toLocaleString()}</span>
-                    <button
-                      onClick={async () => {
-                        const result = await startFight(enemy.uid);
-                        if (result) {
-                          sound.play(result.attackerWins ? 'casino_win' : 'casino_lose');
-                          addNotification(
-                            result.attackerWins
-                              ? `You beat ${result.defenderName}! +${result.pointsAwarded} pts`
-                              : `${result.defenderName} defeated you!`,
-                            result.attackerWins ? 'success' : 'warning',
-                          );
-                        }
-                      }}
-                      className="px-2 py-1 rounded text-[9px] font-bold bg-red-700 hover:bg-red-600 text-white"
-                    >
-                      Fight
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* War Detail View */}
+      {currentWar && <WarView />}
 
       {/* Treasury Contribution */}
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3">
@@ -263,6 +256,88 @@ export default function FamilyView() {
           </button>
         </div>
       </div>
+
+      {/* Syndicate Level & XP */}
+      {(() => {
+        const xp = syndicate.xp ?? 0;
+        const currentLevel = getSyndicateLevel(xp);
+        const nextXp = getNextLevelXp(xp);
+        const currentLevelDef = SYNDICATE_LEVELS.find(sl => sl.level === currentLevel);
+        const prevXp = currentLevelDef?.xpRequired ?? 0;
+        const progress = nextXp ? ((xp - prevXp) / (nextXp - prevXp)) * 100 : 100;
+        const unlockedPerks = SYNDICATE_LEVELS.filter(sl => sl.level <= currentLevel);
+        return (
+          <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3">
+            <h3 className="text-white font-semibold text-sm mb-2">📊 Syndicate Level</h3>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-indigo-300 font-bold text-lg">Level {currentLevel}</span>
+              <span className="text-gray-400 text-[10px]">
+                {nextXp ? `${xp.toLocaleString()} / ${nextXp.toLocaleString()} XP` : 'MAX LEVEL'}
+              </span>
+            </div>
+            {/* XP Progress Bar */}
+            <div className="w-full bg-gray-900 rounded-full h-2.5 mb-3">
+              <div
+                className="bg-gradient-to-r from-indigo-600 to-purple-500 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(progress, 100)}%` }}
+              />
+            </div>
+            {/* Unlocked Perks */}
+            <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-1.5">Unlocked Perks</p>
+            <div className="space-y-1">
+              {unlockedPerks.map(perk => (
+                <div key={perk.level} className="flex items-center gap-2 bg-gray-900/60 rounded-lg px-2 py-1">
+                  <span className="text-green-400 text-[10px] font-bold">Lv{perk.level}</span>
+                  <span className="text-white text-xs">{perk.perkName}</span>
+                  <span className="text-gray-500 text-[10px] ml-auto">{perk.perkDescription}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Treasury Spending (Leader only) */}
+      {isLeader && (
+        <div className="bg-gray-800/60 border border-yellow-700/40 rounded-xl p-3">
+          <h3 className="text-white font-semibold text-sm mb-2">🏪 Treasury Shop</h3>
+          <p className="text-gray-500 text-[10px] mb-2">Spend treasury funds on syndicate upgrades</p>
+          <div className="space-y-2">
+            {TREASURY_PURCHASES.map(purchase => {
+              const canAfford = syndicate.treasury >= purchase.cost;
+              return (
+                <div key={purchase.id} className="flex items-center justify-between bg-gray-900/60 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{purchase.icon}</span>
+                    <div>
+                      <p className="text-white text-xs font-semibold">{purchase.name}</p>
+                      <p className="text-gray-500 text-[10px]">{purchase.description}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (confirm(`Spend ${formatMoney(purchase.cost)} on ${purchase.name}?`)) {
+                        if (await spendTreasury(purchase.id)) {
+                          sound.play('upgrade');
+                          addNotification(`Purchased ${purchase.name}!`, 'success');
+                        }
+                      }
+                    }}
+                    disabled={!canAfford || loading}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition ${
+                      canAfford
+                        ? 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {formatMoney(purchase.cost)}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Members */}
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3">
@@ -300,6 +375,36 @@ export default function FamilyView() {
           ))}
         </div>
       </div>
+
+      {/* Invite Player (leader/underboss only) */}
+      {canManage && syndicate && (
+        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3">
+          <h3 className="text-white font-semibold text-sm mb-2">📨 Invite Player</h3>
+          <p className="text-gray-500 text-[10px] mb-2">Enter a player UID to send them an invite</p>
+          <div className="flex gap-2">
+            <input
+              value={inviteUid}
+              onChange={e => setInviteUid(e.target.value.trim())}
+              placeholder="Player UID"
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-indigo-500"
+            />
+            <button
+              onClick={async () => {
+                if (!inviteUid) return;
+                if (await sendInvite(syndicate.id, inviteUid)) {
+                  addNotification('Invite sent!', 'success');
+                  setInviteUid('');
+                }
+              }}
+              disabled={loading || !inviteUid}
+              className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold"
+            >
+              Send Invite
+            </button>
+          </div>
+          {error && <p className="text-red-400 text-[10px] mt-1">{error}</p>}
+        </div>
+      )}
 
       {/* Leave Syndicate */}
       <button

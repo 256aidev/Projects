@@ -6,6 +6,7 @@ import { formatMoney, formatUnits } from '../../engine/economy';
 import { getDifficultyMultiplier } from '../../engine/difficulty';
 import { CAR_DEFS } from '../../data/carDefs';
 import { getCrewAttack, getCrewDefense } from '../../data/crewDefs';
+import { useSyndicateStore, SyndicateData } from '../../store/syndicateStore';
 
 // ── Point Scoring System ──────────────────────────────────────────────
 // Each category awards points based on difficulty of achievement.
@@ -60,7 +61,7 @@ function calcTotalScore(state: ReturnType<typeof useGameStore.getState>): number
 
 // ── Category Definitions ──────────────────────────────────────────────
 
-type RankCategory = 'overall' | 'money' | 'territory' | 'criminal' | 'combat' | 'prestige' | 'collection';
+type RankCategory = 'overall' | 'money' | 'territory' | 'criminal' | 'combat' | 'prestige' | 'collection' | 'syndicates';
 
 const CATEGORIES: { id: RankCategory; label: string; icon: string }[] = [
   { id: 'overall',    label: 'Overall',    icon: '🏆' },
@@ -70,6 +71,7 @@ const CATEGORIES: { id: RankCategory; label: string; icon: string }[] = [
   { id: 'combat',     label: 'Combat',     icon: '⚔️' },
   { id: 'prestige',   label: 'Prestige',   icon: '⭐' },
   { id: 'collection', label: 'Collection', icon: '💎' },
+  { id: 'syndicates', label: 'Syndicates', icon: '🤝' },
 ];
 
 // ── Sub-components ────────────────────────────────────────────────────
@@ -100,11 +102,16 @@ export default function LeaderboardView() {
   const user = useAuthStore((s) => s.user);
   const state = useGameStore();
   const { entries, loading, fetchLeaderboard } = useLeaderboardStore();
+  const { topSyndicates, fetchTopSyndicates } = useSyndicateStore();
   const isGuest = !user || (user as { uid: string }).uid === 'guest';
 
   useEffect(() => {
     if (!isGuest) fetchLeaderboard();
   }, [fetchLeaderboard, isGuest]);
+
+  useEffect(() => {
+    if (activeTab === 'syndicates') fetchTopSyndicates();
+  }, [activeTab, fetchTopSyndicates]);
 
   const diffMultiplier = getDifficultyMultiplier(
     state.gameSettings?.rivalCount ?? 0,
@@ -126,28 +133,31 @@ export default function LeaderboardView() {
     combat: combatPts,
     prestige: prestigePts,
     collection: collectionPts,
+    syndicates: 0,
   };
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Hero score */}
-      <div className="flex-shrink-0 bg-gradient-to-br from-indigo-900/60 to-purple-900/40 border-b border-indigo-500/30 px-5 py-4 text-center">
-        <p className="text-indigo-300 text-[10px] uppercase tracking-widest">Empire Score</p>
-        <p className="text-white text-3xl font-black">{totalScore.toLocaleString()}</p>
-        <div className="flex items-center justify-center gap-3 mt-1">
-          {diffMultiplier > 1 && (
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${diffMultiplier >= 2 ? 'bg-red-900/50 text-red-400' : diffMultiplier >= 1.5 ? 'bg-orange-900/50 text-orange-400' : 'bg-yellow-900/50 text-yellow-400'}`}>
-              ×{diffMultiplier.toFixed(1)} difficulty
-            </span>
-          )}
-          {(state.prestigeCount ?? 0) > 0 && (
-            <span className="text-yellow-400 text-[10px]">
-              {'⭐'.repeat(Math.min(state.prestigeCount, 5))}{state.prestigeCount > 5 ? ` ×${state.prestigeCount}` : ''}
-            </span>
-          )}
-          <span className="text-gray-500 text-[10px]">{formatTime(state.tickCount)}</span>
+      {/* Hero score (hidden on syndicates tab) */}
+      {activeTab !== 'syndicates' && (
+        <div className="flex-shrink-0 bg-gradient-to-br from-indigo-900/60 to-purple-900/40 border-b border-indigo-500/30 px-5 py-4 text-center">
+          <p className="text-indigo-300 text-[10px] uppercase tracking-widest">Empire Score</p>
+          <p className="text-white text-3xl font-black">{totalScore.toLocaleString()}</p>
+          <div className="flex items-center justify-center gap-3 mt-1">
+            {diffMultiplier > 1 && (
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${diffMultiplier >= 2 ? 'bg-red-900/50 text-red-400' : diffMultiplier >= 1.5 ? 'bg-orange-900/50 text-orange-400' : 'bg-yellow-900/50 text-yellow-400'}`}>
+                ×{diffMultiplier.toFixed(1)} difficulty
+              </span>
+            )}
+            {(state.prestigeCount ?? 0) > 0 && (
+              <span className="text-yellow-400 text-[10px]">
+                {'⭐'.repeat(Math.min(state.prestigeCount, 5))}{state.prestigeCount > 5 ? ` ×${state.prestigeCount}` : ''}
+              </span>
+            )}
+            <span className="text-gray-500 text-[10px]">{formatTime(state.tickCount)}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Category tabs */}
       <div className="flex-shrink-0 flex bg-gray-900/80 border-b border-gray-800 overflow-x-auto">
@@ -170,11 +180,13 @@ export default function LeaderboardView() {
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
-        {/* Category point total */}
-        <div className="bg-gray-800/60 rounded-xl p-3 text-center border border-gray-700/50">
-          <p className="text-gray-400 text-[10px] uppercase tracking-widest">{CATEGORIES.find(c => c.id === activeTab)?.label} Points</p>
-          <p className="text-yellow-400 text-2xl font-black">{categoryPoints[activeTab].toLocaleString()}</p>
-        </div>
+        {/* Category point total (hidden on syndicates tab) */}
+        {activeTab !== 'syndicates' && (
+          <div className="bg-gray-800/60 rounded-xl p-3 text-center border border-gray-700/50">
+            <p className="text-gray-400 text-[10px] uppercase tracking-widest">{CATEGORIES.find(c => c.id === activeTab)?.label} Points</p>
+            <p className="text-yellow-400 text-2xl font-black">{categoryPoints[activeTab].toLocaleString()}</p>
+          </div>
+        )}
 
         {/* Stats breakdown per category */}
         {activeTab === 'overall' && (
@@ -275,7 +287,70 @@ export default function LeaderboardView() {
           </div>
         )}
 
-        {/* Global Leaderboard */}
+        {/* Syndicate Leaderboard */}
+        {activeTab === 'syndicates' && (
+          <div>
+            <div className="flex-shrink-0 bg-gradient-to-br from-amber-900/40 to-orange-900/30 rounded-xl px-5 py-4 text-center border border-amber-500/20 mb-4">
+              <p className="text-amber-300 text-[10px] uppercase tracking-widest">Top Syndicates</p>
+              <p className="text-white text-lg font-bold mt-1">Global Power Rankings</p>
+            </div>
+
+            {topSyndicates.length === 0 ? (
+              <div className="bg-gray-800/50 rounded-xl p-4 text-center">
+                <p className="text-gray-400 text-sm">No syndicates yet</p>
+                <p className="text-gray-600 text-xs">Create or join a syndicate to appear here!</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {topSyndicates.map((syn, i) => {
+                  const rank = i + 1;
+                  return (
+                    <div
+                      key={syn.id}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-800/60"
+                    >
+                      {/* Rank */}
+                      <span className={`w-7 text-center font-bold text-sm flex-shrink-0 ${
+                        rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-gray-500'
+                      }`}>
+                        {rank <= 3 ? ['\u{1F947}', '\u{1F948}', '\u{1F949}'][rank - 1] : `#${rank}`}
+                      </span>
+
+                      {/* Icon */}
+                      <span className="text-xl flex-shrink-0">{syn.icon}</span>
+
+                      {/* Name + tag + level */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate text-white">
+                          {syn.name}{' '}
+                          <span className="text-gray-400 text-[10px]">[{syn.tag}]</span>
+                        </p>
+                        <div className="flex items-center gap-2 text-[10px]">
+                          <span className="text-amber-400">Level {syn.level}</span>
+                          <span className="text-gray-600">|</span>
+                          <span className="text-gray-400">{syn.memberCount}/20</span>
+                          <span className="text-gray-600">|</span>
+                          <span className="text-green-400">{syn.warWins}W</span>
+                          <span className="text-gray-600">/</span>
+                          <span className="text-red-400">{syn.warLosses}L</span>
+                        </div>
+                      </div>
+
+                      {/* Total Power */}
+                      <div className="flex-shrink-0 text-right">
+                        <p className="text-green-400 font-bold text-sm">{syn.totalPower.toLocaleString()}</p>
+                        <p className="text-gray-500 text-[9px]">power</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Global Leaderboard (player rankings, hidden on syndicates tab) */}
+        {activeTab !== 'syndicates' && (
         <div className="border-t border-gray-700 pt-4">
           <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-3 px-1">
             Global Rankings — {CATEGORIES.find(c => c.id === activeTab)?.label}
@@ -326,6 +401,7 @@ export default function LeaderboardView() {
             </div>
           )}
         </div>
+        )}
 
       </div>
     </div>

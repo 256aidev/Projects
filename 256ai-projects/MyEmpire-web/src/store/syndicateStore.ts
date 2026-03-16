@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { httpsCallable } from 'firebase/functions';
-import { collection, doc, onSnapshot, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db, functions } from '../firebase';
+import { collection, doc, onSnapshot, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { db, functions, auth } from '../firebase';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -58,18 +58,45 @@ export interface FightResult {
   defenderName: string;
 }
 
+export interface FightLog {
+  id: string;
+  attackerUid: string;
+  defenderUid: string;
+  attackerName: string;
+  defenderName: string;
+  attackerPower: number;
+  defenderPower: number;
+  winnerId: string;
+  pointsAwarded: number;
+  timestamp: number;
+}
+
+export interface InviteData {
+  id: string;
+  syndicateId: string;
+  syndicateName: string;
+  syndicateIcon: string;
+  invitedBy: string;
+  status: string;
+  createdAt: number;
+}
+
 interface SyndicateState {
   syndicate: SyndicateData | null;
   members: SyndicateMember[];
   currentWar: WarData | null;
   enemyMembers: SyndicateMember[];
+  warFights: FightLog[];
+  pendingInvites: InviteData[];
   searchResults: SyndicateData[];
+  topSyndicates: SyndicateData[];
   loading: boolean;
   error: string | null;
   // Unsubscribe functions for real-time listeners
   _unsubSyndicate: (() => void) | null;
   _unsubMembers: (() => void) | null;
   _unsubWar: (() => void) | null;
+  _unsubWarFights: (() => void) | null;
 }
 
 interface SyndicateActions {
@@ -83,10 +110,17 @@ interface SyndicateActions {
   kickMember: (targetUid: string) => Promise<boolean>;
   promoteMember: (targetUid: string) => Promise<boolean>;
   contributeTreasury: (amount: number) => Promise<boolean>;
+  spendTreasury: (purchaseId: string) => Promise<boolean>;
   // War
   startFight: (defenderUid: string) => Promise<FightResult | null>;
-  // Search
+  // Invites
+  sendInvite: (syndicateId: string, targetUid: string) => Promise<boolean>;
+  acceptInvite: (inviteId: string) => Promise<boolean>;
+  declineInvite: (inviteId: string) => Promise<boolean>;
+  fetchMyInvites: () => Promise<void>;
+  // Search / Leaderboard
   searchSyndicates: (searchTerm?: string) => Promise<void>;
+  fetchTopSyndicates: () => Promise<void>;
   fetchEnemyMembers: (syndicateId: string) => Promise<void>;
   // Errors
   clearError: () => void;
@@ -97,12 +131,16 @@ export const useSyndicateStore = create<SyndicateState & SyndicateActions>((set,
   members: [],
   currentWar: null,
   enemyMembers: [],
+  warFights: [],
+  pendingInvites: [],
   searchResults: [],
+  topSyndicates: [],
   loading: false,
   error: null,
   _unsubSyndicate: null,
   _unsubMembers: null,
   _unsubWar: null,
+  _unsubWarFights: null,
 
   // ── Real-time listeners ───────────────────────────────────────────
 
@@ -112,6 +150,7 @@ export const useSyndicateStore = create<SyndicateState & SyndicateActions>((set,
     state._unsubSyndicate?.();
     state._unsubMembers?.();
     state._unsubWar?.();
+    state._unsubWarFights?.();
 
     // Listen to syndicate document
     const unsubSyndicate = onSnapshot(doc(db, 'syndicates', syndicateId), (snap) => {
@@ -121,6 +160,7 @@ export const useSyndicateStore = create<SyndicateState & SyndicateActions>((set,
         const warId = snap.data()?.currentWarId;
         if (warId && warId !== get().currentWar?.id) {
           get()._unsubWar?.();
+          get()._unsubWarFights?.();
           const unsubWar = onSnapshot(doc(db, 'wars', warId), (warSnap) => {
             if (warSnap.exists()) {
               set({ currentWar: { id: warSnap.id, ...warSnap.data() } as WarData });
@@ -129,12 +169,21 @@ export const useSyndicateStore = create<SyndicateState & SyndicateActions>((set,
               const enemySyndicateId = warData.syndicateA === syndicateId ? warData.syndicateB : warData.syndicateA;
               get().fetchEnemyMembers(enemySyndicateId);
             } else {
-              set({ currentWar: null, enemyMembers: [] });
+              set({ currentWar: null, enemyMembers: [], warFights: [] });
             }
           });
-          set({ _unsubWar: unsubWar });
+          // Listen to fight log
+          const unsubWarFights = onSnapshot(
+            query(collection(db, 'wars', warId, 'fights'), orderBy('timestamp', 'desc'), limit(50)),
+            (snap) => {
+              const fights = snap.docs.map(d => ({ id: d.id, ...d.data() } as FightLog));
+              set({ warFights: fights });
+            }
+          );
+          set({ _unsubWar: unsubWar, _unsubWarFights: unsubWarFights });
         } else if (!warId) {
-          set({ currentWar: null, enemyMembers: [] });
+          get()._unsubWarFights?.();
+          set({ currentWar: null, enemyMembers: [], warFights: [], _unsubWarFights: null });
         }
       } else {
         set({ syndicate: null, members: [], currentWar: null });
@@ -158,7 +207,8 @@ export const useSyndicateStore = create<SyndicateState & SyndicateActions>((set,
     state._unsubSyndicate?.();
     state._unsubMembers?.();
     state._unsubWar?.();
-    set({ _unsubSyndicate: null, _unsubMembers: null, _unsubWar: null, syndicate: null, members: [], currentWar: null });
+    state._unsubWarFights?.();
+    set({ _unsubSyndicate: null, _unsubMembers: null, _unsubWar: null, _unsubWarFights: null, syndicate: null, members: [], currentWar: null, warFights: [] });
   },
 
   // ── CRUD Actions (call Cloud Functions) ───────────────────────────
@@ -247,6 +297,19 @@ export const useSyndicateStore = create<SyndicateState & SyndicateActions>((set,
     }
   },
 
+  spendTreasury: async (purchaseId) => {
+    const syndicate = get().syndicate;
+    if (!syndicate) return false;
+    try {
+      const fn = httpsCallable(functions, 'spendTreasury');
+      await fn({ syndicateId: syndicate.id, purchaseId });
+      return true;
+    } catch (e: any) {
+      set({ error: e.message ?? 'Failed to spend treasury' });
+      return false;
+    }
+  },
+
   // ── War Actions ───────────────────────────────────────────────────
 
   startFight: async (defenderUid) => {
@@ -266,6 +329,63 @@ export const useSyndicateStore = create<SyndicateState & SyndicateActions>((set,
     }
   },
 
+  // ── Invite Actions ──────────────────────────────────────────────
+
+  sendInvite: async (syndicateId, targetUid) => {
+    try {
+      const fn = httpsCallable(functions, 'sendInvite');
+      await fn({ syndicateId, targetUid });
+      return true;
+    } catch (e: any) {
+      set({ error: e.message ?? 'Failed to send invite' });
+      return false;
+    }
+  },
+
+  acceptInvite: async (inviteId) => {
+    set({ loading: true, error: null });
+    try {
+      const fn = httpsCallable(functions, 'acceptInvite');
+      const result = await fn({ inviteId });
+      const data = result.data as { syndicateId: string };
+      get().subscribe(data.syndicateId);
+      set({ loading: false, pendingInvites: [] });
+      return true;
+    } catch (e: any) {
+      set({ loading: false, error: e.message ?? 'Failed to accept invite' });
+      return false;
+    }
+  },
+
+  declineInvite: async (inviteId) => {
+    try {
+      const fn = httpsCallable(functions, 'declineInvite');
+      await fn({ inviteId });
+      set({ pendingInvites: get().pendingInvites.filter(i => i.id !== inviteId) });
+      return true;
+    } catch (e: any) {
+      set({ error: e.message ?? 'Failed to decline invite' });
+      return false;
+    }
+  },
+
+  fetchMyInvites: async () => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    try {
+      const q = query(
+        collection(db, 'syndicate_invites'),
+        where('invitedUid', '==', uid),
+        where('status', '==', 'pending'),
+      );
+      const snap = await getDocs(q);
+      const invites = snap.docs.map(d => ({ id: d.id, ...d.data() } as InviteData));
+      set({ pendingInvites: invites });
+    } catch (e: any) {
+      console.error('Failed to fetch invites:', e);
+    }
+  },
+
   // ── Search ────────────────────────────────────────────────────────
 
   searchSyndicates: async () => {
@@ -280,6 +400,21 @@ export const useSyndicateStore = create<SyndicateState & SyndicateActions>((set,
       set({ searchResults: results });
     } catch (e: any) {
       console.error('Search failed:', e);
+    }
+  },
+
+  fetchTopSyndicates: async () => {
+    try {
+      const q = query(
+        collection(db, 'syndicates'),
+        orderBy('totalPower', 'desc'),
+        limit(20),
+      );
+      const snap = await getDocs(q);
+      const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as SyndicateData));
+      set({ topSyndicates: results });
+    } catch (e: any) {
+      console.error('Failed to fetch top syndicates:', e);
     }
   },
 

@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.syncMemberPower = exports.endWar = exports.dailyWarReset = exports.weeklyMatchmaking = exports.startFight = exports.contributeTreasury = exports.promoteMember = exports.kickMember = exports.leaveSyndicate = exports.joinSyndicate = exports.createSyndicate = void 0;
+exports.syncMemberPower = exports.endWar = exports.dailyWarReset = exports.weeklyMatchmaking = exports.startFight = exports.declineInvite = exports.acceptInvite = exports.sendInvite = exports.spendTreasury = exports.contributeTreasury = exports.promoteMember = exports.kickMember = exports.leaveSyndicate = exports.joinSyndicate = exports.createSyndicate = void 0;
 const admin = __importStar(require("firebase-admin"));
 admin.initializeApp();
 // Syndicate management
@@ -49,6 +49,12 @@ var promote_1 = require("./syndicate/promote");
 Object.defineProperty(exports, "promoteMember", { enumerable: true, get: function () { return promote_1.promoteMember; } });
 var treasury_1 = require("./syndicate/treasury");
 Object.defineProperty(exports, "contributeTreasury", { enumerable: true, get: function () { return treasury_1.contributeTreasury; } });
+var spend_1 = require("./syndicate/spend");
+Object.defineProperty(exports, "spendTreasury", { enumerable: true, get: function () { return spend_1.spendTreasury; } });
+var invite_1 = require("./syndicate/invite");
+Object.defineProperty(exports, "sendInvite", { enumerable: true, get: function () { return invite_1.sendInvite; } });
+Object.defineProperty(exports, "acceptInvite", { enumerable: true, get: function () { return invite_1.acceptInvite; } });
+Object.defineProperty(exports, "declineInvite", { enumerable: true, get: function () { return invite_1.declineInvite; } });
 // War system
 var fight_1 = require("./war/fight");
 Object.defineProperty(exports, "startFight", { enumerable: true, get: function () { return fight_1.startFight; } });
