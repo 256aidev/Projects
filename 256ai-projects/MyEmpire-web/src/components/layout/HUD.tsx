@@ -43,6 +43,7 @@ export default function HUD() {
   const setShowPrestigeConfirm = useUIStore((s) => s.setShowPrestigeConfirm);
   const setPanel = useUIStore((s) => s.setPanel);
   const activePanel = useUIStore((s) => s.activePanel);
+  const setShowBank = useUIStore((s) => s.setShowBank);
   const gameSpeed = useUIStore((s) => s.gameSpeed);
   const setGameSpeed = useUIStore((s) => s.setGameSpeed);
   const isGuest = !user || (user as { uid: string }).uid === 'guest';
@@ -67,6 +68,7 @@ export default function HUD() {
         <button
           onClick={() => setPanel(activePanel === 'warehouse' ? null : 'warehouse')}
           className="flex items-center gap-1.5 hover:opacity-80 transition"
+          style={{ minWidth: 120 }}
         >
           <CannabisLeaf size={26} />
           <span className="text-green-400 font-semibold text-sm">{formatUnits(Object.values(productInventory).reduce((s, e) => s + e.oz, 0))}</span>
@@ -79,6 +81,16 @@ export default function HUD() {
           <span className="text-white font-semibold text-base">{bizCount}</span>
           <span className="text-gray-500 text-sm">fronts</span>
         </div>
+      </Tooltip>
+
+      {/* Bank */}
+      <Tooltip text="Deposits, interest, and loans.">
+        <button
+          onClick={() => setShowBank(true)}
+          className="flex items-center gap-1 hover:opacity-80 transition"
+        >
+          <span className="text-xl">🏦</span>
+        </button>
       </Tooltip>
 
       {/* Season & Calendar */}
