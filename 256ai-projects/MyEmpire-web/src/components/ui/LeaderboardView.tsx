@@ -20,10 +20,12 @@ function calcMoneyPoints(state: ReturnType<typeof useGameStore.getState>): numbe
 }
 
 function calcTerritoryPoints(state: ReturnType<typeof useGameStore.getState>): number {
-  const bizCount = state.businesses?.length ?? 0;
+  const businesses = state.businesses ?? [];
+  const bizCount = businesses.length;
+  const bizLevelTotal = businesses.reduce((sum, b) => sum + (b.upgradeLevel ?? 0), 0);
   const districts = state.unlockedDistricts?.length ?? 0;
   const lots = state.unlockedSlots ? Object.values(state.unlockedSlots).reduce((s, v) => s + (v as number), 0) : 0;
-  return bizCount * 2000 + districts * 1000 + lots * 500;
+  return bizCount * 2000 + bizLevelTotal * 1500 + districts * 1000 + lots * 500;
 }
 
 function calcCriminalPoints(state: ReturnType<typeof useGameStore.getState>): number {
@@ -223,8 +225,10 @@ export default function LeaderboardView() {
 
         {activeTab === 'territory' && (
           <div className="bg-gray-800/40 rounded-xl p-3 space-y-0.5">
-            <StatRow label="Front Businesses" value={`${state.businesses.length}`} pts={state.businesses.length * 5000} color="text-blue-400" />
-            <StatRow label="Districts Unlocked" value={`${state.unlockedDistricts.length}`} pts={state.unlockedDistricts.length * 2000} color="text-purple-400" />
+            <StatRow label="Front Businesses" value={`${state.businesses.length}`} pts={state.businesses.length * 2000} color="text-blue-400" />
+            <StatRow label="Business Upgrades" value={`${state.businesses.reduce((s, b) => s + (b.upgradeLevel ?? 0), 0)} total levels`} pts={state.businesses.reduce((s, b) => s + (b.upgradeLevel ?? 0), 0) * 1500} color="text-cyan-400" />
+            <StatRow label="Districts Unlocked" value={`${state.unlockedDistricts.length}`} pts={state.unlockedDistricts.length * 1000} color="text-purple-400" />
+            <StatRow label="Lots Owned" value={`${state.unlockedSlots ? Object.values(state.unlockedSlots).reduce((s, v) => s + (v as number), 0) : 0}`} pts={(state.unlockedSlots ? Object.values(state.unlockedSlots).reduce((s, v) => s + (v as number), 0) : 0) * 500} color="text-indigo-400" />
           </div>
         )}
 

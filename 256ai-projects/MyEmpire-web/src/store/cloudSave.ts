@@ -37,11 +37,13 @@ export async function updateLeaderboardEntry(
   const cleanEarned = gs.totalCleanEarned ?? 0;
   const moneyPts = Math.floor(dirtyEarned / 500) + Math.floor(cleanEarned / 1000);
 
-  // Territory: businesses, districts, lots owned
-  const bizCount = Array.isArray(gs.businesses) ? gs.businesses.length : 0;
+  // Territory: businesses (count + upgrade levels), districts, lots owned
+  const businesses = Array.isArray(gs.businesses) ? gs.businesses : [];
+  const bizCount = businesses.length;
+  const bizLevelTotal = businesses.reduce((sum: number, b: { upgradeLevel?: number }) => sum + (b.upgradeLevel ?? 0), 0);
   const districtCount = Array.isArray(gs.unlockedDistricts) ? gs.unlockedDistricts.length : 0;
   const lotCount = gs.unlockedSlots ? Object.values(gs.unlockedSlots).reduce((s, v) => s + (v as number), 0) : 0;
-  const territoryPts = bizCount * 2000 + districtCount * 1000 + lotCount * 500;
+  const territoryPts = bizCount * 2000 + bizLevelTotal * 1500 + districtCount * 1000 + lotCount * 500;
 
   // Criminal: grow rooms, dealers, dealer tier (flattened — no single item worth too much)
   const rooms = gs.operation?.growRooms?.length ?? 0;
