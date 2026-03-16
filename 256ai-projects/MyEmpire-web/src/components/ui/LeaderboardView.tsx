@@ -6,7 +6,8 @@ import { formatMoney, formatUnits } from '../../engine/economy';
 import { getDifficultyMultiplier } from '../../engine/difficulty';
 import { CAR_DEFS } from '../../data/carDefs';
 import { getCrewAttack, getCrewDefense } from '../../data/crewDefs';
-import { useSyndicateStore, SyndicateData } from '../../store/syndicateStore';
+import { useSyndicateStore } from '../../store/syndicateStore';
+import type { SyndicateData } from '../../store/syndicateStore';
 
 // ── Point Scoring System ──────────────────────────────────────────────
 // Each category awards points based on difficulty of achievement.
