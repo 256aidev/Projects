@@ -31,22 +31,36 @@ export async function updateLeaderboardEntry(
 ): Promise<void> {
   const gs = state as unknown as GameState;
 
-  // Category point calculations — must match LeaderboardView
-  const moneyPts = Math.floor(((gs.totalDirtyEarned ?? 0) + (gs.totalCleanEarned ?? 0)) / 1000);
+  // Category point calculations — balanced so no single category dominates
+  // Money: dirty worth 2x clean (harder to earn), logarithmic scaling for big earners
+  const dirtyEarned = gs.totalDirtyEarned ?? 0;
+  const cleanEarned = gs.totalCleanEarned ?? 0;
+  const moneyPts = Math.floor(dirtyEarned / 500) + Math.floor(cleanEarned / 1000);
+
+  // Territory: businesses, districts, lots owned
   const bizCount = Array.isArray(gs.businesses) ? gs.businesses.length : 0;
   const districtCount = Array.isArray(gs.unlockedDistricts) ? gs.unlockedDistricts.length : 0;
-  const territoryPts = bizCount * 5000 + districtCount * 2000;
+  const lotCount = gs.unlockedSlots ? Object.values(gs.unlockedSlots).reduce((s, v) => s + (v as number), 0) : 0;
+  const territoryPts = bizCount * 2000 + districtCount * 1000 + lotCount * 500;
+
+  // Criminal: grow rooms, dealers, dealer tier (flattened — no single item worth too much)
   const rooms = gs.operation?.growRooms?.length ?? 0;
   const dealers = gs.operation?.dealerCount ?? 0;
   const tierIndex = gs.operation?.dealerTierIndex ?? 0;
-  const criminalPts = rooms * 10000 + dealers * 1000 + tierIndex * 15000;
+  const criminalPts = rooms * 3000 + dealers * 500 + tierIndex * 5000;
+
+  // Combat: rivals defeated, crew members (nerfed from old values)
   const defeated = Array.isArray(gs.rivals) ? gs.rivals.filter((r: { isDefeated?: boolean }) => r.isDefeated).length : 0;
   const hitmenCount = Array.isArray(gs.crew) ? gs.crew.reduce((s: number, h: { count: number }) => s + h.count, 0) : 0;
-  const combatPts = defeated * 50000 + hitmenCount * 5000;
-  const prestigePts = (gs.prestigeCount ?? 0) * 500000 + (gs.totalTechPointsEarned ?? 0) * 10000;
+  const combatPts = defeated * 10000 + hitmenCount * 2000;
+
+  // Prestige: heavily nerfed — still valuable but doesn't dominate
+  const prestigePts = (gs.prestigeCount ?? 0) * 25000 + (gs.totalTechPointsEarned ?? 0) * 5000;
+
+  // Collection: cars + jewelry (cosmetic, modest points)
   const carCount = Array.isArray(gs.cars) ? gs.cars.length : 0;
   const jewelryCount = Array.isArray(gs.jewelry) ? gs.jewelry.length : 0;
-  const collectionPts = carCount * 20000 + jewelryCount * 15000;
+  const collectionPts = carCount * 5000 + jewelryCount * 3000;
 
   const baseScore = moneyPts + territoryPts + criminalPts + combatPts + prestigePts + collectionPts;
   const settings = gs.gameSettings;

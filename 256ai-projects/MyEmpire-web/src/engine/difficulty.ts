@@ -3,27 +3,28 @@
  *
  * More rivals + shorter entry delay = harder = higher multiplier.
  *
- * Rival count contribution (1-5):
- *   1 rival = 0, 2 = 0.1, 3 = 0.2, 4 = 0.35, 5 = 0.5
+ * Rival count contribution (0-5):
+ *   0 rivals = 0, 1 = 0.1, 2 = 0.3, 3 = 0.6, 4 = 1.0, 5 = 1.5
  *
  * Entry delay contribution (0-60 min):
- *   0 min (instant) = 0.5, 10 min = 0.35, 20 min = 0.2, 30+ min = 0.1, 60 min = 0
+ *   0 min (instant) = 1.0, 10 min = 0.6, 20 min = 0.3, 30+ min = 0.1, 60 min = 0
  *
  * Base multiplier = 1.0
- * Max possible = 1.0 + 0.5 + 0.5 = 2.0× (5 rivals, instant start)
- * Min possible = 1.0 + 0.0 + 0.0 = 1.0× (1 rival, 60 min delay)
+ * Max possible = 1.0 + 1.5 + 1.0 = 3.5× (5 rivals, instant start)
+ * Min possible = 1.0 + 0.0 + 0.0 = 1.0× (0 rivals, 60 min delay)
  */
 
 export function getDifficultyMultiplier(rivalCount: number, entryDelayMinutes: number): number {
-  // Rival count bonus: scales from 0 (1 rival) to 0.5 (5 rivals)
-  const rivalBonus = [0, 0.1, 0.2, 0.35, 0.5][Math.min(rivalCount, 5) - 1] ?? 0;
+  // Rival count bonus: scales from 0 (0 rivals) to 1.5 (5 rivals)
+  // Exponential curve — each rival adds more than the last
+  const rivalBonus = [0, 0.1, 0.3, 0.6, 1.0, 1.5][Math.min(Math.max(rivalCount, 0), 5)] ?? 0;
 
   // Entry delay bonus: shorter delay = harder = more bonus
-  // 0 min = 0.5, 10 min = 0.35, 20 min = 0.2, 30 min = 0.1, 40+ min = 0.05, 60 min = 0
+  // 0 min = 1.0 (max), scales down to 0 at 60 min
   let delayBonus: number;
-  if (entryDelayMinutes <= 0) delayBonus = 0.5;
-  else if (entryDelayMinutes <= 10) delayBonus = 0.35;
-  else if (entryDelayMinutes <= 20) delayBonus = 0.2;
+  if (entryDelayMinutes <= 0) delayBonus = 1.0;
+  else if (entryDelayMinutes <= 10) delayBonus = 0.6;
+  else if (entryDelayMinutes <= 20) delayBonus = 0.3;
   else if (entryDelayMinutes <= 30) delayBonus = 0.1;
   else if (entryDelayMinutes <= 50) delayBonus = 0.05;
   else delayBonus = 0;

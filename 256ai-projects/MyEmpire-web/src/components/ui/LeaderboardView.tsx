@@ -9,44 +9,46 @@ import { getCrewAttack, getCrewDefense } from '../../data/crewDefs';
 import { useSyndicateStore } from '../../store/syndicateStore';
 import type { SyndicateData } from '../../store/syndicateStore';
 
-// ── Point Scoring System ──────────────────────────────────────────────
-// Each category awards points based on difficulty of achievement.
-// Money = easiest (1 pt per $1K), Prestige = hardest (500K pts each)
+// ── Point Scoring System (v2) ────────────────────────────────────────
+// Balanced so no single category dominates. Difficulty multiplier up to 3.5×.
+// Dirty cash worth 2× clean (harder to earn). Prestige nerfed from 500K→25K.
 
 function calcMoneyPoints(state: ReturnType<typeof useGameStore.getState>): number {
-  const totalEarned = (state.totalDirtyEarned ?? 0) + (state.totalCleanEarned ?? 0);
-  return Math.floor(totalEarned / 1000); // 1 pt per $1K earned
+  const dirty = state.totalDirtyEarned ?? 0;
+  const clean = state.totalCleanEarned ?? 0;
+  return Math.floor(dirty / 500) + Math.floor(clean / 1000); // dirty worth 2x
 }
 
 function calcTerritoryPoints(state: ReturnType<typeof useGameStore.getState>): number {
   const bizCount = state.businesses?.length ?? 0;
   const districts = state.unlockedDistricts?.length ?? 0;
-  return bizCount * 5000 + districts * 2000; // 5K per biz, 2K per district
+  const lots = state.unlockedSlots ? Object.values(state.unlockedSlots).reduce((s, v) => s + (v as number), 0) : 0;
+  return bizCount * 2000 + districts * 1000 + lots * 500;
 }
 
 function calcCriminalPoints(state: ReturnType<typeof useGameStore.getState>): number {
   const rooms = state.operation?.growRooms?.length ?? 0;
   const dealers = state.operation?.dealerCount ?? 0;
   const tierIndex = state.operation?.dealerTierIndex ?? 0;
-  return rooms * 10000 + dealers * 1000 + tierIndex * 15000;
+  return rooms * 3000 + dealers * 500 + tierIndex * 5000;
 }
 
 function calcCombatPoints(state: ReturnType<typeof useGameStore.getState>): number {
   const defeated = (state.rivals ?? []).filter(r => r.isDefeated).length;
   const crewCount = (state.crew ?? []).reduce((s, h) => s + h.count, 0);
-  return defeated * 50000 + crewCount * 5000;
+  return defeated * 10000 + crewCount * 2000;
 }
 
 function calcPrestigePoints(state: ReturnType<typeof useGameStore.getState>): number {
   const count = state.prestigeCount ?? 0;
   const tp = state.totalTechPointsEarned ?? 0;
-  return count * 500000 + tp * 10000; // 500K per prestige, 10K per TP earned
+  return count * 25000 + tp * 5000; // nerfed: 25K per prestige, 5K per TP
 }
 
 function calcCollectionPoints(state: ReturnType<typeof useGameStore.getState>): number {
   const cars = state.cars?.length ?? 0;
   const jewelry = state.jewelry?.length ?? 0;
-  return cars * 20000 + jewelry * 15000;
+  return cars * 5000 + jewelry * 3000;
 }
 
 function calcTotalScore(state: ReturnType<typeof useGameStore.getState>): number {
@@ -228,16 +230,16 @@ export default function LeaderboardView() {
 
         {activeTab === 'criminal' && (
           <div className="bg-gray-800/40 rounded-xl p-3 space-y-0.5">
-            <StatRow label="Grow Rooms" value={`${state.operation.growRooms.length}`} pts={state.operation.growRooms.length * 10000} color="text-green-400" />
+            <StatRow label="Grow Rooms" value={`${state.operation.growRooms.length}`} pts={state.operation.growRooms.length * 3000} color="text-green-400" />
             <StatRow label="Dealers" value={`${state.operation.dealerCount}`} pts={state.operation.dealerCount * 1000} color="text-indigo-400" />
-            <StatRow label="Dealer Tier" value={`Tier ${state.operation.dealerTierIndex + 1}`} pts={state.operation.dealerTierIndex * 15000} color="text-purple-400" />
+            <StatRow label="Dealer Tier" value={`Tier ${state.operation.dealerTierIndex + 1}`} pts={state.operation.dealerTierIndex * 5000} color="text-purple-400" />
             <StatRow label="Product Stash" value={formatUnits(Object.values(state.operation.productInventory).reduce((s, e) => s + e.oz, 0))} pts={0} color="text-green-300" />
           </div>
         )}
 
         {activeTab === 'combat' && (<>
           <div className="bg-gray-800/40 rounded-xl p-3 space-y-0.5">
-            <StatRow label="Rivals Defeated" value={`${(state.rivals ?? []).filter(r => r.isDefeated).length} / ${(state.rivals ?? []).length}`} pts={(state.rivals ?? []).filter(r => r.isDefeated).length * 50000} color="text-amber-400" />
+            <StatRow label="Rivals Defeated" value={`${(state.rivals ?? []).filter(r => r.isDefeated).length} / ${(state.rivals ?? []).length}`} pts={(state.rivals ?? []).filter(r => r.isDefeated).length * 10000} color="text-amber-400" />
             <StatRow label="Crew Members" value={`${(state.crew ?? []).reduce((s, h) => s + h.count, 0)}`} pts={(state.crew ?? []).reduce((s, h) => s + h.count, 0) * 5000} color="text-red-400" />
           </div>
 
@@ -275,16 +277,16 @@ export default function LeaderboardView() {
 
         {activeTab === 'prestige' && (
           <div className="bg-gray-800/40 rounded-xl p-3 space-y-0.5">
-            <StatRow label="Prestige Resets" value={`${state.prestigeCount ?? 0}`} pts={(state.prestigeCount ?? 0) * 500000} color="text-yellow-400" />
-            <StatRow label="Total Tech Points Earned" value={`${state.totalTechPointsEarned ?? 0} TP`} pts={(state.totalTechPointsEarned ?? 0) * 10000} color="text-cyan-400" />
+            <StatRow label="Prestige Resets" value={`${state.prestigeCount ?? 0}`} pts={(state.prestigeCount ?? 0) * 25000} color="text-yellow-400" />
+            <StatRow label="Total Tech Points Earned" value={`${state.totalTechPointsEarned ?? 0} TP`} pts={(state.totalTechPointsEarned ?? 0) * 5000} color="text-cyan-400" />
             <StatRow label="Unspent Tech Points" value={`${state.techPoints ?? 0} TP`} pts={0} color="text-cyan-300" />
           </div>
         )}
 
         {activeTab === 'collection' && (
           <div className="bg-gray-800/40 rounded-xl p-3 space-y-0.5">
-            <StatRow label="Cars Owned" value={`${(state.cars ?? []).length} / ${CAR_DEFS.length}`} pts={(state.cars ?? []).length * 20000} color="text-red-400" />
-            <StatRow label="Jewelry Owned" value={`${(state.jewelry ?? []).length}`} pts={(state.jewelry ?? []).length * 15000} color="text-purple-400" />
+            <StatRow label="Cars Owned" value={`${(state.cars ?? []).length} / ${CAR_DEFS.length}`} pts={(state.cars ?? []).length * 5000} color="text-red-400" />
+            <StatRow label="Jewelry Owned" value={`${(state.jewelry ?? []).length}`} pts={(state.jewelry ?? []).length * 3000} color="text-purple-400" />
           </div>
         )}
 
