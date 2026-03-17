@@ -35,6 +35,8 @@ export interface TickState {
   legitProfit: number;
   jobIncome: number;
   hitmanCost: number;
+  reverseFlowDirty: number;   // dirty cash gained from reverse flow
+  reverseFlowClean: number;   // clean cash consumed by reverse flow
   tickCount: number;
   heatNoticeShown: boolean;
   totalDirtyEarned: number;

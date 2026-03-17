@@ -19,6 +19,8 @@ export function tickCashFlowSystem(ts: TickState, ctx: TickContext): void {
   }
 
   ts.dirtyCash += totalDirtyFromClean;
+  ts.reverseFlowDirty = totalDirtyFromClean;
+  ts.reverseFlowClean = totalCleanToDirty;
   ts.cleanCash = ts.cleanCash - totalCleanToDirty + ts.cleanProduced + ts.legitProfit;
   if (ts.cleanCash < 0) ts.cleanCash += ts.cleanCash * 0.0001;
 
