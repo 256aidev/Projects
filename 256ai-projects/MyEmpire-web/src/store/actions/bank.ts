@@ -1,5 +1,5 @@
 import type { GameState } from '../../data/types';
-import { LOAN_DEFS, LOAN_DEF_MAP, calcMonthlyPayment } from '../../data/bankDefs';
+import { LOAN_DEF_MAP, calcMonthlyPayment } from '../../data/bankDefs';
 import type { ActiveLoan } from '../../data/bankDefs';
 
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;

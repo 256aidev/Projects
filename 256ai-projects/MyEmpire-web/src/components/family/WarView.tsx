@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useSyndicateStore } from '../../store/syndicateStore';
 import { useUIStore } from '../../store/uiStore';
-import { formatMoney } from '../../engine/economy';
 import { sound } from '../../engine/sound';
 
 function useCountdown(endsAt: number) {

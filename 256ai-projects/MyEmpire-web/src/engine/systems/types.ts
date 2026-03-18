@@ -1,4 +1,4 @@
-import type { GameState, CriminalOperation, BusinessInstance } from '../../data/types';
+import type { GameState, CriminalOperation } from '../../data/types';
 import type { TechBonuses } from '../tech';
 import type { SessionTechBonuses } from '../sessionTech';
 import type { SeasonDef } from '../../data/seasons';

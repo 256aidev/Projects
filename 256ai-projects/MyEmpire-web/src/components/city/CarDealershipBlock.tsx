@@ -1,6 +1,7 @@
 import { useUIStore } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
 import { formatMoney } from '../../engine/economy';
+import { CAR_DEF_MAP } from '../../data/carDefs';
 import Tooltip from '../ui/Tooltip';
 
 const BLOCK_W = 164;
@@ -12,7 +13,7 @@ export default function CarDealershipBlock() {
   const bankBalance = useGameStore(s => s.bankBalance ?? 0);
   const bankLoans = useGameStore(s => s.bankLoans ?? []);
 
-  const totalPrestige = cars.reduce((s, c) => s + c.prestigeBonus, 0);
+  const totalPrestige = cars.reduce((s, c) => s + (CAR_DEF_MAP[c.defId]?.bonusValue ?? 0), 0);
   const totalOwed = bankLoans.reduce((s, l) => s + l.remainingBalance, 0);
 
   return (

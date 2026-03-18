@@ -32,7 +32,6 @@ export default function LegalView() {
   }, 0);
   const breakdown = getHeatBreakdown(dirtyCash, dealerCount, dealerTierIndex, businesses, activeLawyerId, 0, totalLawyerDecay);
   const rivalBreakdown = getRivalHeatBreakdown(dealerCount, dealerTierIndex, businesses);
-  const activeLawyer = activeLawyerId ? LAWYER_MAP[activeLawyerId] : null;
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">

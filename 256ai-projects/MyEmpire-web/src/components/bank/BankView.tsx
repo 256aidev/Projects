@@ -116,7 +116,7 @@ export default function BankView() {
           ) : (
             <div className="space-y-2">
               {bankLoans.map((loan, i) => (
-                <LoanCard key={i} loan={loan} index={i} onPayOff={() => {
+                <LoanCard key={i} loan={loan} onPayOff={() => {
                   if (bankPayOffLoan(i)) { sound.play('buy'); addNotification('Loan paid off!', 'success'); }
                   else addNotification('Not enough clean cash to pay off', 'warning');
                 }} cleanCash={cleanCash} />
@@ -178,9 +178,8 @@ export default function BankView() {
   );
 }
 
-function LoanCard({ loan, index, onPayOff, cleanCash }: { loan: ActiveLoan; index: number; onPayOff: () => void; cleanCash: number }) {
+function LoanCard({ loan, onPayOff, cleanCash }: { loan: ActiveLoan; onPayOff: () => void; cleanCash: number }) {
   const def = LOAN_DEFS.find(d => d.id === loan.defId);
-  const progress = 1 - (loan.remainingBalance / (loan.monthlyPayment * (loan.monthsRemaining + (loan.monthlyPayment * loan.monthsRemaining > loan.remainingBalance ? 0 : 1))));
 
   return (
     <div className="bg-gray-800/60 rounded-lg border border-orange-900/40 p-3 flex items-center gap-3">

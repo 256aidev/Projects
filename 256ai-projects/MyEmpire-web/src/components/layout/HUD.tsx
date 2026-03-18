@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
-import { formatMoney, formatUnits } from '../../engine/economy';
+import { formatUnits } from '../../engine/economy';
 import { getHeatTier, getRivalHeatTier, HEAT_MAX } from '../../engine/heat';
-import { HEAT_TIER_NAMES, HEAT_TIER_COLORS, RIVAL_TIER_NAMES, RIVAL_TIER_COLORS, PRESTIGE_THRESHOLD } from '../../data/types';
+import { HEAT_TIER_COLORS, RIVAL_TIER_COLORS, PRESTIGE_THRESHOLD } from '../../data/types';
 import { sound } from '../../engine/sound';
 import CannabisLeaf from '../ui/CannabisLeaf';
 import Tooltip from '../ui/Tooltip';
@@ -26,11 +26,9 @@ export default function HUD() {
   const heat = useGameStore((s) => s.heat);
   const heatTier = getHeatTier(heat);
   const tierColor = HEAT_TIER_COLORS[heatTier];
-  const tierName = HEAT_TIER_NAMES[heatTier];
   const rivalHeat = useGameStore((s) => s.rivalHeat ?? 0);
   const rivalTier = getRivalHeatTier(rivalHeat);
   const rivalColor = RIVAL_TIER_COLORS[rivalTier];
-  const rivalTierName = RIVAL_TIER_NAMES[rivalTier];
 
   const techPoints = useGameStore((s) => s.techPoints ?? 0);
   const prestigeCount = useGameStore((s) => s.prestigeCount ?? 0);

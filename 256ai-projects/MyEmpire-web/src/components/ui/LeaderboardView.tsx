@@ -7,7 +7,7 @@ import { getDifficultyMultiplier } from '../../engine/difficulty';
 import { CAR_DEFS } from '../../data/carDefs';
 import { getCrewAttack, getCrewDefense } from '../../data/crewDefs';
 import { useSyndicateStore } from '../../store/syndicateStore';
-import type { SyndicateData } from '../../store/syndicateStore';
+
 
 // ── Point Scoring System (v2) ────────────────────────────────────────
 // Balanced so no single category dominates. Difficulty multiplier up to 3.5×.

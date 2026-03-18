@@ -95,7 +95,7 @@ interface GameActions {
   unlockDistrict: (districtId: string) => boolean;
   fireDealers: (count: number) => void;
   applyForJob: (jobId: string) => boolean;
-  quitJob: () => void;
+  quitJob: (jobId?: string) => void;
   hireLawyer: (lawyerId: string) => boolean;
   fireLawyer: (lawyerId?: string) => void;
   prestige: () => boolean;
@@ -112,6 +112,12 @@ interface GameActions {
   buyJewelry: (defId: string) => boolean;
   upgradeJewelry: (index: number) => boolean;
   buyCar: (defId: string) => boolean;
+  upgradeHouse: () => boolean;
+  upgradeHQ: () => boolean;
+  bankDeposit: (amount: number) => boolean;
+  bankWithdraw: (amount: number) => boolean;
+  bankTakeLoan: (defId: string, amount: number) => boolean;
+  bankPayOffLoan: (index: number) => boolean;
   startTutorial: () => void;
   advanceTutorial: () => void;
   skipTutorial: () => void;
@@ -240,7 +246,7 @@ export const useGameStore = create<GameStore>()(
             const op = updates.operation ?? state.operation;
             updates.operation = { ...op, dealerCount: Math.max(0, op.dealerCount + outcome.dealerCountDelta) };
           }
-          console.log(`[Event] ${eventDef.title} choice=${choiceIndex} success=${success} dirtyCashDelta=${outcome.dirtyCashDelta ?? 0} cleanCashDelta=${outcome.cleanCashDelta ?? 0}`);
+          console.log(`[Event] ${eventDef.name} choice=${choiceIndex} success=${success} dirtyCashDelta=${outcome.dirtyCashDelta ?? 0} cleanCashDelta=${outcome.cleanCashDelta ?? 0}`);
           result = { success, message: success ? eventDef.choices[choiceIndex].description : (eventDef.choices[choiceIndex].description + ' (failed)') };
           return updates;
         });

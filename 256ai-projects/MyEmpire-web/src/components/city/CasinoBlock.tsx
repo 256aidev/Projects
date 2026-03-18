@@ -7,7 +7,6 @@ const BLOCK_W = 164;
 
 export default function CasinoBlock() {
   const setShowCasino = useUIStore(s => s.setShowCasino);
-  const dirtyCash = useGameStore(s => s.dirtyCash);
   const history = useGameStore(s => s.casinoHistory);
 
   return (

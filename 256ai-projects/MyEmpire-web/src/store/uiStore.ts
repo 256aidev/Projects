@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { sound } from '../engine/sound';
 
-type PanelName = 'buy' | 'market' | 'lawyer' | 'event' | 'settings' | 'warehouse' | null;
+type PanelName = 'buy' | 'market' | 'lawyer' | 'event' | 'settings' | 'warehouse' | 'cars' | null;
 export type ViewName = 'operation' | 'city' | 'warehouse' | 'legal' | 'rivals' | 'family' | 'finance' | 'ranks';
 
 export type GameSpeed = 0 | 1 | 2 | 4 | 8;

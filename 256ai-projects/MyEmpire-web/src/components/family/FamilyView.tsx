@@ -7,7 +7,6 @@ import { formatMoney } from '../../engine/economy';
 import { sound } from '../../engine/sound';
 import { SYNDICATE_LEVELS, getSyndicateLevel, getNextLevelXp, TREASURY_PURCHASES } from '../../data/syndicateDefs';
 import WarView from './WarView';
-import Tooltip from '../ui/Tooltip';
 
 export default function FamilyView() {
   const user = useAuthStore((s) => s.user);
@@ -19,7 +18,7 @@ export default function FamilyView() {
     createSyndicate, joinSyndicate, leaveSyndicate,
     kickMember, promoteMember, contributeTreasury, spendTreasury,
     sendInvite, acceptInvite, declineInvite, fetchMyInvites,
-    searchSyndicates, subscribe, clearError,
+    searchSyndicates, clearError,
   } = useSyndicateStore();
 
   const cleanCash = useGameStore((s) => s.cleanCash);
