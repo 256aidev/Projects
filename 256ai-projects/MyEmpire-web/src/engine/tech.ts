@@ -16,6 +16,10 @@ export interface TechBonuses {
   floraBloomBonus: number;   // extra double chance from FloraBloom research
   waterBonus: number;        // extra grow speed from Water research
   lightBonus: number;        // extra grow speed from Light research
+  // Crew combat bonuses
+  crewAttackBonus: number;   // e.g. 0.15 = +15% crew attack per level
+  crewDefenseBonus: number;  // e.g. 0.15 = +15% crew defense per level
+  crewDiscount: number;      // e.g. 0.10 = -10% crew hire cost per level
 }
 
 /** Compute all tech bonuses from current upgrade levels */
@@ -34,5 +38,8 @@ export function getTechBonuses(techUpgrades: Record<TechUpgradeId, number>): Tec
     floraBloomBonus: (techUpgrades.tech_flora_bloom ?? 0) * TECH_UPGRADE_MAP.tech_flora_bloom.effectPerLevel,
     waterBonus: (techUpgrades.tech_water ?? 0) * TECH_UPGRADE_MAP.tech_water.effectPerLevel,
     lightBonus: (techUpgrades.tech_light ?? 0) * TECH_UPGRADE_MAP.tech_light.effectPerLevel,
+    crewAttackBonus: (techUpgrades.tech_crew_attack ?? 0) * (TECH_UPGRADE_MAP.tech_crew_attack?.effectPerLevel ?? 0.15),
+    crewDefenseBonus: (techUpgrades.tech_crew_defense ?? 0) * (TECH_UPGRADE_MAP.tech_crew_defense?.effectPerLevel ?? 0.15),
+    crewDiscount: (techUpgrades.tech_crew_discount ?? 0) * (TECH_UPGRADE_MAP.tech_crew_discount?.effectPerLevel ?? 0.10),
   };
 }

@@ -1,6 +1,8 @@
 import type { GameState, RivalActionType } from '../../data/types';
 import { RIVAL_ACTIONS } from '../../data/types';
 import { CREW_MAP, getCrewAttack } from '../../data/crewDefs';
+import { getTechBonuses } from '../../engine/tech';
+import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
 
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
 type GetState = () => GameState;
@@ -10,15 +12,17 @@ export function createCombatActions(set: SetState, get: GetState) {
     hireCrew: (defId: string) => {
       const state = get();
       const def = CREW_MAP[defId];
-      if (!def || state.dirtyCash < def.cost) return false;
+      const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
+      const discountedCost = Math.floor(def.cost * (1 - tech.crewDiscount));
+      if (!def || state.dirtyCash < discountedCost) return false;
       const existing = state.crew.find(h => h.defId === defId);
       if (existing && existing.count >= def.maxCount) return false;
       const newCrew = existing
         ? state.crew.map(h => h.defId === defId ? { ...h, count: h.count + 1 } : h)
         : [...state.crew, { defId, count: 1 }];
       set({
-        dirtyCash: state.dirtyCash - def.cost,
-        totalSpent: state.totalSpent + def.cost,
+        dirtyCash: state.dirtyCash - discountedCost,
+        totalSpent: state.totalSpent + discountedCost,
         crew: newCrew,
       });
       return true;
@@ -62,8 +66,9 @@ export function createCombatActions(set: SetState, get: GetState) {
         }
       }
 
-      // Calculate success chance
-      const playerAttack = getCrewAttack(state.crew);
+      // Calculate success chance (with tech bonuses)
+      const techBonuses = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
+      const playerAttack = getCrewAttack(state.crew, techBonuses.crewAttackBonus);
       const rivalDefense = rival.hitmen * 15;
       const powerRatio = Math.min(2, playerAttack / Math.max(1, rivalDefense));
 

@@ -11,9 +11,9 @@ export const RIVAL_TICK_INTERVAL = 10;
 // Legacy fallback — each rival now has its own activeAtTick for staggered entry
 export const RIVAL_HEAD_START_TICKS = 300;
 
-/** Get total player defense power from crew */
-export function getPlayerDefense(crew: HiredCrew[]): number {
-  return getCrewDefense(crew);
+/** Get total player defense power from crew (with optional tech bonus) */
+export function getPlayerDefense(crew: HiredCrew[], techDefenseBonus = 0): number {
+  return getCrewDefense(crew, techDefenseBonus);
 }
 
 /** Get total crew upkeep cost per tick */

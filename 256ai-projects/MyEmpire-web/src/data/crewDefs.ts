@@ -116,19 +116,21 @@ export function getCrewBonuses(hiredCrew: HiredCrew[]): CrewBonuses {
 }
 
 /** Get total crew attack power */
-export function getCrewAttack(hiredCrew: HiredCrew[]): number {
-  return hiredCrew.reduce((sum, h) => {
+export function getCrewAttack(hiredCrew: HiredCrew[], techBonus = 0): number {
+  const base = hiredCrew.reduce((sum, h) => {
     const def = CREW_MAP[h.defId];
     return sum + (def ? h.count * def.attack : 0);
   }, 0);
+  return Math.floor(base * (1 + techBonus));
 }
 
 /** Get total crew defense power */
-export function getCrewDefense(hiredCrew: HiredCrew[]): number {
-  return hiredCrew.reduce((sum, h) => {
+export function getCrewDefense(hiredCrew: HiredCrew[], techBonus = 0): number {
+  const base = hiredCrew.reduce((sum, h) => {
     const def = CREW_MAP[h.defId];
     return sum + (def ? h.count * def.defense : 0);
   }, 0);
+  return Math.floor(base * (1 + techBonus));
 }
 
 /** Get total crew upkeep per tick */

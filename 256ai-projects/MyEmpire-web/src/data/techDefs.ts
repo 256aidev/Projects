@@ -20,7 +20,10 @@ export type TechUpgradeId =
   | 'tech_light'
   | 'tech_start_dirty'
   | 'tech_start_clean'
-  | 'tech_start_seeds';
+  | 'tech_start_seeds'
+  | 'tech_crew_attack'
+  | 'tech_crew_defense'
+  | 'tech_crew_discount';
 
 export interface TechUpgradeDef {
   id: TechUpgradeId;
@@ -224,6 +227,39 @@ export const TECH_UPGRADE_DEFS: TechUpgradeDef[] = [
     bonusType: 'start_seeds',
     bonusPerLevel: [50, 150, 400, 1000, 3000],
   },
+  {
+    id: 'tech_crew_attack',
+    name: 'Combat Training',
+    icon: '⚔️',
+    description: 'Train your crew for harder hits',
+    maxLevel: 5,
+    costs: [2, 4, 7, 12, 18],
+    effectPerLevel: 15,
+    effectLabel: '% crew attack',
+    bonusType: 'crew_attack',
+  },
+  {
+    id: 'tech_crew_defense',
+    name: 'Kevlar Vests',
+    icon: '🛡️',
+    description: 'Outfit your crew with better protection',
+    maxLevel: 5,
+    costs: [2, 4, 7, 12, 18],
+    effectPerLevel: 15,
+    effectLabel: '% crew defense',
+    bonusType: 'crew_defense',
+  },
+  {
+    id: 'tech_crew_discount',
+    name: 'Street Recruitment',
+    icon: '📋',
+    description: 'Cheaper crew recruitment costs',
+    maxLevel: 5,
+    costs: [1, 3, 5, 8, 14],
+    effectPerLevel: 10,
+    effectLabel: '% crew cost reduction',
+    bonusType: 'crew_discount',
+  },
 ];
 
 export const TECH_UPGRADE_MAP = Object.fromEntries(
@@ -247,6 +283,9 @@ export const INITIAL_TECH_UPGRADES: Record<TechUpgradeId, number> = {
   tech_start_dirty: 0,
   tech_start_clean: 0,
   tech_start_seeds: 0,
+  tech_crew_attack: 0,
+  tech_crew_defense: 0,
+  tech_crew_discount: 0,
 };
 
 // ─────────────────────────────────────────
