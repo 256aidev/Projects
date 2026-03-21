@@ -331,6 +331,46 @@ export const PRESTIGE_MILESTONES: PrestigeMilestone[] = [
   { id: 'rival_3',    name: '3 rivals defeated',     icon: '🔫', check: (s) => s.rivals.filter(r => r.isDefeated).length >= 3, bonusTP: 3 },
   { id: 'rival_4',    name: '4 rivals defeated',     icon: '🔫', check: (s) => s.rivals.filter(r => r.isDefeated).length >= 4, bonusTP: 4 },
   { id: 'rival_5',    name: '5 rivals defeated',     icon: '🔫', check: (s) => s.rivals.filter(r => r.isDefeated).length >= 5, bonusTP: 5 },
+  // Dealers
+  { id: 'dealers_5',   name: '5 dealers hired',       icon: '🤝', check: (s) => s.operation.dealerCount >= 5,   bonusTP: 1 },
+  { id: 'dealers_15',  name: '15 dealers hired',      icon: '🤝', check: (s) => s.operation.dealerCount >= 15,  bonusTP: 2 },
+  { id: 'dealers_30',  name: '30 dealers hired',      icon: '🤝', check: (s) => s.operation.dealerCount >= 30,  bonusTP: 3 },
+  // Dealer Tier
+  { id: 'tier_2',     name: 'Dealer tier 2+',         icon: '📈', check: (s) => s.operation.dealerTierIndex >= 2, bonusTP: 1 },
+  { id: 'tier_4',     name: 'Dealer tier 4+',         icon: '📈', check: (s) => s.operation.dealerTierIndex >= 4, bonusTP: 2 },
+  { id: 'tier_6',     name: 'Max dealer tier',        icon: '📈', check: (s) => s.operation.dealerTierIndex >= 6, bonusTP: 3 },
+  // Crew (Crime Family)
+  { id: 'crew_3',     name: '3 crew members',         icon: '👊', check: (s) => s.crew.reduce((sum, c) => sum + c.count, 0) >= 3,  bonusTP: 1 },
+  { id: 'crew_8',     name: '8 crew members',         icon: '👊', check: (s) => s.crew.reduce((sum, c) => sum + c.count, 0) >= 8,  bonusTP: 2 },
+  { id: 'crew_15',    name: '15 crew members',        icon: '👊', check: (s) => s.crew.reduce((sum, c) => sum + c.count, 0) >= 15, bonusTP: 3 },
+  // Casino
+  { id: 'casino_10',  name: '10 casino games played', icon: '🎰', check: (s) => s.casinoHistory.gamesPlayed >= 10,   bonusTP: 1 },
+  { id: 'casino_50',  name: '50 casino games played', icon: '🎰', check: (s) => s.casinoHistory.gamesPlayed >= 50,   bonusTP: 2 },
+  { id: 'casino_win', name: '$1M casino winnings',    icon: '🎰', check: (s) => s.casinoHistory.totalWon >= 1_000_000, bonusTP: 3 },
+  // Jewelry & Cars
+  { id: 'jewelry_3',  name: '3 jewelry pieces',       icon: '💎', check: (s) => (s.jewelry?.length ?? 0) >= 3, bonusTP: 1 },
+  { id: 'jewelry_8',  name: '8 jewelry pieces',       icon: '💎', check: (s) => (s.jewelry?.length ?? 0) >= 8, bonusTP: 2 },
+  { id: 'cars_2',     name: '2 cars owned',           icon: '🚗', check: (s) => (s.cars?.length ?? 0) >= 2,    bonusTP: 1 },
+  { id: 'cars_5',     name: '5 cars owned',           icon: '🚗', check: (s) => (s.cars?.length ?? 0) >= 5,    bonusTP: 3 },
+  // Jobs
+  { id: 'has_job',    name: 'Get a job',              icon: '💼', check: (s) => s.currentJobId !== null,        bonusTP: 1 },
+  // Lawyers
+  { id: 'lawyers_3',  name: '3 lawyers retained',     icon: '⚖️', check: (s) => (s.hiredLawyers?.length ?? 0) >= 3,  bonusTP: 1 },
+  { id: 'lawyers_5',  name: '5 lawyers retained',     icon: '⚖️', check: (s) => (s.hiredLawyers?.length ?? 0) >= 5,  bonusTP: 2 },
+  // Run Tech
+  { id: 'runtech_5',  name: '5 run tech upgrades',    icon: '🔧', check: (s) => Object.values(s.runTechUpgrades ?? {}).reduce((sum, v) => sum + v, 0) >= 5,  bonusTP: 1 },
+  { id: 'runtech_15', name: '15 run tech upgrades',   icon: '🔧', check: (s) => Object.values(s.runTechUpgrades ?? {}).reduce((sum, v) => sum + v, 0) >= 15, bonusTP: 2 },
+  // Total Spent (empire builder milestone)
+  { id: 'spent_1m',   name: '$1M total spent',        icon: '💸', check: (s) => s.totalSpent >= 1_000_000,      bonusTP: 1 },
+  { id: 'spent_10m',  name: '$10M total spent',       icon: '💸', check: (s) => s.totalSpent >= 10_000_000,     bonusTP: 2 },
+  { id: 'spent_100m', name: '$100M total spent',      icon: '💸', check: (s) => s.totalSpent >= 100_000_000,    bonusTP: 3 },
+  // Heat survived (high heat without getting busted)
+  { id: 'heat_500',   name: 'Survived 500 heat',      icon: '🔥', check: (s) => s.heat >= 500,                  bonusTP: 2 },
+  { id: 'heat_900',   name: 'Survived 900 heat',      icon: '🔥', check: (s) => s.heat >= 900,                  bonusTP: 4 },
+  // Lots owned
+  { id: 'lots_10',    name: '10 lots owned',           icon: '🏗️', check: (s) => Object.values(s.unlockedSlots ?? {}).reduce((sum, v) => sum + (v as number), 0) >= 10, bonusTP: 1 },
+  { id: 'lots_25',    name: '25 lots owned',           icon: '🏗️', check: (s) => Object.values(s.unlockedSlots ?? {}).reduce((sum, v) => sum + (v as number), 0) >= 25, bonusTP: 2 },
+  { id: 'lots_50',    name: '50 lots owned',           icon: '🏗️', check: (s) => Object.values(s.unlockedSlots ?? {}).reduce((sum, v) => sum + (v as number), 0) >= 50, bonusTP: 4 },
 ];
 
 /** Calculate Tech Points earned for a prestige reset */
