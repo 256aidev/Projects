@@ -301,7 +301,7 @@ export default function OperationView() {
                 <div className="flex items-center justify-between px-2 py-1 border-b"
                   style={{ borderColor: `${themeColor}${Math.round(borderOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`, background: `${themeColor}0D` }}>
                   <p className="font-bold text-xs" style={{ color: isLegalRoom ? '#fde047' : themeColor }}>
-                    {room.name} {isLegalRoom ? '👑' : ''} <span className="text-gray-500 font-normal text-[10px]">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · +{Math.round(totalYieldBonus * 100)}% yield · <span className="text-red-400">{formatMoney(maintenancePerCycle)}/cyc</span></span>
+                    {room.name} {isLegalRoom ? '👑' : ''} <span className="text-white font-normal text-[10px]">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · <span className="text-green-400">+{Math.round(totalYieldBonus * 100)}% yield</span> · <span className="text-cyan-400">-{Math.round(getRoomBonus(room, 'speed') * 100)}% time</span> · <span className="text-purple-400">{Math.round(getRoomBonus(room, 'double') * 100)}% 2×</span> · <span className="text-red-400">{formatMoney(maintenancePerCycle)}/cyc</span></span>
                   </p>
                   {isMaxLevel ? (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: themeColor, background: `${themeColor}20` }}>MAX</span>
