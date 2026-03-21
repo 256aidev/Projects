@@ -6,6 +6,7 @@ import { getTechBonuses } from '../../engine/tech';
 import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
 import { INITIAL_SESSION_TECH } from '../../data/sessionTechDefs';
 import { getSessionTechBonuses } from '../../engine/sessionTech';
+import { INITIAL_RUN_TECH, getRunTechBonuses } from '../../data/runTechDefs';
 import { HEAT_MAX } from '../../engine/heat';
 import { JOB_MAP } from '../../data/types';
 
@@ -79,7 +80,8 @@ export function createOperationActions(set: SetState, get: GetState) {
       if (toSell <= 0) return 0;
       // Sell proportionally from each strain at its actual price
       const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
-      const priceMult = tech.priceMultiplier ?? 1;
+      const rtBonus = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
+      const priceMult = (tech.priceMultiplier ?? 1) * (1 + rtBonus.priceBonus);
       let dirtyEarned = 0;
       const newInventory = { ...state.operation.productInventory };
       for (const [strainName, entry] of inventoryEntries) {
@@ -201,7 +203,8 @@ export function createOperationActions(set: SetState, get: GetState) {
       const base = INITIAL_GAME_STATE.operation.seedCostPerUnit; // $5
       const discount = quantity >= 30000 ? 3 : quantity >= 20000 ? 2 : quantity >= 10000 ? 1 : 0;
       const seedTech = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
-      const pricePerSeed = Math.max(1, Math.floor((base - discount) * (1 - seedTech.seedDiscount)));
+      const runTech = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
+      const pricePerSeed = Math.max(1, Math.floor((base - discount) * (1 - seedTech.seedDiscount - runTech.seedDiscount)));
       const cost = pricePerSeed * quantity;
       if (state.dirtyCash < cost) return false;
       set({

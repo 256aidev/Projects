@@ -40,6 +40,7 @@ export default function HUD() {
   const setShowAccountScreen = useUIStore((s) => s.setShowAccountScreen);
   const setShowTechMenu = useUIStore((s) => s.setShowTechMenu);
   const setShowSessionTechMenu = useUIStore((s) => s.setShowSessionTechMenu);
+  const setShowRunTechMenu = useUIStore((s) => s.setShowRunTechMenu);
   const setShowPrestigeConfirm = useUIStore((s) => s.setShowPrestigeConfirm);
   const setPanel = useUIStore((s) => s.setPanel);
   const activePanel = useUIStore((s) => s.activePanel);
@@ -132,6 +133,16 @@ export default function HUD() {
           className="flex items-center gap-1 hover:opacity-80 transition"
         >
           <span className="text-xl">🛠️</span>
+        </button>
+      </Tooltip>
+
+      {/* Run Upgrades button (run tech) */}
+      <Tooltip text="Run upgrades (persist until prestige reset). Costs dirty cash.">
+        <button
+          onClick={() => setShowRunTechMenu(true)}
+          className="flex items-center gap-1 hover:opacity-80 transition"
+        >
+          <span className="text-xl">🔧</span>
         </button>
       </Tooltip>
 

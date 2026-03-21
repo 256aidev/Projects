@@ -17,7 +17,10 @@ export type TechUpgradeId =
   | 'tech_flora_micro'
   | 'tech_flora_bloom'
   | 'tech_water'
-  | 'tech_light';
+  | 'tech_light'
+  | 'tech_start_dirty'
+  | 'tech_start_clean'
+  | 'tech_start_seeds';
 
 export interface TechUpgradeDef {
   id: TechUpgradeId;
@@ -28,7 +31,8 @@ export interface TechUpgradeDef {
   costs: number[];          // TP cost per level [L1, L2, L3, L4, L5]
   effectPerLevel: number;   // the numeric bonus per level
   effectLabel: string;      // human-readable per-level effect
-  bonusType: 'yield' | 'speed' | 'double' | 'capacity' | 'dealer' | 'launder' | 'heat' | 'price' | 'flora_gro' | 'flora_micro' | 'flora_bloom' | 'water' | 'light';
+  bonusType: 'yield' | 'speed' | 'double' | 'capacity' | 'dealer' | 'launder' | 'heat' | 'price' | 'flora_gro' | 'flora_micro' | 'flora_bloom' | 'water' | 'light' | 'start_dirty' | 'start_clean' | 'start_seeds';
+  bonusPerLevel?: number[];  // per-level bonus values (for non-linear scaling, e.g. starting money)
 }
 
 /** Generate doubling cost array: baseCost, baseCost*2, baseCost*4, ... */
@@ -183,6 +187,43 @@ export const TECH_UPGRADE_DEFS: TechUpgradeDef[] = [
     effectLabel: '+1% grow speed',
     bonusType: 'light',
   },
+  // ─── STARTING MONEY BOOSTERS — applied at prestige/new game ───
+  {
+    id: 'tech_start_dirty',
+    name: 'Seed Money',
+    icon: '💵',
+    description: 'Start each run with bonus dirty cash',
+    maxLevel: 5,
+    costs: [2, 4, 6, 10, 16],
+    effectPerLevel: 0,
+    effectLabel: 'bonus starting dirty cash',
+    bonusType: 'start_dirty',
+    bonusPerLevel: [5000, 15000, 30000, 60000, 120000],
+  },
+  {
+    id: 'tech_start_clean',
+    name: 'Trust Fund',
+    icon: '🏦',
+    description: 'Start each run with bonus clean cash',
+    maxLevel: 5,
+    costs: [2, 4, 6, 10, 16],
+    effectPerLevel: 0,
+    effectLabel: 'bonus starting clean cash',
+    bonusType: 'start_clean',
+    bonusPerLevel: [2000, 6000, 15000, 35000, 75000],
+  },
+  {
+    id: 'tech_start_seeds',
+    name: 'Seed Vault',
+    icon: '🌱',
+    description: 'Start each run with bonus seeds',
+    maxLevel: 5,
+    costs: [1, 2, 4, 7, 12],
+    effectPerLevel: 0,
+    effectLabel: 'bonus starting seeds',
+    bonusType: 'start_seeds',
+    bonusPerLevel: [50, 150, 400, 1000, 3000],
+  },
 ];
 
 export const TECH_UPGRADE_MAP = Object.fromEntries(
@@ -203,6 +244,9 @@ export const INITIAL_TECH_UPGRADES: Record<TechUpgradeId, number> = {
   tech_flora_bloom: 0,
   tech_water: 0,
   tech_light: 0,
+  tech_start_dirty: 0,
+  tech_start_clean: 0,
+  tech_start_seeds: 0,
 };
 
 // ─────────────────────────────────────────

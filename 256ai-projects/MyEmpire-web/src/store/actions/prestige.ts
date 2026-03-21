@@ -1,9 +1,11 @@
 import type { GameState } from '../../data/types';
 import { INITIAL_GAME_STATE, PRESTIGE_THRESHOLD } from '../../data/types';
 import type { TechUpgradeId } from '../../data/techDefs';
-import { TECH_UPGRADE_MAP, INITIAL_TECH_UPGRADES, calculatePrestigeTP } from '../../data/techDefs';
+import { TECH_UPGRADE_MAP, TECH_UPGRADE_DEFS, INITIAL_TECH_UPGRADES, calculatePrestigeTP } from '../../data/techDefs';
 import type { SessionTechId } from '../../data/sessionTechDefs';
 import { SESSION_TECH_MAP, INITIAL_SESSION_TECH } from '../../data/sessionTechDefs';
+import type { RunTechId } from '../../data/runTechDefs';
+import { RUN_TECH_MAP, INITIAL_RUN_TECH } from '../../data/runTechDefs';
 import { generateRivals } from '../../data/rivals';
 
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
@@ -17,14 +19,30 @@ export function createPrestigeActions(set: SetState, get: GetState) {
       const { total: earnedTP } = calculatePrestigeTP(state);
       const newCount = (state.prestigeCount ?? 0) + 1;
       const startOp = { ...INITIAL_GAME_STATE.operation, productInventory: { 'Basic Bud': { oz: 12, pricePerUnit: 8 } } };
+
+      // Calculate starting bonuses from permanent tech
+      const techUpgrades = state.techUpgrades ?? INITIAL_TECH_UPGRADES;
+      const startDirtyLevel = techUpgrades.tech_start_dirty ?? 0;
+      const startCleanLevel = techUpgrades.tech_start_clean ?? 0;
+      const startSeedsLevel = techUpgrades.tech_start_seeds ?? 0;
+      const startDirtyDef = TECH_UPGRADE_DEFS.find(t => t.id === 'tech_start_dirty');
+      const startCleanDef = TECH_UPGRADE_DEFS.find(t => t.id === 'tech_start_clean');
+      const startSeedsDef = TECH_UPGRADE_DEFS.find(t => t.id === 'tech_start_seeds');
+      const bonusDirty = startDirtyLevel > 0 && startDirtyDef?.bonusPerLevel ? (startDirtyDef.bonusPerLevel as number[])[startDirtyLevel - 1] ?? 0 : 0;
+      const bonusClean = startCleanLevel > 0 && startCleanDef?.bonusPerLevel ? (startCleanDef.bonusPerLevel as number[])[startCleanLevel - 1] ?? 0 : 0;
+      const bonusSeeds = startSeedsLevel > 0 && startSeedsDef?.bonusPerLevel ? (startSeedsDef.bonusPerLevel as number[])[startSeedsLevel - 1] ?? 0 : 0;
+
       set({
         ...INITIAL_GAME_STATE,
-        operation: startOp,
+        dirtyCash: INITIAL_GAME_STATE.dirtyCash + bonusDirty,
+        cleanCash: INITIAL_GAME_STATE.cleanCash + bonusClean,
+        operation: { ...startOp, seedStock: startOp.seedStock + bonusSeeds },
         prestigeCount: newCount,
         prestigeBonus: 0,
         techPoints: (state.techPoints ?? 0) + earnedTP,
         totalTechPointsEarned: (state.totalTechPointsEarned ?? 0) + earnedTP,
-        techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
+        techUpgrades: { ...techUpgrades },
+        runTechUpgrades: { ...INITIAL_RUN_TECH },
         gameSettings: { ...state.gameSettings },
         rivals: generateRivals(state.gameSettings.rivalCount, state.gameSettings.rivalEntryDelay ?? 2),
         crew: [],
@@ -85,17 +103,52 @@ export function createPrestigeActions(set: SetState, get: GetState) {
       return true;
     },
 
+    purchaseRunTech: (upgradeId: RunTechId) => {
+      const state = get();
+      const def = RUN_TECH_MAP[upgradeId];
+      if (!def) return false;
+      const currentLevel = (state.runTechUpgrades ?? INITIAL_RUN_TECH)[upgradeId] ?? 0;
+      if (currentLevel >= def.maxLevel) return false;
+      const cost = def.costs[currentLevel];
+      if (state.dirtyCash < cost) return false;
+      set({
+        dirtyCash: state.dirtyCash - cost,
+        totalSpent: state.totalSpent + cost,
+        runTechUpgrades: {
+          ...(state.runTechUpgrades ?? INITIAL_RUN_TECH),
+          [upgradeId]: currentLevel + 1,
+        },
+      });
+      return true;
+    },
+
     resetGame: () => {
       const state = get();
       const startOp = { ...INITIAL_GAME_STATE.operation, productInventory: { 'Basic Bud': { oz: 12, pricePerUnit: 8 } } };
+
+      // Calculate starting bonuses from permanent tech
+      const techUpgrades = state.techUpgrades ?? INITIAL_TECH_UPGRADES;
+      const startDirtyLevel = techUpgrades.tech_start_dirty ?? 0;
+      const startCleanLevel = techUpgrades.tech_start_clean ?? 0;
+      const startSeedsLevel = techUpgrades.tech_start_seeds ?? 0;
+      const startDirtyDef = TECH_UPGRADE_DEFS.find(t => t.id === 'tech_start_dirty');
+      const startCleanDef = TECH_UPGRADE_DEFS.find(t => t.id === 'tech_start_clean');
+      const startSeedsDef = TECH_UPGRADE_DEFS.find(t => t.id === 'tech_start_seeds');
+      const bonusDirty = startDirtyLevel > 0 && startDirtyDef?.bonusPerLevel ? (startDirtyDef.bonusPerLevel as number[])[startDirtyLevel - 1] ?? 0 : 0;
+      const bonusClean = startCleanLevel > 0 && startCleanDef?.bonusPerLevel ? (startCleanDef.bonusPerLevel as number[])[startCleanLevel - 1] ?? 0 : 0;
+      const bonusSeeds = startSeedsLevel > 0 && startSeedsDef?.bonusPerLevel ? (startSeedsDef.bonusPerLevel as number[])[startSeedsLevel - 1] ?? 0 : 0;
+
       set({
         ...INITIAL_GAME_STATE,
-        operation: startOp,
+        dirtyCash: INITIAL_GAME_STATE.dirtyCash + bonusDirty,
+        cleanCash: INITIAL_GAME_STATE.cleanCash + bonusClean,
+        operation: { ...startOp, seedStock: startOp.seedStock + bonusSeeds },
         prestigeCount: state.prestigeCount ?? 0,
         prestigeBonus: 0,
         techPoints: state.techPoints ?? 0,
         totalTechPointsEarned: state.totalTechPointsEarned ?? 0,
-        techUpgrades: { ...(state.techUpgrades ?? INITIAL_TECH_UPGRADES) },
+        techUpgrades: { ...techUpgrades },
+        runTechUpgrades: { ...INITIAL_RUN_TECH },
       });
     },
 

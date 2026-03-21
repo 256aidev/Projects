@@ -40,7 +40,7 @@ export default function TechMenu() {
 
       {/* Upgrade Grid */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
           {TECH_UPGRADE_DEFS.map((def) => {
             const level = techUpgrades[def.id] ?? 0;
             const isMaxed = level >= def.maxLevel;

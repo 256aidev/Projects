@@ -6,6 +6,8 @@ import type { TechUpgradeId } from '../data/techDefs';
 import { INITIAL_TECH_UPGRADES } from '../data/techDefs';
 import type { SessionTechId } from '../data/sessionTechDefs';
 import { INITIAL_SESSION_TECH } from '../data/sessionTechDefs';
+import type { RunTechId } from '../data/runTechDefs';
+import { INITIAL_RUN_TECH, getRunTechBonuses } from '../data/runTechDefs';
 import { getTechBonuses } from '../engine/tech';
 import { getSessionTechBonuses } from '../engine/sessionTech';
 import { resolveEventChoice as resolveChoice, getEventDef } from '../engine/events';
@@ -101,6 +103,7 @@ interface GameActions {
   prestige: () => boolean;
   purchaseTechUpgrade: (upgradeId: TechUpgradeId) => boolean;
   purchaseSessionTech: (upgradeId: SessionTechId) => boolean;
+  purchaseRunTech: (upgradeId: RunTechId) => boolean;
   resetGame: () => void;
   wipeGame: () => void;
   startNewGame: (rivalCount: number, entryDelayMinutes?: number) => void;
@@ -137,23 +140,25 @@ export const useGameStore = create<GameStore>()(
         set((state) => {
           const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
           const sTech = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
+          const runTech = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
           const carBonus = getCarBonuses(state.cars ?? []);
           const crewBonus = getCrewBonuses(state.crew ?? []);
           const jewBonus = getJewelryBonuses(state.jewelry ?? []);
           const effectiveTech = {
             ...tech,
-            yieldBonus: tech.yieldBonus + sTech.yieldBonus + tech.floraMicroBonus + sTech.floraMicroBonus + jewBonus.yieldBoost,
-            speedBonus: tech.speedBonus + sTech.speedBonus + carBonus.growSpeed + tech.floraGroBonus + tech.waterBonus + tech.lightBonus + sTech.floraGroBonus + sTech.waterBonus + sTech.lightBonus,
+            yieldBonus: tech.yieldBonus + sTech.yieldBonus + tech.floraMicroBonus + sTech.floraMicroBonus + jewBonus.yieldBoost + runTech.yieldBonus,
+            speedBonus: tech.speedBonus + sTech.speedBonus + carBonus.growSpeed + tech.floraGroBonus + tech.waterBonus + tech.lightBonus + sTech.floraGroBonus + sTech.waterBonus + sTech.lightBonus + runTech.speedBonus,
             doubleChance: tech.doubleChance + tech.floraBloomBonus + sTech.floraBloomBonus,
-            dealerMultiplier: tech.dealerMultiplier * sTech.dealerMultiplier * (1 + crewBonus.dealerBoost),
-            launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier * (1 + crewBonus.launderBoost) * (1 + jewBonus.launderBoost),
-            heatReduction: tech.heatReduction + sTech.heatReduction + crewBonus.heatReduction + jewBonus.heatDecay,
+            dealerMultiplier: tech.dealerMultiplier * sTech.dealerMultiplier * (1 + crewBonus.dealerBoost) * runTech.dealerMultiplier,
+            launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier * (1 + crewBonus.launderBoost) * (1 + jewBonus.launderBoost) * runTech.launderMultiplier,
+            heatReduction: tech.heatReduction + sTech.heatReduction + crewBonus.heatReduction + jewBonus.heatDecay + runTech.heatReduction,
+            priceMultiplier: tech.priceMultiplier * (1 + runTech.priceBonus),
           };
           const { seasonDef } = getSeasonFromTick(state.tickCount + 1);
           const ctx: TickContext = {
             prevState: state,
             tech: effectiveTech,
-            sessionTech: sTech,
+            sessionTech: { ...sTech, demandBonus: sTech.demandBonus + runTech.demandBonus, seedDiscount: sTech.seedDiscount + runTech.seedDiscount },
             carBonuses: carBonus,
             jewelryBonuses: jewBonus,
             gameSpeed: useUIStore.getState().gameSpeed,
@@ -432,6 +437,8 @@ export const useGameStore = create<GameStore>()(
         }
 
         if (!merged.lotBuildTimers) merged.lotBuildTimers = {};
+
+        if (!merged.runTechUpgrades) merged.runTechUpgrades = { ...INITIAL_RUN_TECH };
 
         // v27: Ensure unlockedSlots covers all existing businesses (no more free lots)
         if (merged.unlockedSlots && merged.businesses) {

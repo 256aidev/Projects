@@ -54,7 +54,7 @@ export default function SessionTechMenu() {
 
       {/* Upgrade Grid */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
           {SESSION_TECH_DEFS.map((def) => {
             const level = sessionTech[def.id] ?? 0;
             const isMaxed = level >= def.maxLevel;

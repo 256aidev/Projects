@@ -42,6 +42,7 @@ import LeaderboardView from './components/ui/LeaderboardView';
 import StartGameScreen from './components/ui/StartGameScreen';
 import TechMenu from './components/tech/TechMenu';
 import SessionTechMenu from './components/tech/SessionTechMenu';
+import RunTechMenu from './components/tech/RunTechMenu';
 import PrestigeConfirmModal from './components/tech/PrestigeConfirmModal';
 import CasinoView from './components/casino/CasinoView';
 import JewelryStoreView from './components/jewelry/JewelryStoreView';
@@ -69,6 +70,7 @@ export default function App() {
   const showCarDealership = useUIStore((s) => s.showCarDealership);
   const showBank = useUIStore((s) => s.showBank);
   const showSessionTechMenu = useUIStore((s) => s.showSessionTechMenu);
+  const showRunTechMenu = useUIStore((s) => s.showRunTechMenu);
   const setPanel = useUIStore((s) => s.setPanel);
 
   const { user, loading, syncToCloud } = useAuthStore();
@@ -164,6 +166,7 @@ export default function App() {
       {showAccountScreen && <AccountScreen />}
       {showTechMenu && <TechMenu />}
       {showSessionTechMenu && <SessionTechMenu />}
+      {showRunTechMenu && <RunTechMenu />}
       {showPrestigeConfirm && <PrestigeConfirmModal />}
       {showCasino && <CasinoView />}
       {showJewelryStore && <JewelryStoreView />}

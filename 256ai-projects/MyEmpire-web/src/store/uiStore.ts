@@ -21,6 +21,7 @@ interface UIState {
   showCarDealership: boolean;
   showBank: boolean;
   showSessionTechMenu: boolean;
+  showRunTechMenu: boolean;
   gameSpeed: GameSpeed;
   notifications: { id: number; message: string; type: 'success' | 'warning' | 'error' }[];
 }
@@ -40,6 +41,7 @@ interface UIActions {
   setShowCarDealership: (show: boolean) => void;
   setShowBank: (show: boolean) => void;
   setShowSessionTechMenu: (show: boolean) => void;
+  setShowRunTechMenu: (show: boolean) => void;
   setGameSpeed: (speed: GameSpeed) => void;
   closeAll: () => void;
   addNotification: (message: string, type: 'success' | 'warning' | 'error') => void;
@@ -63,6 +65,7 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   showCarDealership: false,
   showBank: false,
   showSessionTechMenu: false,
+  showRunTechMenu: false,
   gameSpeed: 1,
   notifications: [],
 
@@ -94,6 +97,7 @@ export const useUIStore = create<UIState & UIActions>()((set) => ({
   setShowCarDealership: (show) => set({ showCarDealership: show }),
   setShowBank: (show) => set({ showBank: show }),
   setShowSessionTechMenu: (show) => set({ showSessionTechMenu: show }),
+  setShowRunTechMenu: (show) => set({ showRunTechMenu: show }),
   setGameSpeed: (speed) => set({ gameSpeed: speed }),
   closeAll: () => set({ selectedSlot: null, selectedBusinessId: null, activePanel: null }),
 
