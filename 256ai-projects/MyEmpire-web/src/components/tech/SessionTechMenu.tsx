@@ -25,7 +25,7 @@ export default function SessionTechMenu() {
           <span className="text-2xl">🛠️</span>
           <div>
             <h1 className="text-lg font-bold text-amber-300">Street Upgrades</h1>
-            <p className="text-[9px] text-gray-500">Temporary boosts — reset on prestige</p>
+            <p className="text-[9px] text-gray-500">Short-term boosts — lost when spent or session ends</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
