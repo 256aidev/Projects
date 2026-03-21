@@ -2,6 +2,7 @@ import { useGameStore } from '../../store/gameStore';
 import { JOB_DEFS, JOB_MAP } from '../../data/types';
 import { formatMoney } from '../../engine/economy';
 import { sound } from '../../engine/sound';
+import { JOB_SPRITE_MAP } from './DealerJobSprites';
 
 const BLOCK_W = 164;
 
@@ -22,7 +23,6 @@ export default function JobDistrictBlock() {
     >
       <p className="text-[9px] font-bold text-center mb-1 text-emerald-400">💼 Dirty Jobs</p>
 
-      {/* Status badge */}
       <div className="flex items-center justify-center gap-1 mb-1.5">
         {jobFiredCooldown > 0 ? (
           <span className="text-[7px] text-red-400 font-semibold">Fired! Wait {jobFiredCooldown}s</span>
@@ -35,7 +35,6 @@ export default function JobDistrictBlock() {
         )}
       </div>
 
-      {/* Job tiles grid (2x3 = 6 jobs) */}
       <div className="grid grid-cols-2 gap-1">
         {JOB_DEFS.map((job) => {
           const isActive = activeJobIds.includes(job.id);
@@ -43,62 +42,55 @@ export default function JobDistrictBlock() {
           const cantAfford = dirtyCash < job.bribeCost;
           const onCooldown = jobFiredCooldown > 0;
           const canApply = !isActive && !tooHot && !cantAfford && !onCooldown;
+          const Sprite = JOB_SPRITE_MAP[job.id];
 
           return (
             <button
               key={job.id}
               disabled={!canApply && !isActive}
               onClick={() => {
-                if (isActive) {
-                  quitJob(job.id);
-                  sound.play('fire');
-                } else if (canApply) {
-                  applyForJob(job.id);
-                  sound.play('dealer_hire');
-                }
+                if (isActive) { quitJob(job.id); sound.play('fire'); }
+                else if (canApply) { applyForJob(job.id); sound.play('dealer_hire'); }
               }}
-              className={`w-[72px] h-[72px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden transition-all ${
-                isActive
-                  ? 'ring-1 ring-emerald-400/60'
-                  : tooHot
-                    ? 'opacity-30'
-                    : canApply
-                      ? 'hover:brightness-125 cursor-pointer'
-                      : 'opacity-50'
+              className={`w-[72px] h-[72px] rounded-lg border-2 relative overflow-hidden transition-all ${
+                isActive ? 'ring-1 ring-emerald-400/60'
+                  : tooHot ? 'opacity-30'
+                  : canApply ? 'hover:brightness-125 cursor-pointer'
+                  : 'opacity-50'
               }`}
               style={{
-                backgroundColor: isActive ? '#10B98125' : '#10B98110',
                 borderColor: isActive ? '#10B981' : tooHot ? '#EF444440' : '#10B98140',
               }}
             >
-              {/* Active job pulsing indicator */}
+              {/* SVG sprite background */}
+              {Sprite && <Sprite w={72} h={72} />}
+
+              {/* Active pulse dot */}
               {isActive && (
-                <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse z-20" />
               )}
 
-              <div className="relative z-10 flex flex-col items-center">
-                <span className="text-lg leading-none">{job.icon}</span>
-                <span className="text-[8px] font-bold text-white/90 text-center leading-tight">{job.name}</span>
-
+              {/* Text overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10">
+                <span className="text-[8px] font-bold text-white/90 text-center leading-tight drop-shadow">{job.name}</span>
                 {isActive ? (
                   <>
-                    <span className="text-[7px] text-emerald-300 font-semibold">
+                    <span className="text-[7px] text-emerald-300 font-semibold drop-shadow">
                       +{formatMoney(job.cleanPerTick)}/s
                     </span>
-                    <span className="text-[6px] text-red-400/70">tap to quit</span>
+                    <span className="text-[6px] text-red-400/80 drop-shadow">tap to quit</span>
                   </>
                 ) : tooHot ? (
-                  <span className="text-[7px] text-red-400">Too hot!</span>
+                  <span className="text-[7px] text-red-400 drop-shadow">Too hot!</span>
                 ) : (
-                  <span className={`text-[7px] ${cantAfford ? 'text-red-400' : 'text-gray-400'}`}>
-                    Bribe {formatMoney(job.bribeCost)}
-                  </span>
-                )}
-
-                {!isActive && (
-                  <span className="text-[6px] text-gray-600">
-                    Max heat: {job.maxHeat}
-                  </span>
+                  <>
+                    <span className={`text-[7px] drop-shadow ${cantAfford ? 'text-red-400' : 'text-gray-300'}`}>
+                      Bribe {formatMoney(job.bribeCost)}
+                    </span>
+                    <span className="text-[6px] text-gray-500 drop-shadow">
+                      Max heat: {job.maxHeat}
+                    </span>
+                  </>
                 )}
               </div>
             </button>
