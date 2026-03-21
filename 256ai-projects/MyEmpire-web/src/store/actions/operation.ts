@@ -1,6 +1,6 @@
 import type { GameState } from '../../data/types';
 import { GROW_ROOM_TYPE_MAP, ROOM_UPGRADE_MAP, INITIAL_GAME_STATE, getStrainUnlockCost } from '../../data/types';
-import { harvestSlot, getMaxStreetDemand, getStreetSellHeat } from '../../engine/economy';
+import { harvestSlot, getMaxStreetDemand, getStreetSellHeat, getRoomBonus } from '../../engine/economy';
 import { getCarBonuses } from '../../data/carDefs';
 import { getTechBonuses } from '../../engine/tech';
 import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
@@ -225,6 +225,13 @@ export function createOperationActions(set: SetState, get: GetState) {
       if (!slot || slot.isHarvesting) return false;
       // Always use the canonical grow time from the def, not whatever is saved in the slot
       const canonicalTimer = GROW_ROOM_TYPE_MAP[room.typeId]?.strainSlots[slotIndex]?.growTimerTicks ?? slot.growTimerTicks;
+      // Apply speed bonus from all sources: room upgrades + tech + run tech + session tech + cars
+      const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
+      const runTech = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
+      const sessionTech = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
+      const cars = getCarBonuses(state.cars ?? []);
+      const speedBonus = getRoomBonus(room, 'speed') + (tech?.speedBonus ?? 0) + (runTech?.speedBonus ?? 0) + (sessionTech?.speedBonus ?? 0) + (cars?.growSpeed ?? 0);
+      const effectiveTimer = Math.max(1, Math.ceil(canonicalTimer * (1 - speedBonus)));
       set({
         operation: {
           ...state.operation,
@@ -234,7 +241,7 @@ export function createOperationActions(set: SetState, get: GetState) {
               ? {
                   ...r,
                   slots: r.slots.map((s, i) =>
-                    i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: canonicalTimer, growTimerTicks: canonicalTimer } : s
+                    i === slotIndex ? { ...s, isHarvesting: true, ticksRemaining: effectiveTimer, growTimerTicks: canonicalTimer } : s
                   ),
                 }
               : r
