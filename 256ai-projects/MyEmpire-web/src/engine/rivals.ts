@@ -110,15 +110,19 @@ export function tickRivals(
       );
       const district = availableDistricts[Math.floor(Math.random() * availableDistricts.length)];
       if (district) {
-        const slot = Math.floor(Math.random() * district.maxBusinessSlots);
-        const slotKey = `${district.id}:${slot}`;
-        const alreadyHas = r.businesses.some(b => b.districtId === district.id && b.slotIndex === slot);
-        const alreadyOwnsLot = r.ownedLots.some(l => l.districtId === district.id && l.slotIndex === slot);
-        const isBlacklisted = (r.blacklistedSlots ?? []).includes(slotKey);
-        const playerOwnsSlot = slot < (playerUnlockedSlots?.[district.id] ?? 0);
-        if (!alreadyHas && !alreadyOwnsLot && !isBlacklisted && !playerOwnsSlot) {
-          r.ownedLots = [...r.ownedLots, { districtId: district.id, slotIndex: slot, boughtAtTick: tickCount }];
-          r.dirtyCash -= t.rivalLotCost;
+        // Rivals use slot indices starting at 100+ to never conflict with player's sequential 0,1,2...
+        const rivalSlotBase = 100 + rivals.indexOf(rival) * 20;
+        const existingRivalSlots = r.businesses.filter(b => b.districtId === district.id).length
+          + r.ownedLots.filter(l => l.districtId === district.id).length;
+        // Each rival gets up to 3 businesses per district
+        if (existingRivalSlots < 3) {
+          const slot = rivalSlotBase + existingRivalSlots;
+          const slotKey = `${district.id}:${slot}`;
+          const isBlacklisted = (r.blacklistedSlots ?? []).includes(slotKey);
+          if (!isBlacklisted) {
+            r.ownedLots = [...r.ownedLots, { districtId: district.id, slotIndex: slot, boughtAtTick: tickCount }];
+            r.dirtyCash -= t.rivalLotCost;
+          }
         }
       }
     }
