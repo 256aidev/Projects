@@ -194,10 +194,10 @@ export default function HUD() {
 
       {/* Speed controls */}
       <div className="flex items-center gap-1 bg-gray-800 rounded-lg px-2 py-1">
-        {([0, 1, 2, 4, 8] as GameSpeed[]).map((speed) => {
+        {([0, 1, 1.25, 1.5, 2] as GameSpeed[]).map((speed) => {
           const label = speed === 0 ? '⏸' : speed === 1 ? '▶' : `${speed}x`;
           const isActive = gameSpeed === speed;
-          const tip = speed === 0 ? 'Pause the game.' : speed === 1 ? 'Normal speed.' : 'Speed up game. Events scale with speed.';
+          const tip = speed === 0 ? 'Pause the game.' : speed === 1 ? 'Normal speed (1 tick/sec).' : `${speed}x speed (1 tick/${Math.round(1000 / speed)}ms).`;
           return (
             <Tooltip key={speed} text={tip}>
               <button

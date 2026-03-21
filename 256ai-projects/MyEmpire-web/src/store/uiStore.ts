@@ -4,7 +4,7 @@ import { sound } from '../engine/sound';
 type PanelName = 'buy' | 'market' | 'lawyer' | 'event' | 'settings' | 'warehouse' | 'cars' | null;
 export type ViewName = 'operation' | 'city' | 'warehouse' | 'legal' | 'rivals' | 'family' | 'finance' | 'ranks';
 
-export type GameSpeed = 0 | 1 | 2 | 4 | 8;
+export type GameSpeed = 0 | 1 | 1.25 | 1.5 | 2;
 
 interface UIState {
   activeView: ViewName;

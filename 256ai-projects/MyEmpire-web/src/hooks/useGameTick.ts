@@ -12,9 +12,8 @@ export function useGameTick() {
 
     if (gameSpeed === 0) return; // paused
 
-    // Each speed step is 125ms faster: 1x=1000, 2x=875, 4x=750, 8x=625
-    const SPEED_MS: Record<number, number> = { 1: 1000, 2: 875, 4: 750, 8: 625 };
-    const ms = SPEED_MS[gameSpeed] ?? 1000;
+    // True speed: 1x=1000ms, 1.25x=800ms, 1.5x=667ms, 2x=500ms
+    const ms = Math.round(1000 / gameSpeed);
     intervalRef.current = setInterval(tick, ms);
 
     return () => {
