@@ -1,15 +1,17 @@
 import type { TickState, TickContext } from './types';
-import { tickRivals, getPlayerDefense, RIVAL_TICK_INTERVAL } from '../rivals';
+import { tickRivals, getPlayerDefense } from '../rivals';
+import { getTuning } from '../../store/tuningStore';
 
 /**
- * Rival AI system: runs every RIVAL_TICK_INTERVAL ticks.
+ * Rival AI system: runs every tunable tick interval.
  * Rivals attack player, steal cash/product, reveal districts.
  */
 export function tickRivalSystem(ts: TickState, ctx: TickContext): void {
   ts.rivals = ctx.prevState.rivals ?? [];
   ts.rivalAttackLog = ctx.prevState.rivalAttackLog ?? [];
 
-  if (ts.rivals.length > 0 && ts.tickCount % RIVAL_TICK_INTERVAL === 0) {
+  const interval = getTuning().rivalTickInterval;
+  if (ts.rivals.length > 0 && ts.tickCount % interval === 0) {
     const totalProductOz = Object.values(ts.operation.productInventory).reduce(
       (s, e) => s + e.oz,
       0,

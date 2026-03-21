@@ -4,9 +4,10 @@ import { BUSINESSES } from '../data/businesses';
 import { DISTRICTS } from '../data/districts';
 import type { HiredCrew } from '../data/crewDefs';
 import { getCrewDefense, getCrewUpkeep, getCrewCount } from '../data/crewDefs';
+import { getTuning } from '../store/tuningStore';
 
-// Rival AI runs every N ticks to avoid per-tick overhead
-export const RIVAL_TICK_INTERVAL = 10;
+// Rival AI runs every N ticks to avoid per-tick overhead — now tunable
+export const RIVAL_TICK_INTERVAL = 10; // fallback, actual value read from tuning
 
 // Legacy fallback — each rival now has its own activeAtTick for staggered entry
 export const RIVAL_HEAD_START_TICKS = 300;
@@ -61,18 +62,15 @@ export function tickRivals(
     const entryTick = rival.activeAtTick ?? RIVAL_HEAD_START_TICKS;
     if (tickCount < entryTick) return rival;
 
-    // ── Passive growth — scales with power and time alive ──────
+    // ── Passive growth — all values from tuning dashboard ──────
+    const t = getTuning();
     let r = { ...rival };
-    const ticksAlive = tickCount - entryTick;
-    // Dirty: $200 base + $100 per power level — rivals need cash to grow
-    r.dirtyCash += Math.floor(200 + r.power * 100);
-    // Clean: $100 base + $80 per power — starts after $10K dirty (low bar)
-    if (r.dirtyCash >= 10000) {
-      r.cleanCash += Math.floor(100 + r.power * 80);
+    r.dirtyCash += Math.floor(t.rivalDirtyBase + r.power * t.rivalDirtyPerPower);
+    if (r.dirtyCash >= t.rivalCleanThreshold) {
+      r.cleanCash += Math.floor(t.rivalCleanBase + r.power * t.rivalCleanPerPower);
     }
-    r.productOz += Math.floor(1 + r.power * 0.5);
-    // Power grows faster early, slows down — rivals feel alive
-    r.power = Math.min(20, r.power + 0.005);
+    r.productOz += Math.floor(1 + r.power * t.rivalProductPerPower);
+    r.power = Math.min(t.rivalPowerCap, r.power + t.rivalPowerGrowth);
     // Weakness decays very slowly — 0.005/tick ≈ 0.3%/min so attacks accumulate
     if ((r.weakness ?? 0) > 0) r.weakness = Math.max(0, (r.weakness ?? 0) - 0.005);
 
@@ -105,8 +103,7 @@ export function tickRivals(
 
     // ── Step 1: Rival buys a LOT occasionally (1% chance per rival tick) ──
     if (!r.ownedLots) r.ownedLots = [];
-    const LOT_COST = 2000; // flat lot cost for rivals
-    if (r.dirtyCash >= LOT_COST && Math.random() < 0.05) {
+    if (r.dirtyCash >= t.rivalLotCost && Math.random() < t.rivalLotBuyChance) {
       const maxDistrictCost = r.power * 25000;
       const availableDistricts = DISTRICTS.filter(d =>
         d.maxBusinessSlots > 0 && (d.unlockCost ?? 0) <= maxDistrictCost
@@ -121,7 +118,7 @@ export function tickRivals(
         const playerOwnsSlot = slot < (playerUnlockedSlots?.[district.id] ?? 0);
         if (!alreadyHas && !alreadyOwnsLot && !isBlacklisted && !playerOwnsSlot) {
           r.ownedLots = [...r.ownedLots, { districtId: district.id, slotIndex: slot, boughtAtTick: tickCount }];
-          r.dirtyCash -= LOT_COST;
+          r.dirtyCash -= t.rivalLotCost;
         }
       }
     }
@@ -145,14 +142,14 @@ export function tickRivals(
     }
 
     // Rival hires hitmen occasionally
-    if (r.dirtyCash > 20000 && Math.random() < 0.05) {
+    if (r.dirtyCash > t.rivalHitmanCost * 4 && Math.random() < t.rivalHitmanHireChance) {
       r.hitmen += 1;
-      r.dirtyCash -= 5000;
+      r.dirtyCash -= t.rivalHitmanCost;
     }
 
     // ── Attack decision ─────────────────────────────────────────────────
     // Higher rival heat + higher aggression = more likely to attack
-    const attackChance = (rivalHeat / 1000) * r.aggression * 0.15;
+    const attackChance = (rivalHeat / 1000) * r.aggression * t.rivalAttackMultiplier;
     if (Math.random() < attackChance && r.hitmen > 0) {
       const rivalAttack = r.hitmen * 15;
       const defenseRatio = playerDefense / Math.max(1, rivalAttack);
@@ -163,7 +160,7 @@ export function tickRivals(
         const roll = Math.random();
         if (roll < 0.4) {
           // Steal dirty cash
-          const stolen = Math.min(playerDirtyCash - dirtyCashLost, 1000 + Math.floor(r.power * 500));
+          const stolen = Math.min(playerDirtyCash - dirtyCashLost, t.rivalStolenCashBase + Math.floor(r.power * t.rivalStolenCashPerPower));
           if (stolen > 0) {
             dirtyCashLost += stolen;
             r.dirtyCash += stolen;
@@ -171,7 +168,7 @@ export function tickRivals(
           }
         } else if (roll < 0.7) {
           // Steal product
-          const stolenOz = Math.min(playerProductOz - productLost, 2 + Math.floor(r.power * 2));
+          const stolenOz = Math.min(playerProductOz - productLost, t.rivalStolenProductBase + Math.floor(r.power * t.rivalStolenProductPerPower));
           if (stolenOz > 0) {
             productLost += stolenOz;
             r.productOz += stolenOz;

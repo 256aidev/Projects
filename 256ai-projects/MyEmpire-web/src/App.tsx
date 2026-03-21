@@ -51,12 +51,26 @@ import BankView from './components/bank/BankView';
 import EventPopup from './components/ui/EventPopup';
 import TutorialOverlay from './components/ui/TutorialOverlay';
 import VictoryScreen from './components/ui/VictoryScreen';
+import AdminDashboard from './components/admin/AdminDashboard';
+import { useTuningStore } from './store/tuningStore';
 
 // Auto-sync to Firestore every 60 ticks (≈ 1 min)
 const SYNC_INTERVAL_TICKS = 60;
 
 export default function App() {
   useGameTick();
+
+  // Admin dashboard accessed via #admin hash
+  const [isAdmin, setIsAdmin] = useState(window.location.hash === '#admin');
+  useEffect(() => {
+    const onHash = () => setIsAdmin(window.location.hash === '#admin');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  if (isAdmin) return <AdminDashboard />;
+
+  // Subscribe to live tuning config from Firestore
+  useEffect(() => useTuningStore.getState().subscribe(), []);
 
   const activeView = useUIStore((s) => s.activeView);
   const selectedSlot = useUIStore((s) => s.selectedSlot);
