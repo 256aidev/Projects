@@ -200,9 +200,15 @@ export const useGameStore = create<GameStore>()(
             system(ts, ctx);
           }
 
+          // Compute deltas so we don't overwrite concurrent changes (casino, etc.)
+          const dirtyDelta = ts.dirtyCash - state.dirtyCash;
+          const cleanDelta = ts.cleanCash - state.cleanCash;
+
+          // Re-read current state to apply deltas on top of any concurrent changes
+          const current = get();
           return {
-            dirtyCash: ts.dirtyCash,
-            cleanCash: ts.cleanCash,
+            dirtyCash: Math.max(0, current.dirtyCash + dirtyDelta),
+            cleanCash: Math.max(0, current.cleanCash + cleanDelta),
             heat: ts.heat,
             rivalHeat: ts.rivalHeat,
             activeLawyerId: ts.activeLawyerId,
