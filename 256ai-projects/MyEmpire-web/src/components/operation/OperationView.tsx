@@ -350,7 +350,7 @@ export default function OperationView() {
                         : slot.isHarvesting ? 1 : 0;
                       const ready = slot.isHarvesting && slot.ticksRemaining === 0;
                       const idle = !slot.isHarvesting;
-                      const yieldBonus = getRoomBonus(room, 'yield') + prestigeBonus;
+                      const yieldBonus = totalYieldBonus;
                       const effectiveYield = Math.floor(slot.harvestYield * (1 + yieldBonus));
 
                       return (
