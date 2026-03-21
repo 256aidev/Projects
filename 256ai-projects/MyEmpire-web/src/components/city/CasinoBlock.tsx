@@ -2,6 +2,7 @@ import { useUIStore } from '../../store/uiStore';
 import { useGameStore } from '../../store/gameStore';
 import { formatMoney } from '../../engine/economy';
 import Tooltip from '../ui/Tooltip';
+import { CasinoSprite } from './VenueSprites';
 
 const BLOCK_W = 164;
 
@@ -13,31 +14,20 @@ export default function CasinoBlock() {
     <Tooltip text="Enter the casino. Bet dirty cash to win clean cash.">
     <button
       onClick={() => setShowCasino(true)}
-      style={{ width: BLOCK_W, borderColor: '#EAB30850', backgroundColor: '#EAB30812' }}
-      className="rounded-lg border p-2 flex flex-col items-center justify-center gap-1 hover:brightness-125 transition-all cursor-pointer"
+      style={{ width: BLOCK_W, borderColor: '#EAB30850' }}
+      className="rounded-lg border relative overflow-hidden hover:brightness-125 transition-all cursor-pointer"
     >
-      <span className="text-3xl">🎰</span>
-      <p className="text-[10px] font-bold text-yellow-400">Lucky 7 Casino</p>
-      <p className="text-[8px] text-gray-400">Dirty cash in, clean cash out</p>
-
-      <div className="mt-1 flex flex-col items-center gap-0.5">
-        <span className="text-[7px] text-gray-500">
-          {history.gamesPlayed} games played
-        </span>
-        <span className="text-[7px] text-emerald-400">
-          {formatMoney(history.totalWon)} laundered
-        </span>
-        <span className="text-[7px] text-red-400">
-          {formatMoney(history.totalGambled)} wagered
-        </span>
+      <CasinoSprite w={BLOCK_W} h={130} />
+      <div className="absolute inset-0 flex flex-col items-center justify-end pb-2 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+        <p className="text-[10px] font-bold text-yellow-400 drop-shadow">Lucky 7 Casino</p>
+        <p className="text-[8px] text-gray-300 drop-shadow">Dirty cash in, clean cash out</p>
+        <div className="mt-0.5 flex flex-col items-center gap-0">
+          <span className="text-[7px] text-gray-400 drop-shadow">{history.gamesPlayed} games played</span>
+          <span className="text-[7px] text-emerald-400 drop-shadow">{formatMoney(history.totalWon)} laundered</span>
+          <span className="text-[7px] text-red-400 drop-shadow">{formatMoney(history.totalGambled)} wagered</span>
+        </div>
+        <p className="text-[7px] text-yellow-500/60 mt-0.5 drop-shadow">Tap to enter</p>
       </div>
-
-      <div className="mt-1 flex gap-2 text-sm">
-        <span>🃏</span>
-        <span>🎲</span>
-        <span>♠️</span>
-      </div>
-      <p className="text-[7px] text-yellow-500/60 mt-0.5">Tap to enter</p>
     </button>
     </Tooltip>
   );
