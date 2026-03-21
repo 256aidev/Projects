@@ -7,6 +7,7 @@ import { SESSION_TECH_MAP, INITIAL_SESSION_TECH } from '../../data/sessionTechDe
 import type { RunTechId } from '../../data/runTechDefs';
 import { RUN_TECH_MAP, INITIAL_RUN_TECH } from '../../data/runTechDefs';
 import { generateRivals } from '../../data/rivals';
+import { getJewelryBonuses } from '../../engine/jewelry';
 
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
 type GetState = () => GameState;
@@ -16,7 +17,9 @@ export function createPrestigeActions(set: SetState, get: GetState) {
     prestige: () => {
       const state = get();
       if (state.totalDirtyEarned < PRESTIGE_THRESHOLD) return false;
-      const { total: earnedTP } = calculatePrestigeTP(state);
+      const jewelryBonuses = getJewelryBonuses(state.jewelry ?? []);
+      const { total: baseTP } = calculatePrestigeTP(state);
+      const earnedTP = Math.floor(baseTP * (1 + (jewelryBonuses.prestigeSpeed ?? 0)));
       const newCount = (state.prestigeCount ?? 0) + 1;
       const startOp = { ...INITIAL_GAME_STATE.operation, productInventory: { 'Basic Bud': { oz: 12, pricePerUnit: 8 } } };
 

@@ -8,6 +8,9 @@ import { JOB_MAP } from '../../data/types';
 import { sound } from '../../engine/sound';
 import { getCarBonuses } from '../../data/carDefs';
 import { getJewelryBonuses } from '../../engine/jewelry';
+import { getTechBonuses } from '../../engine/tech';
+import { getRunTechBonuses } from '../../data/runTechDefs';
+import { getSessionTechBonuses } from '../../engine/sessionTech';
 import CannabisLeaf from '../ui/CannabisLeaf';
 import Tooltip from '../ui/Tooltip';
 
@@ -50,6 +53,12 @@ export default function OperationView() {
   const refillRate = getStreetRefillRate(maxDemandOz);
   const prestigeBonus = useGameStore((s) => s.prestigeBonus ?? 0);
   const jewelryBonuses = getJewelryBonuses(useGameStore((s) => s.jewelry ?? []));
+  const techUpgrades = useGameStore((s) => s.techUpgrades);
+  const runTechUpgrades = useGameStore((s) => s.runTechUpgrades);
+  const sessionTechUpgrades = useGameStore((s) => s.sessionTechUpgrades);
+  const tech = getTechBonuses(techUpgrades);
+  const runTech = getRunTechBonuses(runTechUpgrades);
+  const sessionTech = getSessionTechBonuses(sessionTechUpgrades);
   const addNotification = useUIStore((s) => s.addNotification);
 
   const currentDealerTier = DEALER_TIERS[op.dealerTierIndex];
@@ -284,7 +293,10 @@ export default function OperationView() {
             const canUpgrade = hasNextSlot && dirtyCash >= nextUpgradeCost;
             const isMaxLevel = !hasNextSlot;
 
-            const totalYieldBonus = getRoomBonus(room, 'yield') + prestigeBonus + jewelryBonuses.yieldBoost;
+            const totalYieldBonus = getRoomBonus(room, 'yield') + prestigeBonus + jewelryBonuses.yieldBoost
+              + (tech?.yieldBonus ?? 0) + (runTech?.yieldBonus ?? 0) + (sessionTech?.yieldBonus ?? 0);
+            const totalSpeedBonus = getRoomBonus(room, 'speed') + (tech?.speedBonus ?? 0) + (runTech?.speedBonus ?? 0) + (sessionTech?.speedBonus ?? 0);
+            const totalDoubleChance = getRoomBonus(room, 'double') + (tech?.doubleChance ?? 0);
             const maintenancePerCycle = getRoomCycleCost(room);
             const upgMult = def?.upgradeCostMultiplier ?? 1;
 
@@ -301,7 +313,7 @@ export default function OperationView() {
                 <div className="flex items-center justify-between px-2 py-1 border-b"
                   style={{ borderColor: `${themeColor}${Math.round(borderOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`, background: `${themeColor}0D` }}>
                   <p className="font-bold text-xs" style={{ color: isLegalRoom ? '#fde047' : themeColor }}>
-                    {room.name} {isLegalRoom ? '👑' : ''} <span className="text-white font-normal text-[10px]">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · <span className="text-green-400">+{Math.round(totalYieldBonus * 100)}% yield</span> · <span className="text-cyan-400">-{Math.round(getRoomBonus(room, 'speed') * 100)}% time</span> · <span className="text-purple-400">{Math.round(getRoomBonus(room, 'double') * 100)}% 2×</span> · <span className="text-red-400">{formatMoney(maintenancePerCycle)}/cyc</span></span>
+                    {room.name} {isLegalRoom ? '👑' : ''} <span className="text-white font-normal text-[10px]">{room.slots.length} strain{room.slots.length > 1 ? 's' : ''} · <span className="text-green-400">+{Math.round(totalYieldBonus * 100)}% yield</span> · <span className="text-cyan-400">-{Math.round(totalSpeedBonus * 100)}% time</span> · <span className="text-purple-400">{Math.round(totalDoubleChance * 100)}% 2×</span> · <span className="text-red-400">{formatMoney(maintenancePerCycle)}/cyc</span></span>
                   </p>
                   {isMaxLevel ? (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: themeColor, background: `${themeColor}20` }}>MAX</span>

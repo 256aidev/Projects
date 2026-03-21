@@ -1,6 +1,6 @@
 import type { GameState, RivalActionType } from '../../data/types';
 import { RIVAL_ACTIONS } from '../../data/types';
-import { CREW_MAP, getCrewAttack } from '../../data/crewDefs';
+import { CREW_MAP, getCrewAttack, getCrewBonuses } from '../../data/crewDefs';
 import { getTechBonuses } from '../../engine/tech';
 import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
 
@@ -13,7 +13,8 @@ export function createCombatActions(set: SetState, get: GetState) {
       const state = get();
       const def = CREW_MAP[defId];
       const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
-      const discountedCost = Math.floor(def.cost * (1 - tech.crewDiscount));
+      const crewBonuses = getCrewBonuses(state.crew ?? []);
+      const discountedCost = Math.floor(def.cost * (1 - tech.crewDiscount) * (1 - crewBonuses.costReduction));
       if (!def || state.dirtyCash < discountedCost) return false;
       const existing = state.crew.find(h => h.defId === defId);
       if (existing && existing.count >= def.maxCount) return false;
