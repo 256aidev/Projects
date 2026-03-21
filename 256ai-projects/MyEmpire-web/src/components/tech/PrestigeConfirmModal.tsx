@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { calculatePrestigeTP } from '../../data/techDefs';
@@ -6,13 +7,38 @@ import { formatMoney } from '../../engine/economy';
 import { sound } from '../../engine/sound';
 import Tooltip from '../ui/Tooltip';
 
+// Group milestone IDs by category
+const MILESTONE_GROUPS: { label: string; icon: string; prefixes: string[] }[] = [
+  { label: 'Money (Dirty)', icon: '💵', prefixes: ['dirty_'] },
+  { label: 'Money (Clean)', icon: '🏦', prefixes: ['clean_'] },
+  { label: 'Money (Spent)', icon: '💸', prefixes: ['spent_'] },
+  { label: 'Grow Rooms', icon: '🌿', prefixes: ['rooms_'] },
+  { label: 'Businesses & Lots', icon: '🏢', prefixes: ['biz_', 'lots_'] },
+  { label: 'Districts', icon: '🗺️', prefixes: ['dist_'] },
+  { label: 'Dealers', icon: '🤝', prefixes: ['dealers_', 'tier_'] },
+  { label: 'Crew & Rivals', icon: '👊', prefixes: ['crew_', 'rival_'] },
+  { label: 'Casino', icon: '🎰', prefixes: ['casino_'] },
+  { label: 'Luxury', icon: '💎', prefixes: ['jewelry_', 'cars_'] },
+  { label: 'Jobs & Lawyers', icon: '💼', prefixes: ['has_job', 'lawyers_'] },
+  { label: 'Tech & Heat', icon: '🔧', prefixes: ['runtech_', 'heat_'] },
+];
+
 export default function PrestigeConfirmModal() {
   const state = useGameStore();
   const setShowPrestigeConfirm = useUIStore((s) => s.setShowPrestigeConfirm);
   const setShowTechMenu = useUIStore((s) => s.setShowTechMenu);
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
   const eligible = state.totalDirtyEarned >= PRESTIGE_THRESHOLD;
   const { total, milestones } = calculatePrestigeTP(state);
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      return next;
+    });
+  };
 
   const handlePrestige = () => {
     const success = state.prestige();
@@ -41,24 +67,54 @@ export default function PrestigeConfirmModal() {
           <p className="text-gray-500 text-[10px]">1 base + {total - 1} from milestones</p>
         </div>
 
-        {/* Milestone Breakdown */}
+        {/* Milestone Breakdown — Grouped Dropdowns */}
         <div className="p-4 space-y-1.5">
           <p className="text-gray-400 text-xs font-semibold mb-2">MILESTONES</p>
-          {milestones.map(({ milestone, achieved }) => (
-            <div
-              key={milestone.id}
-              className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs ${
-                achieved ? 'bg-green-900/20 text-green-400' : 'bg-gray-800/50 text-gray-600'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span>{achieved ? '✅' : '⬜'}</span>
-                <span>{milestone.icon}</span>
-                <span>{milestone.name}</span>
+          {MILESTONE_GROUPS.map(group => {
+            const groupMilestones = milestones.filter(({ milestone }) =>
+              group.prefixes.some(p => milestone.id.startsWith(p))
+            );
+            if (groupMilestones.length === 0) return null;
+            const achievedCount = groupMilestones.filter(m => m.achieved).length;
+            const groupTP = groupMilestones.filter(m => m.achieved).reduce((sum, m) => sum + m.milestone.bonusTP, 0);
+            const isOpen = openGroups.has(group.label);
+            return (
+              <div key={group.label}>
+                <button
+                  onClick={() => toggleGroup(group.label)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition ${
+                    achievedCount > 0 ? 'bg-green-900/15 text-green-300 hover:bg-green-900/25' : 'bg-gray-800/50 text-gray-500 hover:bg-gray-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px]">{isOpen ? '▼' : '▶'}</span>
+                    <span>{group.icon}</span>
+                    <span className="font-semibold">{group.label}</span>
+                    <span className="text-[10px] opacity-60">{achievedCount}/{groupMilestones.length}</span>
+                  </div>
+                  {groupTP > 0 && <span className="font-bold text-green-400">+{groupTP} TP</span>}
+                </button>
+                {isOpen && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {groupMilestones.map(({ milestone, achieved }) => (
+                      <div
+                        key={milestone.id}
+                        className={`flex items-center justify-between px-3 py-1 rounded text-[11px] ${
+                          achieved ? 'bg-green-900/20 text-green-400' : 'bg-gray-800/30 text-gray-600'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{achieved ? '✅' : '⬜'}</span>
+                          <span>{milestone.name}</span>
+                        </div>
+                        <span className="font-bold">+{milestone.bonusTP} TP</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <span className="font-bold">+{milestone.bonusTP} TP</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Warning */}
