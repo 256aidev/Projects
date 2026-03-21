@@ -285,7 +285,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'myempire-save',
-      version: 27,
+      version: 28,
       migrate: (persisted: unknown, _version: number) => {
         try {
         const saved = (persisted ?? {}) as Partial<GameState>;
