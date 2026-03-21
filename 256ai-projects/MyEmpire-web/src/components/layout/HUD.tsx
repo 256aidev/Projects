@@ -126,16 +126,6 @@ export default function HUD() {
         </button>
       </Tooltip>
 
-      {/* Street Upgrades button (session tech) */}
-      <Tooltip text="Temporary upgrades (reset on prestige). Costs cash + product.">
-        <button
-          onClick={() => setShowSessionTechMenu(true)}
-          className="flex items-center gap-1 hover:opacity-80 transition"
-        >
-          <span className="text-xl">🛠️</span>
-        </button>
-      </Tooltip>
-
       {/* Run Upgrades button (run tech) */}
       <Tooltip text="Run upgrades (persist until prestige reset). Costs dirty cash.">
         <button
@@ -143,6 +133,16 @@ export default function HUD() {
           className="flex items-center gap-1 hover:opacity-80 transition"
         >
           <span className="text-xl">🔧</span>
+        </button>
+      </Tooltip>
+
+      {/* Street Upgrades button (session tech) */}
+      <Tooltip text="Short-term boosts. Costs cash + product.">
+        <button
+          onClick={() => setShowSessionTechMenu(true)}
+          className="flex items-center gap-1 hover:opacity-80 transition"
+        >
+          <span className="text-xl">🛠️</span>
         </button>
       </Tooltip>
 
