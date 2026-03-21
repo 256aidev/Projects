@@ -6,25 +6,29 @@ import { formatUnits, formatMoney } from '../../engine/economy';
 import { HOUSE_TIERS, HQ_TIERS } from '../../data/houseDefs';
 import { sound } from '../../engine/sound';
 import Tooltip from '../ui/Tooltip';
+import {
+  ROOM_SPRITE_MAP, LegalDistroSprite, GarageCarSprite,
+  HouseSprite, BackyardSprite, HQSprite, WarehouseSprite,
+} from './OperationSprites';
 import type { GrowRoom } from '../../data/types';
 
 const BLOCK_W = 164;
 const BLOCK_H = 258;
 const ROAD_W = 22;
-const DOUBLE_H = BLOCK_H * 2 + ROAD_W; // spans 2 rows with road removed
+const DOUBLE_H = BLOCK_H * 2 + ROAD_W;
 
-/** Visual labels for each grow room type */
-const ROOM_VISUALS: Record<string, { emoji: string; label: string; bg: string; border: string }> = {
-  closet: { emoji: '🏠', label: "Grandma's House", bg: '#8B735530', border: '#8B7355' },
-  shed:   { emoji: '🏚️', label: 'The Shed',        bg: '#78716C30', border: '#78716C' },
-  garage: { emoji: '🔧', label: 'The Garage',      bg: '#CA8A0430', border: '#CA8A04' },
-  small_grow: { emoji: '🏭', label: 'Grow House',   bg: '#16A34A30', border: '#16A34A' },
-  grow_facility: { emoji: '🏗️', label: 'Grow Facility', bg: '#0EA5E930', border: '#0EA5E9' },
-  large_grow:    { emoji: '🏢', label: 'Large Grow',    bg: '#7C3AED30', border: '#7C3AED' },
+const ROOM_VISUALS: Record<string, { label: string; border: string }> = {
+  closet:        { label: "Grandma's House", border: '#8B7355' },
+  shed:          { label: 'The Shed',        border: '#78716C' },
+  garage:        { label: 'The Garage',      border: '#CA8A04' },
+  small_grow:    { label: 'Grow House',      border: '#16A34A' },
+  grow_facility: { label: 'Grow Facility',   border: '#0EA5E9' },
+  large_grow:    { label: 'Large Grow',      border: '#7C3AED' },
 };
 
 function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwned: boolean; room: GrowRoom | undefined }) {
-  const vis = ROOM_VISUALS[roomTypeId] ?? { emoji: '🏠', label: roomTypeId, bg: '#33333330', border: '#555' };
+  const vis = ROOM_VISUALS[roomTypeId] ?? { label: roomTypeId, border: '#555' };
+  const Sprite = ROOM_SPRITE_MAP[roomTypeId];
 
   if (!isOwned) {
     return (
@@ -43,25 +47,18 @@ function RoomBuilding({ roomTypeId, isOwned, room }: { roomTypeId: string; isOwn
   const readySlots = room?.slots?.filter(s => s.isHarvesting && s.ticksRemaining === 0).length ?? 0;
 
   return (
-    <div
-      className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden"
-      style={{ backgroundColor: vis.bg, borderColor: vis.border + '80' }}
-    >
-      <div
-        className="absolute inset-x-1 bottom-0 rounded-t-sm"
-        style={{
-          backgroundColor: vis.border + '40',
-          height: `${30 + (totalSlots * 15)}%`,
-        }}
-      />
-      <div className="relative z-10 flex flex-col items-center">
-        <span className="text-xl leading-none">{vis.emoji}</span>
-        <span className="text-[9px] font-bold text-white/90 text-center leading-tight">{vis.label}</span>
-        <span className="text-[8px] text-gray-400">
+    <div className="w-[72px] h-[78px] rounded-lg border-2 relative overflow-hidden"
+      style={{ borderColor: vis.border + '80' }}>
+      {/* SVG sprite background */}
+      {Sprite && <Sprite w={72} h={72} />}
+      {/* Overlay with text */}
+      <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+        <span className="text-[9px] font-bold text-white/90 text-center leading-tight drop-shadow">{vis.label}</span>
+        <span className="text-[8px] text-gray-300 drop-shadow">
           {activeSlots}/{totalSlots} growing
         </span>
         {readySlots > 0 && (
-          <span className="text-[8px] text-green-400 font-bold animate-pulse">
+          <span className="text-[8px] text-green-400 font-bold animate-pulse drop-shadow">
             {readySlots} READY!
           </span>
         )}
@@ -90,43 +87,38 @@ function HouseBuilding() {
           else addNotification(next ? `Need ${formatMoney(next.upgradeCost)} clean cash` : 'Already maxed!', 'warning');
         }}
         disabled={isMax}
-        className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden transition hover:brightness-110"
-        style={{ backgroundColor: '#F59E0B20', borderColor: isMax ? '#F59E0B' : '#F59E0B60' }}
+        className="w-[72px] h-[78px] rounded-lg border-2 relative overflow-hidden transition hover:brightness-110"
+        style={{ borderColor: isMax ? '#F59E0B' : '#F59E0B60' }}
       >
-        {isMax && <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />}
-        <span className="text-xl leading-none">{current.icon}</span>
-        <span className="text-[9px] font-bold text-amber-400 text-center leading-tight">{current.name}</span>
-        {isMax ? (
-          <span className="text-[7px] text-yellow-500 font-bold">MAX</span>
-        ) : (
-          <span className={`text-[7px] ${canAfford ? 'text-green-400' : 'text-gray-500'}`}>
-            {formatMoney(next.upgradeCost)}
-          </span>
-        )}
+        <HouseSprite w={72} h={72} level={houseLevel} />
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+          {isMax && <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />}
+          <span className="text-[9px] font-bold text-amber-400 text-center leading-tight drop-shadow">{current.name}</span>
+          {isMax ? (
+            <span className="text-[7px] text-yellow-500 font-bold drop-shadow">MAX</span>
+          ) : (
+            <span className={`text-[7px] drop-shadow ${canAfford ? 'text-green-400' : 'text-gray-400'}`}>
+              {formatMoney(next.upgradeCost)}
+            </span>
+          )}
+        </div>
       </button>
     </Tooltip>
   );
 }
 
-const BACKYARD_VISUALS = [
-  { icon: '🏚️', label: 'Empty Lot', desc: 'Dirt and weeds' },
-  { icon: '🌿', label: 'Small Yard', desc: 'Patch of grass' },
-  { icon: '🏊', label: 'Pool', desc: 'Pool & patio' },
-  { icon: '🏊', label: 'Big Pool', desc: 'Pool, garden & gazebo' },
-  { icon: '🌴', label: 'Estate Grounds', desc: 'Nature paradise' },
-];
-
 function HouseBackyard() {
   const houseLevel = useGameStore(s => s.houseLevel ?? 0);
-  const vis = BACKYARD_VISUALS[houseLevel];
+  const labels = ['Empty Lot', 'Small Yard', 'Pool', 'Big Pool', 'Estate Grounds'];
   return (
-    <div
-      className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden"
-      style={{ backgroundColor: '#16A34A15', borderColor: '#16A34A40' }}
-    >
-      <span className="text-xl leading-none">{vis.icon}</span>
-      <span className="text-[9px] font-bold text-green-400 text-center leading-tight">{vis.label}</span>
-      <span className="text-[8px] text-gray-500">{vis.desc}</span>
+    <div className="w-[72px] h-[78px] rounded-lg border-2 relative overflow-hidden"
+      style={{ borderColor: '#16A34A40' }}>
+      <BackyardSprite w={72} h={72} level={houseLevel} />
+      <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+        <span className="text-[9px] font-bold text-green-400 text-center leading-tight drop-shadow">
+          {labels[houseLevel]}
+        </span>
+      </div>
     </div>
   );
 }
@@ -151,19 +143,21 @@ function HQBuilding() {
           else addNotification(next ? `Need ${formatMoney(next.upgradeCost)} dirty cash` : 'Already maxed!', 'warning');
         }}
         disabled={isMax}
-        className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 relative overflow-hidden transition hover:brightness-110"
-        style={{ backgroundColor: '#6366F120', borderColor: isMax ? '#6366F1' : '#6366F160' }}
+        className="w-[72px] h-[78px] rounded-lg border-2 relative overflow-hidden transition hover:brightness-110"
+        style={{ borderColor: isMax ? '#6366F1' : '#6366F160' }}
       >
-        {isMax && <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />}
-        <span className="text-xl leading-none">{current.icon}</span>
-        <span className="text-[9px] font-bold text-indigo-400 text-center leading-tight">{current.name}</span>
-        {isMax ? (
-          <span className="text-[7px] text-indigo-400 font-bold">MAX</span>
-        ) : (
-          <span className={`text-[7px] ${canAfford ? 'text-green-400' : 'text-gray-500'}`}>
-            {formatMoney(next.upgradeCost)}
-          </span>
-        )}
+        <HQSprite w={72} h={72} level={hqLevel} />
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+          {isMax && <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />}
+          <span className="text-[9px] font-bold text-indigo-400 text-center leading-tight drop-shadow">{current.name}</span>
+          {isMax ? (
+            <span className="text-[7px] text-indigo-400 font-bold drop-shadow">MAX</span>
+          ) : (
+            <span className={`text-[7px] drop-shadow ${canAfford ? 'text-green-400' : 'text-gray-400'}`}>
+              {formatMoney(next.upgradeCost)}
+            </span>
+          )}
+        </div>
       </button>
     </Tooltip>
   );
@@ -213,12 +207,14 @@ export default function OperationsBlock() {
         {/* Large Garage — right of legal_distribution */}
         <button
           onClick={() => setPanel('cars')}
-          className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-gray-700/30 transition relative overflow-hidden"
-          style={{ backgroundColor: '#71717A20', borderColor: '#71717A60' }}
+          className="w-[72px] h-[78px] rounded-lg border-2 relative overflow-hidden hover:brightness-110 transition"
+          style={{ borderColor: '#71717A60' }}
         >
-          <span className="text-xl leading-none">🚗</span>
-          <span className="text-[9px] font-bold text-gray-300 text-center leading-tight">Large Garage</span>
-          <span className="text-[8px] text-gray-500">View Cars</span>
+          <GarageCarSprite w={72} h={72} />
+          <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+            <span className="text-[9px] font-bold text-gray-300 text-center leading-tight drop-shadow">Large Garage</span>
+            <span className="text-[8px] text-gray-400 drop-shadow">View Cars</span>
+          </div>
         </button>
 
         {/* Backyard — left side, upgrades with house */}
@@ -233,14 +229,16 @@ export default function OperationsBlock() {
         {/* Warehouse / Stash House — right of HQ */}
         <button
           onClick={() => setPanel('warehouse')}
-          className="w-[72px] h-[78px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 hover:bg-amber-900/20 transition relative overflow-hidden"
-          style={{ backgroundColor: '#92400E20', borderColor: '#92400E60' }}
+          className="w-[72px] h-[78px] rounded-lg border-2 relative overflow-hidden hover:brightness-110 transition"
+          style={{ borderColor: '#92400E60' }}
         >
-          <span className="text-xl leading-none">📦</span>
-          <span className="text-[9px] font-bold text-amber-400 text-center leading-tight">Warehouse</span>
-          <span className="text-[8px] text-gray-400">
-            {totalOz > 0 ? `${formatUnits(totalOz)} stored` : 'Empty'}
-          </span>
+          <WarehouseSprite w={72} h={72} />
+          <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+            <span className="text-[9px] font-bold text-amber-400 text-center leading-tight drop-shadow">Warehouse</span>
+            <span className="text-[8px] text-gray-300 drop-shadow">
+              {totalOz > 0 ? `${formatUnits(totalOz)} stored` : 'Empty'}
+            </span>
+          </div>
         </button>
       </div>
     </div>
