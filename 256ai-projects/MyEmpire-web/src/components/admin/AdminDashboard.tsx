@@ -14,6 +14,7 @@ export default function AdminDashboard() {
   const tuning = useTuningStore(s => s.tuning);
   const loaded = useTuningStore(s => s.loaded);
   const saving = useTuningStore(s => s.saving);
+  const error = useTuningStore(s => s.error);
   const setTuning = useTuningStore(s => s.set);
   const resetAll = useTuningStore(s => s.resetAll);
   const subscribe = useTuningStore(s => s.subscribe);
@@ -35,14 +36,6 @@ export default function AdminDashboard() {
     return map;
   }, [search]);
 
-  if (!loaded) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-950 text-gray-400">
-        Loading tuning config...
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
       <div className="max-w-4xl mx-auto">
@@ -50,7 +43,8 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-black text-amber-400">Game Tuning Dashboard</h1>
-            <p className="text-gray-500 text-sm">Adjust game parameters live. Changes apply to all players in real-time.</p>
+            <p className="text-gray-500 text-sm">Adjust game parameters live. Changes save to Firestore.</p>
+            {error && <p className="text-red-400 text-xs mt-1">Firestore: {error} — using local defaults</p>}
           </div>
           <div className="flex items-center gap-3">
             {saving && <span className="text-yellow-400 text-sm animate-pulse">Saving...</span>}
