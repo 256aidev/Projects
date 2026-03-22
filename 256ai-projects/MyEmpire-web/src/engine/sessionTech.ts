@@ -15,6 +15,12 @@ export interface SessionTechBonuses {
   floraBloomBonus: number;
   waterBonus: number;
   lightBonus: number;
+  // Run tech pass-through bonuses
+  dealerCutReduction: number;  // fraction to reduce dealer cut
+  bizIncome: number;           // fraction to boost business revenue
+  bizCapacity: number;         // fraction to boost launder capacity
+  lawyerPower: number;         // fraction to boost lawyer decay
+  crewDef: number;             // fraction to boost crew defense
 }
 
 /** Compute session tech bonuses from current upgrade levels */
@@ -32,5 +38,10 @@ export function getSessionTechBonuses(sessionTech: Record<SessionTechId, number>
     floraBloomBonus: (sessionTech.stech_flora_bloom ?? 0) * SESSION_TECH_MAP.stech_flora_bloom.effectPerLevel,
     waterBonus: (sessionTech.stech_water ?? 0) * SESSION_TECH_MAP.stech_water.effectPerLevel,
     lightBonus: (sessionTech.stech_light ?? 0) * SESSION_TECH_MAP.stech_light.effectPerLevel,
+    dealerCutReduction: 0,
+    bizIncome: 0,
+    bizCapacity: 0,
+    lawyerPower: 0,
+    crewDef: 0,
   };
 }

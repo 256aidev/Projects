@@ -23,7 +23,7 @@ export function tickRivalSystem(ts: TickState, ctx: TickContext): void {
       ts.dirtyCash,
       totalProductOz,
       ctx.prevState.businesses,
-      getPlayerDefense(ctx.prevState.crew ?? [], ctx.tech.crewDefenseBonus),
+      Math.floor(getPlayerDefense(ctx.prevState.crew ?? [], ctx.tech.crewDefenseBonus) * (1 + (ctx.sessionTech.crewDef ?? 0))),
       ts.tickCount,
       ctx.prevState.unlockedSlots,
     );

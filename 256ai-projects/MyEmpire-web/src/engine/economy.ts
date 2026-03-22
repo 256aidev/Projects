@@ -70,7 +70,7 @@ export function getRoomCycleCost(room: GrowRoom): number {
 
 // ─── CRIMINAL OPERATION ───────────────────────────
 
-export function tickCriminalOperation(op: CriminalOperation, tech?: TechBonuses): {
+export function tickCriminalOperation(op: CriminalOperation, tech?: TechBonuses, dealerCutReduction = 0): {
   newOp: CriminalOperation;
   dirtyEarned: number;
   maintenanceCost: number;
@@ -84,7 +84,7 @@ export function tickCriminalOperation(op: CriminalOperation, tech?: TechBonuses)
   if (op.dealerCount > 0 && totalOz > 0) {
     const dealerMult = tech?.dealerMultiplier ?? 1;
     const unitsSold = Math.min(totalOz, dealerTier.salesRatePerTick * op.dealerCount * dealerMult);
-    const cutCost = unitsSold * (dealerTier.cutPer8oz / 8);
+    const cutCost = unitsSold * (dealerTier.cutPer8oz / 8) * (1 - dealerCutReduction);
     let saleValue = 0;
     for (const strainName of Object.keys(newProductInventory)) {
       const entry = newProductInventory[strainName];

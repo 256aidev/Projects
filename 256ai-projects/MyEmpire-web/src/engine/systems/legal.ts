@@ -17,7 +17,7 @@ export function tickLegalSystem(ts: TickState, ctx: TickContext): void {
     const def = LAWYER_MAP[hired.defId];
     if (!def) continue;
     totalRetainer += def.monthlyRetainer * hired.count;
-    totalLawyerDecay += def.heatDecayBonus * hired.count;
+    totalLawyerDecay += def.heatDecayBonus * hired.count * (1 + (ctx.sessionTech.lawyerPower ?? 0));
   }
 
   // Pay retainer — if can't afford, keep what we can

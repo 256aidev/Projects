@@ -141,9 +141,27 @@ export const useGameStore = create<GameStore>()(
           const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
           const sTech = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
           const runTech = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
-          const carBonus = getCarBonuses(state.cars ?? []);
+          const carBonusRaw = getCarBonuses(state.cars ?? []);
+          const carAmp = 1 + runTech.carBoost;
+          const carBonus = {
+            heatReduction: carBonusRaw.heatReduction * carAmp,
+            growSpeed: carBonusRaw.growSpeed * carAmp,
+            dealerBoost: carBonusRaw.dealerBoost * carAmp,
+            incomeMultiplier: carBonusRaw.incomeMultiplier * carAmp,
+            launderBoost: carBonusRaw.launderBoost * carAmp,
+            streetDemand: carBonusRaw.streetDemand * carAmp,
+          };
           const crewBonus = getCrewBonuses(state.crew ?? []);
-          const jewBonus = getJewelryBonuses(state.jewelry ?? []);
+          const jewBonusRaw = getJewelryBonuses(state.jewelry ?? []);
+          const jewAmp = 1 + runTech.jewelryValue;
+          const jewBonus = {
+            prestigeSpeed: jewBonusRaw.prestigeSpeed * jewAmp,
+            hitmanDiscount: jewBonusRaw.hitmanDiscount * jewAmp,
+            operationDiscount: jewBonusRaw.operationDiscount * jewAmp,
+            yieldBoost: jewBonusRaw.yieldBoost * jewAmp,
+            heatDecay: jewBonusRaw.heatDecay * jewAmp,
+            launderBoost: jewBonusRaw.launderBoost * jewAmp,
+          };
           const effectiveTech = {
             ...tech,
             yieldBonus: tech.yieldBonus + sTech.yieldBonus + tech.floraMicroBonus + sTech.floraMicroBonus + jewBonus.yieldBoost + runTech.yieldBonus + runTech.harvestSize,
@@ -158,7 +176,7 @@ export const useGameStore = create<GameStore>()(
           const ctx: TickContext = {
             prevState: state,
             tech: effectiveTech,
-            sessionTech: { ...sTech, demandBonus: sTech.demandBonus + runTech.demandBonus, seedDiscount: sTech.seedDiscount + runTech.seedDiscount },
+            sessionTech: { ...sTech, demandBonus: sTech.demandBonus + runTech.demandBonus, seedDiscount: sTech.seedDiscount + runTech.seedDiscount, dealerCutReduction: runTech.dealerCutReduction, bizIncome: runTech.bizIncome, bizCapacity: runTech.bizCapacity, lawyerPower: runTech.lawyerPower, crewDef: runTech.crewDef },
             carBonuses: carBonus,
             jewelryBonuses: jewBonus,
             gameSpeed: useUIStore.getState().gameSpeed,

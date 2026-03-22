@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import type { GameState } from '../data/types';
 import { INITIAL_GAME_STATE } from '../data/types';
 import { getDifficultyMultiplier } from '../engine/difficulty';
+import { getRunTechBonuses, INITIAL_RUN_TECH } from '../data/runTechDefs';
 
 const SAVE_VERSION = 4;
 
@@ -69,7 +70,8 @@ export async function updateLeaderboardEntry(
   const diffMultiplier = settings
     ? getDifficultyMultiplier(settings.rivalCount, settings.rivalEntryDelay)
     : 1;
-  const score = Math.floor(baseScore * diffMultiplier);
+  const runTech = getRunTechBonuses((gs as any).runTechUpgrades ?? INITIAL_RUN_TECH);
+  const score = Math.floor(baseScore * diffMultiplier * (1 + runTech.xpBoost));
 
   const ref = doc(db, 'leaderboard', uid);
   await setDoc(ref, {

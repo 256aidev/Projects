@@ -1,5 +1,7 @@
 import type { GameState, GeneratedBlock } from '../../data/types';
 import { DISTRICTS, DISTRICT_MAP } from '../../data/districts';
+import { getRunTechBonuses } from '../../data/runTechDefs';
+import { INITIAL_RUN_TECH } from '../../data/runTechDefs';
 
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
 type GetState = () => GameState;
@@ -49,7 +51,8 @@ export function createTerritoryActions(set: SetState, get: GetState) {
       if (currentUnlocked >= maxSlots) return false;
       // Linear lot pricing: baseCost × (slot+1) — starter: $1K, $2K, $3K...
       const baseCost = district?.lotBaseCost ?? 2000;
-      const cost = baseCost * (currentUnlocked + 1);
+      const runTech = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
+      const cost = Math.floor(baseCost * (currentUnlocked + 1) * (1 - runTech.lotDiscount));
       if (state.cleanCash < cost) return false;
       const slotKey = `${districtId}:${currentUnlocked}`;
       set({

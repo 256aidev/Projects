@@ -47,7 +47,7 @@ export function tickBusinessesSystem(ts: TickState, ctx: TickContext): void {
       const { dirtyConsumed, cleanProduced } = calculateLaunderTick(
         biz,
         ts.dirtyCash - totalDirtyConsumed,
-        ctx.tech.launderMultiplier * (1 + ctx.carBonuses.launderBoost),
+        ctx.tech.launderMultiplier * (1 + ctx.carBonuses.launderBoost) * (1 + (ctx.sessionTech.bizCapacity ?? 0)),
       );
       totalDirtyConsumed += dirtyConsumed;
       totalCleanProduced += cleanProduced;
@@ -57,7 +57,7 @@ export function tickBusinessesSystem(ts: TickState, ctx: TickContext): void {
       const { dirtyConsumed, cleanProduced } = calculateLaunderTick(
         biz,
         ts.dirtyCash - totalDirtyConsumed,
-        ctx.tech.launderMultiplier * (1 + ctx.carBonuses.launderBoost),
+        ctx.tech.launderMultiplier * (1 + ctx.carBonuses.launderBoost) * (1 + (ctx.sessionTech.bizCapacity ?? 0)),
       );
       totalDirtyConsumed += dirtyConsumed;
       totalCleanProduced += cleanProduced;
@@ -78,6 +78,8 @@ export function tickBusinessesSystem(ts: TickState, ctx: TickContext): void {
   }
 
   ts.operation = finalOp;
+  // Apply run tech bizIncome bonus to clean cash produced
+  totalCleanProduced = Math.floor(totalCleanProduced * (1 + (ctx.sessionTech.bizIncome ?? 0)));
   ts.cleanProduced = totalCleanProduced;
   ts.legitProfit = totalRevenue - totalExpenses;
 

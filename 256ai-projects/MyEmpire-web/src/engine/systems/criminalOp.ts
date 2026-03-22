@@ -10,6 +10,7 @@ export function tickCriminalOpSystem(ts: TickState, ctx: TickContext): void {
   const { newOp, dirtyEarned: rawDirtyEarned, maintenanceCost } = tickCriminalOperation(
     ctx.prevState.operation,
     ctx.tech,
+    ctx.sessionTech.dealerCutReduction,
   );
 
   const crewBonuses = getCrewBonuses(ctx.prevState.crew ?? []);

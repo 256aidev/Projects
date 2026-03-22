@@ -3,6 +3,7 @@ import { RIVAL_ACTIONS } from '../../data/types';
 import { CREW_MAP, getCrewAttack, getCrewBonuses } from '../../data/crewDefs';
 import { getTechBonuses } from '../../engine/tech';
 import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
+import { getRunTechBonuses, INITIAL_RUN_TECH } from '../../data/runTechDefs';
 
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
 type GetState = () => GameState;
@@ -14,7 +15,8 @@ export function createCombatActions(set: SetState, get: GetState) {
       const def = CREW_MAP[defId];
       const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
       const crewBonuses = getCrewBonuses(state.crew ?? []);
-      const discountedCost = Math.floor(def.cost * (1 - tech.crewDiscount) * (1 - crewBonuses.costReduction));
+      const runTech = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
+      const discountedCost = Math.floor(def.cost * (1 - tech.crewDiscount) * (1 - crewBonuses.costReduction) * (1 - runTech.crewCost));
       if (!def || state.dirtyCash < discountedCost) return false;
       const existing = state.crew.find(h => h.defId === defId);
       if (existing && existing.count >= def.maxCount) return false;
@@ -67,9 +69,10 @@ export function createCombatActions(set: SetState, get: GetState) {
         }
       }
 
-      // Calculate success chance (with tech bonuses)
+      // Calculate success chance (with tech bonuses + run tech)
       const techBonuses = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
-      const playerAttack = getCrewAttack(state.crew, techBonuses.crewAttackBonus);
+      const runTechBonuses = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
+      const playerAttack = Math.floor(getCrewAttack(state.crew, techBonuses.crewAttackBonus) * (1 + runTechBonuses.crewAtk));
       const rivalDefense = rival.hitmen * 15;
       const powerRatio = Math.min(2, playerAttack / Math.max(1, rivalDefense));
 
@@ -92,6 +95,7 @@ export function createCombatActions(set: SetState, get: GetState) {
       let message: string = '';
       let playerHitmenLost = 0;
 
+      const weakMult = 1 + runTechBonuses.rivalWeak; // run tech: Intelligence Network
       const updatedRivals = state.rivals.map(r => {
         if (r.id !== rivalId) return r;
         const weakness = r.weakness ?? 0;
@@ -110,12 +114,12 @@ export function createCombatActions(set: SetState, get: GetState) {
           case 'rob': {
             const stolen = Math.min(r.dirtyCash, 2000 + Math.floor(Math.random() * 8000));
             message = `Robbed ${rival.name} for $${stolen.toLocaleString()}!`;
-            return { ...r, dirtyCash: r.dirtyCash - stolen, aggression: Math.min(1, r.aggression + 0.15), weakness: Math.min(100, weakness + 3) };
+            return { ...r, dirtyCash: r.dirtyCash - stolen, aggression: Math.min(1, r.aggression + 0.15), weakness: Math.min(100, weakness + 3 * weakMult) };
           }
           case 'raid': {
             const stolenOz = Math.min(r.productOz, 5 + Math.floor(Math.random() * 20));
             message = `Raided ${rival.name} — stole ${stolenOz} oz!`;
-            return { ...r, productOz: r.productOz - stolenOz, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.min(100, weakness + 4) };
+            return { ...r, productOz: r.productOz - stolenOz, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.min(100, weakness + 4 * weakMult) };
           }
           case 'sabotage': {
             if (r.businesses.length === 0) {
@@ -127,7 +131,7 @@ export function createCombatActions(set: SetState, get: GetState) {
             message = `Sabotaged ${rival.name}'s business! (-50% health)`;
             const updated = [...r.businesses];
             updated[idx] = { ...biz, health: Math.max(0, biz.health - 50) };
-            return { ...r, businesses: updated.filter(b => b.health > 0), aggression: Math.min(1, r.aggression + 0.25), weakness: Math.min(100, weakness + 6) };
+            return { ...r, businesses: updated.filter(b => b.health > 0), aggression: Math.min(1, r.aggression + 0.25), weakness: Math.min(100, weakness + 6 * weakMult) };
           }
           case 'arson': {
             const active = r.businesses.filter(b => !b.burnedAtTick);
@@ -140,7 +144,7 @@ export function createCombatActions(set: SetState, get: GetState) {
             const updated = r.businesses.map(b =>
               b === target ? { ...b, burnedAtTick: state.tickCount, health: 0 } : b
             );
-            return { ...r, businesses: updated, aggression: Math.min(1, r.aggression + 0.3), weakness: Math.min(100, weakness + 10) };
+            return { ...r, businesses: updated, aggression: Math.min(1, r.aggression + 0.3), weakness: Math.min(100, weakness + 10 * weakMult) };
           }
           case 'hit': {
             if (r.hitmen <= 0) {
@@ -148,7 +152,7 @@ export function createCombatActions(set: SetState, get: GetState) {
               return r;
             }
             message = `Took out one of ${rival.name}'s hitmen! (${r.hitmen - 1} remaining)`;
-            return { ...r, hitmen: r.hitmen - 1, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.min(100, weakness + 7) };
+            return { ...r, hitmen: r.hitmen - 1, aggression: Math.min(1, r.aggression + 0.2), weakness: Math.min(100, weakness + 7 * weakMult) };
           }
           case 'assassinate': {
             message = `☠️ ${rival.name} has been eliminated! Their empire crumbles.`;

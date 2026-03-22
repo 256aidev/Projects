@@ -1,6 +1,7 @@
 import type { GameState } from '../../data/types';
 import { JEWELRY_DEF_MAP, JEWELRY_SLOT_LIMITS } from '../../data/jewelryDefs';
 import { CAR_DEF_MAP } from '../../data/carDefs';
+import { getRunTechBonuses, INITIAL_RUN_TECH } from '../../data/runTechDefs';
 
 type SetState = (partial: Partial<GameState> | ((state: GameState) => Partial<GameState>)) => void;
 type GetState = () => GameState;
@@ -11,9 +12,11 @@ export function createLuxuryActions(set: SetState, get: GetState) {
     settleCasinoBet: (betAmount: number, grossPayout: number) => {
       // Use set() updater to avoid race with tick system
       set((state) => {
+        const runTech = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
+        const boostedPayout = grossPayout > 0 ? Math.floor(grossPayout * (1 + runTech.casinoLuck)) : 0;
         const dirtyAfterBet = Math.max(0, state.dirtyCash - betAmount);
-        const taxAmount = grossPayout > 0 ? Math.floor(grossPayout * 0.15) : 0;
-        const cleanWon = Math.max(0, grossPayout - taxAmount);
+        const taxAmount = boostedPayout > 0 ? Math.floor(boostedPayout * 0.15) : 0;
+        const cleanWon = Math.max(0, boostedPayout - taxAmount);
         const history = state.casinoHistory ?? { totalGambled: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0 };
         console.log(`[Casino] bet=${betAmount} gross=${grossPayout} tax=${taxAmount} cleanWon=${cleanWon} dirtyBefore=${state.dirtyCash} dirtyAfter=${dirtyAfterBet} cleanBefore=${state.cleanCash}`);
         return {
