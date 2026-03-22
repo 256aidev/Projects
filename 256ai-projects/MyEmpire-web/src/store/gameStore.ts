@@ -146,9 +146,9 @@ export const useGameStore = create<GameStore>()(
           const jewBonus = getJewelryBonuses(state.jewelry ?? []);
           const effectiveTech = {
             ...tech,
-            yieldBonus: tech.yieldBonus + sTech.yieldBonus + tech.floraMicroBonus + sTech.floraMicroBonus + jewBonus.yieldBoost + runTech.yieldBonus,
+            yieldBonus: tech.yieldBonus + sTech.yieldBonus + tech.floraMicroBonus + sTech.floraMicroBonus + jewBonus.yieldBoost + runTech.yieldBonus + runTech.harvestSize,
             speedBonus: tech.speedBonus + sTech.speedBonus + carBonus.growSpeed + tech.floraGroBonus + tech.waterBonus + tech.lightBonus + sTech.floraGroBonus + sTech.waterBonus + sTech.lightBonus + runTech.speedBonus,
-            doubleChance: tech.doubleChance + tech.floraBloomBonus + sTech.floraBloomBonus,
+            doubleChance: tech.doubleChance + tech.floraBloomBonus + sTech.floraBloomBonus + runTech.doubleChance,
             dealerMultiplier: tech.dealerMultiplier * sTech.dealerMultiplier * (1 + crewBonus.dealerBoost) * runTech.dealerMultiplier,
             launderMultiplier: tech.launderMultiplier * sTech.launderMultiplier * (1 + crewBonus.launderBoost) * (1 + jewBonus.launderBoost) * runTech.launderMultiplier,
             heatReduction: tech.heatReduction + sTech.heatReduction + crewBonus.heatReduction + jewBonus.heatDecay + runTech.heatReduction,
