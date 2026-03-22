@@ -84,6 +84,14 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     bpm: 85,
     mood: 'Chill',
   },
+  {
+    id: 'black_grid_protocol',
+    name: 'Black Grid Protocol',
+    description: 'Dark tech industrial. 10 min of machine warfare.',
+    path: '/sounds/black_grid_protocol.wav',
+    bpm: 136,
+    mood: 'Dark',
+  },
 ];
 
 export const MUSIC_TRACK_MAP = Object.fromEntries(MUSIC_TRACKS.map(t => [t.id, t]));
