@@ -221,6 +221,13 @@ class SoundEngine {
     savePlaylistPrefs(this.playlistPrefs);
   }
 
+  /** Set auto-switch interval in minutes (1-20) */
+  setRotationMinutes(mins: number) {
+    this.playlistPrefs.rotationMinutes = Math.max(1, Math.min(20, Math.round(mins)));
+    savePlaylistPrefs(this.playlistPrefs);
+    this.resetRotationTimer();
+  }
+
   /** Play a specific track immediately */
   playTrack(trackId: string) {
     const track = MUSIC_TRACKS.find(t => t.id === trackId);
@@ -259,7 +266,7 @@ class SoundEngine {
       if (this.getEnabledTracks().length > 1) {
         this.nextTrack();
       }
-    }, TRACK_ROTATION_MS);
+    }, (this.playlist.rotationMinutes ?? 10) * 60 * 1000);
   }
 
   /** Start looping background music. Call once after first user interaction. */

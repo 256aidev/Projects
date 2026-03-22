@@ -97,6 +97,7 @@ export interface PlaylistPrefs {
   enabledTracks: string[];  // track IDs that are enabled
   order: string[];          // custom order
   shuffle: boolean;
+  rotationMinutes: number;  // auto-switch interval in minutes (1-20)
 }
 
 export function loadPlaylistPrefs(): PlaylistPrefs {
@@ -108,6 +109,7 @@ export function loadPlaylistPrefs(): PlaylistPrefs {
         enabledTracks: parsed.enabledTracks ?? MUSIC_TRACKS.map(t => t.id),
         order: parsed.order ?? MUSIC_TRACKS.map(t => t.id),
         shuffle: parsed.shuffle ?? false,
+        rotationMinutes: parsed.rotationMinutes ?? 10,
       };
     }
   } catch {}
@@ -115,6 +117,7 @@ export function loadPlaylistPrefs(): PlaylistPrefs {
     enabledTracks: MUSIC_TRACKS.map(t => t.id),
     order: MUSIC_TRACKS.map(t => t.id),
     shuffle: false,
+    rotationMinutes: 10,
   };
 }
 

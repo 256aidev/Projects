@@ -77,7 +77,20 @@ export default function MusicMenu({ onClose }: Props) {
           >
             {playlist.shuffle ? '🔀 Shuffle ON' : '🔀 Shuffle'}
           </button>
-          <span className="text-gray-600 text-xs">Auto-switches every 10 min</span>
+        </div>
+
+        {/* Auto-switch interval */}
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-gray-400 text-xs whitespace-nowrap">Auto-switch</span>
+          <input
+            type="range"
+            min="1"
+            max="20"
+            value={playlist.rotationMinutes ?? 10}
+            onChange={e => { sound.setRotationMinutes(parseInt(e.target.value)); refresh(); }}
+            className="flex-1 accent-purple-500"
+          />
+          <span className="text-white text-xs w-12 text-right">{playlist.rotationMinutes ?? 10} min</span>
         </div>
 
         {/* Volume */}
