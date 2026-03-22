@@ -24,8 +24,10 @@ export function tickLegalSystem(ts: TickState, ctx: TickContext): void {
   if (totalRetainer > 0) {
     if (ts.cleanCash >= totalRetainer) {
       ts.cleanCash -= totalRetainer;
+      ts.lawyerRetainer = totalRetainer;
     } else {
       // Can't afford full retainer — still deduct what we have but reduce effectiveness
+      ts.lawyerRetainer = ts.cleanCash;
       ts.cleanCash = 0;
       totalLawyerDecay *= 0.5; // half effectiveness when behind on payments
     }
