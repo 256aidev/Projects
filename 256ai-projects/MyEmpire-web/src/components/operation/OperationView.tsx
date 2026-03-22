@@ -294,9 +294,9 @@ export default function OperationView() {
             const isMaxLevel = !hasNextSlot;
 
             const totalYieldBonus = getRoomBonus(room, 'yield') + prestigeBonus + jewelryBonuses.yieldBoost
-              + (tech?.yieldBonus ?? 0) + (runTech?.yieldBonus ?? 0) + (sessionTech?.yieldBonus ?? 0);
+              + (tech?.yieldBonus ?? 0) + (runTech?.yieldBonus ?? 0) + (runTech?.harvestSize ?? 0) + (sessionTech?.yieldBonus ?? 0);
             const totalSpeedBonus = getRoomBonus(room, 'speed') + (tech?.speedBonus ?? 0) + (runTech?.speedBonus ?? 0) + (sessionTech?.speedBonus ?? 0) + carBonuses.growSpeed;
-            const totalDoubleChance = getRoomBonus(room, 'double') + (tech?.doubleChance ?? 0);
+            const totalDoubleChance = getRoomBonus(room, 'double') + (tech?.doubleChance ?? 0) + (runTech?.doubleChance ?? 0) + (sessionTech?.floraBloomBonus ?? 0);
             const maintenancePerCycle = getRoomCycleCost(room);
             const upgMult = def?.upgradeCostMultiplier ?? 1;
 
