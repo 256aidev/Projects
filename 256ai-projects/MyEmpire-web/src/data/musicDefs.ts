@@ -121,9 +121,19 @@ export function loadPlaylistPrefs(): PlaylistPrefs {
     const raw = localStorage.getItem(PLAYLIST_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      const enabled: string[] = parsed.enabledTracks ?? MUSIC_TRACKS.map(t => t.id);
+      const order: string[] = parsed.order ?? MUSIC_TRACKS.map(t => t.id);
+      // Merge in any new tracks that weren't in the saved playlist
+      const allIds = MUSIC_TRACKS.map(t => t.id);
+      for (const id of allIds) {
+        if (!order.includes(id)) order.push(id);
+        if (!enabled.includes(id)) enabled.push(id);
+      }
+      // Remove stale IDs no longer in MUSIC_TRACKS
+      const validIds = new Set(allIds);
       return {
-        enabledTracks: parsed.enabledTracks ?? MUSIC_TRACKS.map(t => t.id),
-        order: parsed.order ?? MUSIC_TRACKS.map(t => t.id),
+        enabledTracks: enabled.filter(id => validIds.has(id)),
+        order: order.filter(id => validIds.has(id)),
         shuffle: parsed.shuffle ?? false,
         rotationMinutes: parsed.rotationMinutes ?? 10,
       };
