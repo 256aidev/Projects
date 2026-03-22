@@ -22,10 +22,10 @@ function seedWarningClass(seeds: number): string {
   return 'text-gray-400';
 }
 
-function seedPrice(qty: number): number {
+function seedPrice(qty: number, seedDiscount = 0): number {
   const base = INITIAL_OPERATION.seedCostPerUnit;
-  const discount = qty >= 30000 ? 3 : qty >= 20000 ? 2 : qty >= 10000 ? 1 : 0;
-  return base - discount;
+  const bulkDiscount = qty >= 30000 ? 3 : qty >= 20000 ? 2 : qty >= 10000 ? 1 : 0;
+  return Math.max(1, Math.floor((base - bulkDiscount) * (1 - seedDiscount)));
 }
 
 export default function OperationView() {
@@ -170,7 +170,7 @@ export default function OperationView() {
             <p className="text-white font-semibold text-xs">Seeds <span className={`font-normal ${seedWarningClass(op.seedStock)}`}>{op.seedStock} in stock · {formatMoney(INITIAL_OPERATION.seedCostPerUnit)}/seed</span></p>
             <span className="text-lg">🌱</span>
           </div>
-          <SeedButtons buySeed={buySeed} dirtyCash={dirtyCash} addNotification={addNotification} />
+          <SeedButtons buySeed={buySeed} dirtyCash={dirtyCash} addNotification={addNotification} seedDiscount={(sessionTech?.seedDiscount ?? 0) + (runTech?.seedDiscount ?? 0)} />
         </div>
 
         <div className="w-px bg-gray-700 self-stretch" />
@@ -524,16 +524,17 @@ export default function OperationView() {
   );
 }
 
-function SeedButtons({ buySeed, dirtyCash, addNotification }: {
+function SeedButtons({ buySeed, dirtyCash, addNotification, seedDiscount = 0 }: {
   buySeed: (qty: number) => boolean;
   dirtyCash: number;
   addNotification: (msg: string, type: 'success' | 'warning' | 'error') => void;
+  seedDiscount?: number;
 }) {
   const [customQty, setCustomQty] = useState('');
   const [showCustom, setShowCustom] = useState(false);
 
   const handleBuy = (qty: number) => {
-    const price = seedPrice(qty);
+    const price = seedPrice(qty, seedDiscount);
     const cost = price * qty;
     if (buySeed(qty)) {
       sound.play('buy');
@@ -556,7 +557,7 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
       {rows.map((row, rowIdx) => (
         <div key={rowIdx} className={`flex gap-1.5 ${rowIdx > 0 ? 'mt-1' : ''}`}>
           {row.map((qty) => {
-            const cost = seedPrice(qty) * qty;
+            const cost = seedPrice(qty, seedDiscount) * qty;
             const canAfford = dirtyCash >= cost;
             return (
               <Tooltip key={qty} text={`Buy ${fmtQty(qty)} seed${qty > 1 ? 's' : ''} for planting.${qty >= 10000 ? ' Bulk discount applied!' : ''}`}>
@@ -578,10 +579,10 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
       {/* Row 3: bulk discount tiers + custom */}
       <div className="flex gap-1.5 mt-1">
         {[20000, 30000].map((qty) => {
-          const cost = seedPrice(qty) * qty;
+          const cost = seedPrice(qty, seedDiscount) * qty;
           const canAfford = dirtyCash >= cost;
           return (
-            <Tooltip key={qty} text={`Buy ${fmtQty(qty)} seeds. Bulk discount: $${INITIAL_OPERATION.seedCostPerUnit - seedPrice(qty)} off per seed!`}>
+            <Tooltip key={qty} text={`Buy ${fmtQty(qty)} seeds. Bulk discount: $${INITIAL_OPERATION.seedCostPerUnit - seedPrice(qty, seedDiscount)} off per seed!`}>
             <button
               onClick={() => handleBuy(qty)}
               disabled={!canAfford}
@@ -615,7 +616,7 @@ function SeedButtons({ buySeed, dirtyCash, addNotification }: {
           />
           {(() => {
             const qty = Math.max(0, Math.floor(Number(customQty) || 0));
-            const cost = qty > 0 ? seedPrice(qty) * qty : 0;
+            const cost = qty > 0 ? seedPrice(qty, seedDiscount) * qty : 0;
             const canAfford = qty > 0 && dirtyCash >= cost;
             return (
               <button
