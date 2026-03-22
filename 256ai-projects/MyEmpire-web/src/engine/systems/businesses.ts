@@ -78,10 +78,12 @@ export function tickBusinessesSystem(ts: TickState, ctx: TickContext): void {
   }
 
   ts.operation = finalOp;
-  // Apply run tech bizIncome bonus to clean cash produced
-  totalCleanProduced = Math.floor(totalCleanProduced * (1 + (ctx.sessionTech.bizIncome ?? 0)));
+  // Apply run tech bizIncome bonus to all business income (laundering + legit)
+  const bizIncomeBonus = 1 + (ctx.sessionTech.bizIncome ?? 0);
+  totalCleanProduced = Math.floor(totalCleanProduced * bizIncomeBonus);
+  const boostedRevenue = Math.floor(totalRevenue * bizIncomeBonus);
   ts.cleanProduced = totalCleanProduced;
-  ts.legitProfit = totalRevenue - totalExpenses;
+  ts.legitProfit = boostedRevenue - totalExpenses;
 
   // Store intermediate values for cashFlow system via closure-free approach:
   // We temporarily stash totalDirtyConsumed in dirtyCash adjustment
