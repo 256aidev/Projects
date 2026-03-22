@@ -76,6 +76,14 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     bpm: 105,
     mood: 'Upbeat',
   },
+  {
+    id: 'chill_sunset',
+    name: 'Chill Sunset',
+    description: 'Rhodes keys over a warm lo-fi groove. 3 min journey.',
+    path: '/sounds/chill_sunset.wav',
+    bpm: 85,
+    mood: 'Chill',
+  },
 ];
 
 export const MUSIC_TRACK_MAP = Object.fromEntries(MUSIC_TRACKS.map(t => [t.id, t]));
