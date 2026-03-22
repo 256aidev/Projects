@@ -41,8 +41,6 @@ import AccountScreen from './components/auth/AccountScreen';
 import LeaderboardView from './components/ui/LeaderboardView';
 import StartGameScreen from './components/ui/StartGameScreen';
 import TechMenu from './components/tech/TechMenu';
-import SessionTechMenu from './components/tech/SessionTechMenu';
-import RunTechMenu from './components/tech/RunTechMenu';
 import PrestigeConfirmModal from './components/tech/PrestigeConfirmModal';
 import CasinoView from './components/casino/CasinoView';
 import JewelryStoreView from './components/jewelry/JewelryStoreView';
@@ -178,9 +176,7 @@ export default function App() {
 
       <Notifications />
       {showAccountScreen && <AccountScreen />}
-      {showTechMenu && <TechMenu />}
-      {showSessionTechMenu && <SessionTechMenu />}
-      {showRunTechMenu && <RunTechMenu />}
+      {(showTechMenu || showSessionTechMenu || showRunTechMenu) && <TechMenu />}
       {showPrestigeConfirm && <PrestigeConfirmModal />}
       {showCasino && <CasinoView />}
       {showJewelryStore && <JewelryStoreView />}
