@@ -92,6 +92,14 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     bpm: 136,
     mood: 'Dark',
   },
+  {
+    id: 'red_protocol',
+    name: 'Red Protocol',
+    description: 'Aggressive dark tech. 10 min system meltdown. 138-150 BPM.',
+    path: '/sounds/red_protocol.wav',
+    bpm: 144,
+    mood: 'Aggressive',
+  },
 ];
 
 export const MUSIC_TRACK_MAP = Object.fromEntries(MUSIC_TRACKS.map(t => [t.id, t]));
