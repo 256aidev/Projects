@@ -4,6 +4,8 @@ import { harvestSlot, getMaxStreetDemand, getStreetSellHeat, getRoomBonus } from
 import { getCarBonuses } from '../../data/carDefs';
 import { getTechBonuses } from '../../engine/tech';
 import { INITIAL_TECH_UPGRADES } from '../../data/techDefs';
+import { getRunTechBonuses } from '../../data/runTechDefs';
+import { INITIAL_RUN_TECH } from '../../data/runTechDefs';
 import { INITIAL_SESSION_TECH } from '../../data/sessionTechDefs';
 import { getSessionTechBonuses } from '../../engine/sessionTech';
 import { INITIAL_RUN_TECH, getRunTechBonuses } from '../../data/runTechDefs';
@@ -30,10 +32,12 @@ export function createOperationActions(set: SetState, get: GetState) {
       const state = get();
       const tech = getTechBonuses(state.techUpgrades ?? INITIAL_TECH_UPGRADES);
       const sTech2 = getSessionTechBonuses(state.sessionTechUpgrades ?? INITIAL_SESSION_TECH);
+      const runTech = getRunTechBonuses(state.runTechUpgrades ?? INITIAL_RUN_TECH);
       const combinedTech = {
         ...tech,
-        yieldBonus: tech.yieldBonus + sTech2.yieldBonus,
-        speedBonus: tech.speedBonus + sTech2.speedBonus,
+        yieldBonus: tech.yieldBonus + sTech2.yieldBonus + runTech.yieldBonus + runTech.harvestSize,
+        speedBonus: tech.speedBonus + sTech2.speedBonus + runTech.speedBonus,
+        doubleChance: tech.doubleChance + sTech2.floraBloomBonus + runTech.doubleChance,
       };
       const { newOp, unitsHarvested, cycleCost, speedBonus } = harvestSlot(state.operation, roomId, slotIndex, combinedTech);
       if (unitsHarvested > 0) {
