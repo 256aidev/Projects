@@ -117,7 +117,8 @@ export function tickCriminalOperation(op: CriminalOperation, tech?: TechBonuses)
       // ticksRemaining === 1: reaches 0 this tick
       if (slot.ticksRemaining === 1) {
         if (isAutoHarvest && newSeedStock > 0) {
-          const baseUnits = Math.floor(slot.harvestYield * (1 + yieldBonus));
+          const capacityExtra = (tech?.capacityBonus ?? 0) * (slot.harvestYield / slot.plantsCapacity);
+          const baseUnits = Math.floor((slot.harvestYield + capacityExtra) * (1 + yieldBonus));
           const doubled = doubleChance > 0 && Math.random() < doubleChance;
           const harvestedUnits = doubled ? baseUnits * 2 : baseUnits;
           if (!autoHarvestedByStrain[slot.strainName]) {
@@ -177,7 +178,8 @@ export function harvestSlot(op: CriminalOperation, roomId: string, slotIndex: nu
   // Always use canonical yield from def (saved state may be stale)
   const def = GROW_ROOM_TYPE_MAP[room.typeId];
   const canonicalYield = def?.strainSlots[slotIndex]?.harvestYield ?? slot.harvestYield;
-  const baseUnits = Math.floor(canonicalYield * (1 + yieldBonus));
+  const capacityExtra = (tech?.capacityBonus ?? 0) * (canonicalYield / (slot.plantsCapacity || 1));
+  const baseUnits = Math.floor((canonicalYield + capacityExtra) * (1 + yieldBonus));
   const doubled = doubleChance > 0 && Math.random() < doubleChance;
   const unitsHarvested = doubled ? baseUnits * 2 : baseUnits;
 

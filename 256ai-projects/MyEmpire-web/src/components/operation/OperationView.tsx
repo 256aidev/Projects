@@ -351,7 +351,8 @@ export default function OperationView() {
                       const ready = slot.isHarvesting && slot.ticksRemaining === 0;
                       const idle = !slot.isHarvesting;
                       const yieldBonus = totalYieldBonus;
-                      const effectiveYield = Math.floor(slot.harvestYield * (1 + yieldBonus));
+                      const capacityExtra = (tech?.capacityBonus ?? 0) * (slot.harvestYield / (slot.plantsCapacity || 1));
+                      const effectiveYield = Math.floor((slot.harvestYield + capacityExtra) * (1 + yieldBonus));
 
                       return (
                         <div key={slotIndex} className="bg-gray-900/50 rounded p-1 flex flex-col">
