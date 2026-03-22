@@ -46,7 +46,9 @@ export default function TechMenu() {
             const isMaxed = level >= def.maxLevel;
             const nextCost = isMaxed ? 0 : def.costs[level];
             const canAfford = techPoints >= nextCost;
-            const currentBonus = level * def.effectPerLevel;
+            const currentBonus = def.bonusPerLevel && level > 0
+              ? (def.bonusPerLevel as number[])[level - 1] ?? 0
+              : level * def.effectPerLevel;
 
             return (
               <div
@@ -134,6 +136,12 @@ function formatBonus(bonusType: string, value: number): string {
     case 'flora_bloom': return `+${Math.round(value * 100)}% double chance`;
     case 'water': return `+${Math.round(value * 100)}% grow speed`;
     case 'light': return `+${Math.round(value * 100)}% grow speed`;
+    case 'start_dirty': return `+$${value.toLocaleString()} dirty cash`;
+    case 'start_clean': return `+$${value.toLocaleString()} clean cash`;
+    case 'start_seeds': return `+${value.toLocaleString()} seeds`;
+    case 'crew_attack': return `+${value} crew attack`;
+    case 'crew_defense': return `+${value} crew defense`;
+    case 'crew_discount': return `-$${value.toLocaleString()} crew cost`;
     default: return `+${value}`;
   }
 }
