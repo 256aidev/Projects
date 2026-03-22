@@ -305,12 +305,28 @@ function formatRunBonus(bonusType: string, value: number): string {
   switch (bonusType) {
     case 'yield': return `+${Math.round(value * 100)}% yield`;
     case 'speed': return `-${Math.round(value * 100)}% grow time`;
+    case 'auto_speed': return `-${Math.round(value * 100)}% grow time`;
+    case 'double': return `+${Math.round(value * 100)}% double chance`;
+    case 'harvest_size': return `+${Math.round(value * 100)}% harvest size`;
     case 'dealer': return `+${Math.round(value * 100)}% dealer sales`;
+    case 'dealer_cut': return `-${Math.round(value * 100)}% dealer cut`;
     case 'launder': return `+${Math.round(value * 100)}% launder eff.`;
     case 'heat': return `-${Math.round(value * 100)}% heat gain`;
     case 'price': return `+${Math.round(value * 100)}% sell price`;
     case 'demand': return `+${Math.round(value)} oz street demand`;
     case 'seeds': return `-${Math.round(value * 100)}% seed cost`;
+    case 'biz_income': return `+${Math.round(value * 100)}% business income`;
+    case 'biz_capacity': return `+${Math.round(value * 100)}% launder capacity`;
+    case 'lot_discount': return `-${Math.round(value * 100)}% lot cost`;
+    case 'lawyer_power': return `+${Math.round(value * 100)}% lawyer power`;
+    case 'crew_atk': return `+${Math.round(value * 100)}% crew attack`;
+    case 'crew_def': return `+${Math.round(value * 100)}% crew defense`;
+    case 'crew_cost': return `-${Math.round(value * 100)}% crew cost`;
+    case 'rival_weak': return `+${Math.round(value * 100)}% weakness dealt`;
+    case 'casino_luck': return `+${Math.round(value * 100)}% casino odds`;
+    case 'jewelry_value': return `+${Math.round(value * 100)}% jewelry value`;
+    case 'car_boost': return `+${Math.round(value * 100)}% car bonuses`;
+    case 'xp_boost': return `+${Math.round(value * 100)}% score bonus`;
     default: return `+${value}`;
   }
 }
