@@ -21,6 +21,7 @@ export type TechUpgradeId =
   | 'tech_start_dirty'
   | 'tech_start_clean'
   | 'tech_start_seeds'
+  | 'tech_demand'
   | 'tech_crew_attack'
   | 'tech_crew_defense'
   | 'tech_crew_discount';
@@ -34,7 +35,7 @@ export interface TechUpgradeDef {
   costs: number[];          // TP cost per level [L1, L2, L3, L4, L5]
   effectPerLevel: number;   // the numeric bonus per level
   effectLabel: string;      // human-readable per-level effect
-  bonusType: 'yield' | 'speed' | 'double' | 'capacity' | 'dealer' | 'launder' | 'heat' | 'price' | 'flora_gro' | 'flora_micro' | 'flora_bloom' | 'water' | 'light' | 'start_dirty' | 'start_clean' | 'start_seeds';
+  bonusType: 'yield' | 'speed' | 'double' | 'capacity' | 'dealer' | 'launder' | 'heat' | 'price' | 'demand' | 'flora_gro' | 'flora_micro' | 'flora_bloom' | 'water' | 'light' | 'start_dirty' | 'start_clean' | 'start_seeds';
   bonusPerLevel?: number[];  // per-level bonus values (for non-linear scaling, e.g. starting money)
 }
 
@@ -258,7 +259,18 @@ export const TECH_UPGRADE_DEFS: TechUpgradeDef[] = [
     costs: [1, 3, 5, 8, 14],
     effectPerLevel: 10,
     effectLabel: '% crew cost reduction',
-    bonusType: 'crew_discount',
+    bonusType: 'crew_discount' as any,
+  },
+  {
+    id: 'tech_demand',
+    name: 'Market Influence',
+    icon: '📢',
+    description: 'Permanent street demand boost — more customers want your product',
+    maxLevel: 5,
+    costs: [2, 4, 7, 12, 20],
+    effectPerLevel: 20,
+    effectLabel: ' oz street demand',
+    bonusType: 'demand',
   },
 ];
 
@@ -286,6 +298,7 @@ export const INITIAL_TECH_UPGRADES: Record<TechUpgradeId, number> = {
   tech_crew_attack: 0,
   tech_crew_defense: 0,
   tech_crew_discount: 0,
+  tech_demand: 0,
 };
 
 // ─────────────────────────────────────────

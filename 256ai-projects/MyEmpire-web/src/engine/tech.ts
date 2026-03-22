@@ -20,6 +20,7 @@ export interface TechBonuses {
   crewAttackBonus: number;   // e.g. 0.15 = +15% crew attack per level
   crewDefenseBonus: number;  // e.g. 0.15 = +15% crew defense per level
   crewDiscount: number;      // e.g. 0.10 = -10% crew hire cost per level
+  demandBonus: number;       // flat oz added to street demand
 }
 
 /** Compute all tech bonuses from current upgrade levels */
@@ -41,5 +42,6 @@ export function getTechBonuses(techUpgrades: Record<TechUpgradeId, number>): Tec
     crewAttackBonus: (techUpgrades.tech_crew_attack ?? 0) * (TECH_UPGRADE_MAP.tech_crew_attack?.effectPerLevel ?? 0.15),
     crewDefenseBonus: (techUpgrades.tech_crew_defense ?? 0) * (TECH_UPGRADE_MAP.tech_crew_defense?.effectPerLevel ?? 0.15),
     crewDiscount: (techUpgrades.tech_crew_discount ?? 0) * (TECH_UPGRADE_MAP.tech_crew_discount?.effectPerLevel ?? 0.10),
+    demandBonus: (techUpgrades.tech_demand ?? 0) * (TECH_UPGRADE_MAP.tech_demand?.effectPerLevel ?? 20),
   };
 }
